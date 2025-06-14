@@ -1,24 +1,52 @@
-import { initializeApp } from "firebase/app";
-import { initializeAuth, getReactNativePersistence } from "firebase/auth";
-import Constants from "expo-constants";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+// config/firebase.js
 
-// add firebase config
-const firebaseConfig = {
-  apiKey: Constants.expoConfig?.extra?.apiKey,
-  authDomain: Constants.expoConfig?.extra?.authDomain,
-  projectId: Constants.expoConfig?.extra?.projectId,
-  storageBucket: Constants.expoConfig?.extra?.storageBucket,
-  messagingSenderId: Constants.expoConfig?.extra?.messagingSenderId,
-  appId: Constants.expoConfig?.extra?.appId,
-};
+import firebase from 'firebase/app';
+import 'firebase/auth';
+import 'firebase/firestore';
+import 'firebase/storage';
+import firebaseConfig from "./firebaseConfig";
 
-// initialize firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase only once
+let app;
+let auth;
+let db;
+let storage;
 
-// initialize auth; only for native platforms (Android and iOS)
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
+if (firebase.apps.length === 0) {
+  // Initialize Firebase app
+  app = firebase.initializeApp(firebaseConfig);
+  
+  // Get services
+  auth = firebase.auth();
+  db = firebase.firestore();
+  storage = firebase.storage();
+  
+  // Configure Firestore settings
+  try {
+    db.settings({
+      experimentalForceLongPolling: true, // Helps with connection issues
+      merge: true,
+    });
+  } catch (error) {
+    console.log("Firestore settings error (can be ignored):", error.message);
+  }
+  
+  // Configure auth persistence for better reliability
+  try {
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+  } catch (error) {
+    console.log("Auth persistence error (can be ignored):", error.message);
+  }
+  
+  console.log("Firebase initialized successfully");
+} else {
+  // Use existing app
+  app = firebase.app();
+  auth = firebase.auth();
+  db = firebase.firestore();
+  storage = firebase.storage();
+}
 
-export { auth };
+export { auth, db, storage };
+export default firebase;
+

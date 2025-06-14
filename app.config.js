@@ -1,18 +1,21 @@
-import "dotenv/config";
-
 export default {
   expo: {
-    name: "Expo Firebase Starter",
-    slug: "expo-firebase",
+    name: "Numa Health App",
+    slug: "numa-health-app",
+    owner: "gilraz",
     privacy: "public",
-    platforms: ["ios", "android"],
-    version: "0.19.0",
+    platforms: ["ios", "android", "web"],
+    version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/flame.png",
+    icon: "./assets/numa-logo.png",
     splash: {
       image: "./assets/splash.png",
       resizeMode: "cover",
-      backgroundColor: "#F57C00",
+      backgroundColor: "#007AFF",
+    },
+    web: {
+      favicon: "./assets/numa-logo.png",
+      bundler: "metro"
     },
     updates: {
       fallbackToCacheTimeout: 0,
@@ -20,14 +23,30 @@ export default {
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
+      bundleIdentifier: "com.numahealth.app",
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
+        NSCameraUsageDescription: "This app uses the camera to let you take photos of your meals for tracking.",
+        NSPhotoLibraryUsageDescription: "This app accesses your photo library to let you select meal photos.",
+        NSMicrophoneUsageDescription: "This app does not use the microphone."
+      }
+    },
+    android: {
+      package: "com.numahealth.app",
+      adaptiveIcon: {
+        foregroundImage: "./assets/numa-logo.png",
+        backgroundColor: "#007AFF"
+      },
+      permissions: [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     extra: {
-      apiKey: process.env.API_KEY,
-      authDomain: process.env.AUTH_DOMAIN,
-      projectId: process.env.PROJECT_ID,
-      storageBucket: process.env.STORAGE_BUCKET,
-      messagingSenderId: process.env.MESSAGING_SENDER_ID,
-      appId: process.env.APP_ID,
+      eas: {
+        projectId: "f8a7c205-a5a5-4ac0-b6e9-a084d95662fa"
+      }
     },
   },
 };

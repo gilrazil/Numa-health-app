@@ -1,5 +1,12 @@
 import { Images } from "./images";
 import { Colors } from "./theme";
-import { auth } from "./firebase";
+import { firebase, auth, db, storage } from "./firebase";
 
-export { Images, Colors, auth };
+export { 
+  Images, 
+  Colors, 
+  firebase,
+  auth, 
+  db, 
+  storage 
+};

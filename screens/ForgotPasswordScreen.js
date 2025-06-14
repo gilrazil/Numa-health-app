@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { Formik } from "formik";
-import { sendPasswordResetEmail } from "firebase/auth";
 
 import { passwordResetSchema } from "../utils";
 import { Colors, auth } from "../config";
@@ -13,7 +12,7 @@ export const ForgotPasswordScreen = ({ navigation }) => {
   const handleSendPasswordResetEmail = (values) => {
     const { email } = values;
 
-    sendPasswordResetEmail(auth, email)
+    auth.sendPasswordResetEmail(email)
       .then(() => {
         console.log("Success: Password Reset Email sent.");
         navigation.navigate("Login");

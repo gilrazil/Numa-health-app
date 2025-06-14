@@ -1,16 +1,24 @@
-import React, { useState } from "react";
-import { Text, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Text, StyleSheet, Alert } from "react-native";
 import { Formik } from "formik";
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import * as LocalAuthentication from 'expo-local-authentication';
 
-import { View, TextInput, Logo, Button, FormErrorMessage } from "../components";
-import { Images, Colors, auth } from "../config";
+import { View, TextInput, Logo, Button, FormErrorMessage, BiometricSetupModal } from "../components";
+import { Images, Colors, auth, db, firebase } from "../config";
 import { useTogglePasswordVisibility } from "../hooks";
 import { signupValidationSchema } from "../utils";
+import { BiometricService } from "../services/BiometricService";
 
-export const SignupScreen = ({ navigation }) => {
+export const SignupScreen = ({ navigation, route }) => {
+  // Get user data from previous screens
+  const userData = route.params || {};
+  
   const [errorState, setErrorState] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showBiometricModal, setShowBiometricModal] = useState(false);
+  const [userCredentials, setUserCredentials] = useState(null);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
 
   const {
     passwordVisibility,
@@ -21,12 +29,105 @@ export const SignupScreen = ({ navigation }) => {
     confirmPasswordVisibility,
   } = useTogglePasswordVisibility();
 
-  const handleSignup = async (values) => {
-    const { email, password } = values;
+  useEffect(() => {
+    checkBiometricAvailability();
+  }, []);
 
-    createUserWithEmailAndPassword(auth, email, password).catch((error) =>
-      setErrorState(error.message)
-    );
+  const checkBiometricAvailability = async () => {
+    const { isAvailable } = await BiometricService.isBiometricAvailable();
+    setBiometricAvailable(isAvailable);
+  };
+
+  const handleSignUp = async (values) => {
+    const { email, password } = values;
+    
+    if (!email || !password) {
+      setErrorState('Please fill in all fields');
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorState('Password must be at least 6 characters');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorState('');
+    
+    try {
+      // Create user account
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      const user = userCredential.user;
+
+      // Prepare user data from route params
+      const userDataToSave = {
+        userId: user.uid,
+        email: user.email,
+        gender: route.params?.gender || null,
+        age: route.params?.age || null,
+        height: route.params?.height || null,
+        weight: route.params?.weight || null,
+        goal: route.params?.goal || null,
+        createdAt: new Date().toISOString(),
+      };
+
+      // Try to save to Firestore
+      try {
+        // Ensure Firestore is online before attempting to save
+        await db.enableNetwork();
+        await db.collection('users').doc(user.uid).set(userDataToSave);
+        console.log('✅ User data saved to Firestore successfully');
+      } catch (firestoreError) {
+        console.log('❌ Could not save to Firestore:', firestoreError.code, firestoreError.message);
+        
+        // Try alternative approach if the first attempt fails
+        if (firestoreError.code === 'invalid-argument' || firestoreError.message.includes('stream token')) {
+          console.log('🔄 Retrying Firestore save with different approach...');
+          try {
+            // Wait a moment and try again
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await db.collection('users').doc(user.uid).set(userDataToSave, { merge: true });
+            console.log('✅ User data saved to Firestore on retry');
+          } catch (retryError) {
+            console.log('❌ Retry also failed:', retryError.code, retryError.message);
+            // Don't show error to user as account was created successfully
+          }
+        }
+      }
+
+      // Store credentials for biometric setup
+      setUserCredentials({ email, password });
+
+      // Check if biometric authentication is available and show setup modal
+      const isAvailable = await BiometricService.isBiometricAvailable();
+      if (isAvailable) {
+        setShowBiometricModal(true);
+      }
+      
+      // Navigation will be handled by auth state change
+    } catch (error) {
+      console.error('Signup error:', error);
+      let errorMessage = 'An error occurred during signup. Please try again.';
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email is already registered. Please try logging in instead.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Please enter a valid email address';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password should be at least 6 characters';
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      }
+      
+      setErrorState(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBiometricSetupComplete = (wasSetup) => {
+    console.log(`Biometric setup ${wasSetup ? 'completed' : 'skipped'}`);
+    // User will be automatically navigated to HomeScreen by the auth state change
   };
 
   return (
@@ -35,7 +136,10 @@ export const SignupScreen = ({ navigation }) => {
         {/* LogoContainer: consist app logo and screen title */}
         <View style={styles.logoContainer}>
           <Logo uri={Images.logo} />
-          <Text style={styles.screenTitle}>Create a new account!</Text>
+          <Text style={styles.screenTitle}>Create your account</Text>
+          <Text style={styles.subtitle}>
+            Last step! Set up your login details
+          </Text>
         </View>
         {/* Formik Wrapper */}
         <Formik
@@ -45,7 +149,7 @@ export const SignupScreen = ({ navigation }) => {
             confirmPassword: "",
           }}
           validationSchema={signupValidationSchema}
-          onSubmit={(values) => handleSignup(values)}
+          onSubmit={(values) => handleSignUp(values)}
         >
           {({
             values,
@@ -91,7 +195,7 @@ export const SignupScreen = ({ navigation }) => {
               <TextInput
                 name="confirmPassword"
                 leftIconName="key-variant"
-                placeholder="Enter password"
+                placeholder="Confirm password"
                 autoCapitalize="none"
                 autoCorrect={false}
                 secureTextEntry={confirmPasswordVisibility}
@@ -111,12 +215,15 @@ export const SignupScreen = ({ navigation }) => {
                 <FormErrorMessage error={errorState} visible={true} />
               ) : null}
               {/* Signup button */}
-              <Button style={styles.button} onPress={handleSubmit}>
-                <Text style={styles.buttonText}>Signup</Text>
+              <Button style={styles.button} onPress={handleSubmit} disabled={isLoading}>
+                <Text style={styles.buttonText}>
+                  {isLoading ? "Creating Account..." : "Create Account"}
+                </Text>
               </Button>
             </>
           )}
         </Formik>
+        
         {/* Button to navigate to Login screen */}
         <Button
           style={styles.borderlessButtonContainer}
@@ -125,6 +232,14 @@ export const SignupScreen = ({ navigation }) => {
           onPress={() => navigation.navigate("Login")}
         />
       </KeyboardAwareScrollView>
+
+      {/* Biometric Setup Modal */}
+      <BiometricSetupModal
+        visible={showBiometricModal}
+        onClose={() => setShowBiometricModal(false)}
+        onSetupComplete={handleBiometricSetupComplete}
+        userCredentials={userCredentials}
+      />
     </View>
   );
 };
@@ -144,17 +259,24 @@ const styles = StyleSheet.create({
     color: Colors.black,
     paddingTop: 20,
   },
+  subtitle: {
+    fontSize: 16,
+    color: Colors.darkgrey,
+    marginTop: 10,
+    marginBottom: 20,
+    textAlign: "center",
+  },
   button: {
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 24,
     backgroundColor: Colors.orange,
-    padding: 10,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 12,
   },
   buttonText: {
-    fontSize: 20,
+    fontSize: 18,
     color: Colors.white,
     fontWeight: "700",
   },
@@ -162,5 +284,5 @@ const styles = StyleSheet.create({
     marginTop: 16,
     alignItems: "center",
     justifyContent: "center",
-  },
+  }
 });

@@ -3,10 +3,12 @@ import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../config';
 import { Button } from '../components';
+import { t, getCurrentLanguageInfo } from '../config/i18n';
 
 export const GoalScreen = ({ navigation, route }) => {
   const userInfo = route.params || {};
   const [selectedGoal, setSelectedGoal] = useState(null);
+  const { isRTL } = getCurrentLanguageInfo();
 
   const handleContinue = () => {
     if (selectedGoal) {
@@ -27,9 +29,14 @@ export const GoalScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, isRTL && styles.rtlContainer]}>
       <View style={styles.content}>
-        <Text style={styles.title}>What's your goal?</Text>
+        <Text style={[styles.title, isRTL && styles.rtlText]}>
+          {t('goal.title')}
+        </Text>
+        <Text style={[styles.subtitle, isRTL && styles.rtlText]}>
+          {t('goal.subtitle')}
+        </Text>
         
         <View style={styles.optionsContainer}>
           <TouchableOpacity
@@ -39,9 +46,11 @@ export const GoalScreen = ({ navigation, route }) => {
             ]}
             onPress={() => setSelectedGoal('reduce')}
           >
-            <Text style={styles.optionTitle}>Reduce</Text>
-            <Text style={styles.optionDescription}>
-              I want to lose weight and improve my health
+            <Text style={[styles.optionTitle, isRTL && styles.rtlText]}>
+              {t('goal.reduce')}
+            </Text>
+            <Text style={[styles.optionDescription, isRTL && styles.rtlText]}>
+              {t('goal.reduceDesc')}
             </Text>
           </TouchableOpacity>
           
@@ -52,9 +61,11 @@ export const GoalScreen = ({ navigation, route }) => {
             ]}
             onPress={() => setSelectedGoal('maintain')}
           >
-            <Text style={styles.optionTitle}>Maintain</Text>
-            <Text style={styles.optionDescription}>
-              I want to maintain my current weight and focus on health
+            <Text style={[styles.optionTitle, isRTL && styles.rtlText]}>
+              {t('goal.maintain')}
+            </Text>
+            <Text style={[styles.optionDescription, isRTL && styles.rtlText]}>
+              {t('goal.maintainDesc')}
             </Text>
           </TouchableOpacity>
           
@@ -65,9 +76,11 @@ export const GoalScreen = ({ navigation, route }) => {
             ]}
             onPress={() => setSelectedGoal('increase')}
           >
-            <Text style={styles.optionTitle}>Increase</Text>
-            <Text style={styles.optionDescription}>
-              I want to gain weight and build muscle
+            <Text style={[styles.optionTitle, isRTL && styles.rtlText]}>
+              {t('goal.increase')}
+            </Text>
+            <Text style={[styles.optionDescription, isRTL && styles.rtlText]}>
+              {t('goal.increaseDesc')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -82,7 +95,9 @@ export const GoalScreen = ({ navigation, route }) => {
           onPress={handleContinue}
           disabled={!selectedGoal}
         >
-          <Text style={styles.buttonText}>Continue</Text>
+          <Text style={[styles.buttonText, isRTL && styles.rtlText]}>
+            {t('goal.continue')}
+          </Text>
         </Button>
       </View>
     </SafeAreaView>
@@ -97,6 +112,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 50
   },
+  rtlContainer: {
+    direction: 'rtl'
+  },
   content: {
     flex: 1,
     justifyContent: 'center'
@@ -105,8 +123,19 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '600',
     color: Colors.black,
-    marginBottom: 40,
+    marginBottom: 16,
     textAlign: 'center'
+  },
+  subtitle: {
+    fontSize: 16,
+    color: Colors.darkgrey,
+    marginBottom: 40,
+    textAlign: 'center',
+    lineHeight: 22
+  },
+  rtlText: {
+    textAlign: 'center',
+    writingDirection: 'rtl'
   },
   optionsContainer: {
     width: '100%',
@@ -131,7 +160,8 @@ const styles = StyleSheet.create({
   },
   optionDescription: {
     fontSize: 14,
-    color: Colors.darkgrey
+    color: Colors.darkgrey,
+    lineHeight: 20
   },
   buttonContainer: {
     marginTop: 40

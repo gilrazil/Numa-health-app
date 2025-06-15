@@ -3,9 +3,11 @@ import { StyleSheet, Text, View, TextInput, KeyboardAvoidingView, Platform, Scro
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../config';
 import { Button } from '../components';
+import { t, getCurrentLanguageInfo } from '../config/i18n';
 
 export const AgeHeightWeightScreen = ({ navigation, route }) => {
   const { gender } = route.params || {};
+  const { isRTL } = getCurrentLanguageInfo();
   
   const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
@@ -32,7 +34,7 @@ export const AgeHeightWeightScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, isRTL && styles.rtlContainer]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -41,13 +43,20 @@ export const AgeHeightWeightScreen = ({ navigation, route }) => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.title}>Tell us about yourself</Text>
+          <Text style={[styles.title, isRTL && styles.rtlText]}>
+            {t('profile.title')}
+          </Text>
+          <Text style={[styles.subtitle, isRTL && styles.rtlText]}>
+            {t('profile.subtitle')}
+          </Text>
           
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Age</Text>
+            <Text style={[styles.label, isRTL && styles.rtlText]}>
+              {t('profile.age')}
+            </Text>
             <TextInput
-              style={styles.input}
-              placeholder="Years"
+              style={[styles.input, isRTL && styles.rtlInput]}
+              placeholder={t('profile.ageYears')}
               keyboardType="number-pad"
               value={age}
               onChangeText={setAge}
@@ -56,10 +65,12 @@ export const AgeHeightWeightScreen = ({ navigation, route }) => {
           </View>
           
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Height</Text>
+            <Text style={[styles.label, isRTL && styles.rtlText]}>
+              {t('profile.height')}
+            </Text>
             <TextInput
-              style={styles.input}
-              placeholder="cm"
+              style={[styles.input, isRTL && styles.rtlInput]}
+              placeholder={t('profile.heightCm')}
               keyboardType="number-pad"
               value={height}
               onChangeText={setHeight}
@@ -68,10 +79,12 @@ export const AgeHeightWeightScreen = ({ navigation, route }) => {
           </View>
           
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Weight</Text>
+            <Text style={[styles.label, isRTL && styles.rtlText]}>
+              {t('profile.weight')}
+            </Text>
             <TextInput
-              style={styles.input}
-              placeholder="kg"
+              style={[styles.input, isRTL && styles.rtlInput]}
+              placeholder={t('profile.weightKg')}
               keyboardType="number-pad"
               value={weight}
               onChangeText={setWeight}
@@ -88,7 +101,9 @@ export const AgeHeightWeightScreen = ({ navigation, route }) => {
               onPress={handleContinue}
               disabled={!isFormValid}
             >
-              <Text style={styles.buttonText}>Continue</Text>
+              <Text style={[styles.buttonText, isRTL && styles.rtlText]}>
+                {t('profile.continue')}
+              </Text>
             </Button>
           </View>
         </ScrollView>
@@ -102,6 +117,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.white
   },
+  rtlContainer: {
+    direction: 'rtl'
+  },
   scrollContent: {
     paddingHorizontal: 25,
     paddingVertical: 40,
@@ -111,8 +129,19 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '600',
     color: Colors.black,
-    marginBottom: 40,
+    marginBottom: 16,
     textAlign: 'center'
+  },
+  subtitle: {
+    fontSize: 16,
+    color: Colors.darkgrey,
+    marginBottom: 40,
+    textAlign: 'center',
+    lineHeight: 22
+  },
+  rtlText: {
+    textAlign: 'center',
+    writingDirection: 'rtl'
   },
   inputContainer: {
     marginBottom: 24
@@ -131,6 +160,9 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     color: Colors.black
+  },
+  rtlInput: {
+    textAlign: 'right'
   },
   buttonContainer: {
     marginTop: 30

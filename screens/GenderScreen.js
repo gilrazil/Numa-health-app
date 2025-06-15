@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, I18nManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../config';
 import { Button } from '../components';
+import { t, getCurrentLanguageInfo } from '../config/i18n';
 
 export const GenderScreen = ({ navigation }) => {
   const [selectedGender, setSelectedGender] = useState(null);
+  const { isRTL } = getCurrentLanguageInfo();
 
   const handleContinue = () => {
     if (selectedGender) {
@@ -15,9 +17,14 @@ export const GenderScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, isRTL && styles.rtlContainer]}>
       <View style={styles.content}>
-        <Text style={styles.title}>What's your gender?</Text>
+        <Text style={[styles.title, isRTL && styles.rtlText]}>
+          {t('gender.title')}
+        </Text>
+        <Text style={[styles.subtitle, isRTL && styles.rtlText]}>
+          {t('gender.subtitle')}
+        </Text>
         
         <View style={styles.optionsContainer}>
           <TouchableOpacity
@@ -30,10 +37,11 @@ export const GenderScreen = ({ navigation }) => {
             <Text 
               style={[
                 styles.optionText, 
-                selectedGender === 'male' && styles.selectedOptionText
+                selectedGender === 'male' && styles.selectedOptionText,
+                isRTL && styles.rtlText
               ]}
             >
-              Male
+              {t('gender.male')}
             </Text>
           </TouchableOpacity>
           
@@ -47,10 +55,11 @@ export const GenderScreen = ({ navigation }) => {
             <Text 
               style={[
                 styles.optionText, 
-                selectedGender === 'female' && styles.selectedOptionText
+                selectedGender === 'female' && styles.selectedOptionText,
+                isRTL && styles.rtlText
               ]}
             >
-              Female
+              {t('gender.female')}
             </Text>
           </TouchableOpacity>
           
@@ -64,10 +73,11 @@ export const GenderScreen = ({ navigation }) => {
             <Text 
               style={[
                 styles.optionText, 
-                selectedGender === 'other' && styles.selectedOptionText
+                selectedGender === 'other' && styles.selectedOptionText,
+                isRTL && styles.rtlText
               ]}
             >
-              Other
+              {t('gender.other')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -82,7 +92,9 @@ export const GenderScreen = ({ navigation }) => {
           onPress={handleContinue}
           disabled={!selectedGender}
         >
-          <Text style={styles.buttonText}>Continue</Text>
+          <Text style={[styles.buttonText, isRTL && styles.rtlText]}>
+            {t('gender.continue')}
+          </Text>
         </Button>
       </View>
     </SafeAreaView>
@@ -97,6 +109,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 50
   },
+  rtlContainer: {
+    direction: 'rtl'
+  },
   content: {
     flex: 1,
     justifyContent: 'center'
@@ -105,8 +120,19 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '600',
     color: Colors.black,
-    marginBottom: 40,
+    marginBottom: 16,
     textAlign: 'center'
+  },
+  subtitle: {
+    fontSize: 16,
+    color: Colors.darkgrey,
+    marginBottom: 40,
+    textAlign: 'center',
+    lineHeight: 22
+  },
+  rtlText: {
+    textAlign: 'center',
+    writingDirection: 'rtl'
   },
   optionsContainer: {
     width: '100%',

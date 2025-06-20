@@ -34,15 +34,13 @@ export const HomeScreen = ({ navigation }) => {
       if (userDoc.exists()) {
         const data = userDoc.data();
         setUserData(data);
-        
-        // Check if profile is incomplete
-        if (!data.profileCompleted && !data.age) {
-          // Navigate to profile completion if needed
-          navigation.navigate('Gender');
-        }
+        console.log('✅ User data loaded for HomeScreen:', { 
+          email: data.email,
+          profileCompleted: data.profileCompleted,
+          hasEssentialFields: !!(data.gender && data.age && data.height && data.weight && data.goal)
+        });
       } else {
-        // New user - navigate to profile setup
-        navigation.navigate('Gender');
+        console.log('⚠️ No user document found - this should not happen if RootNavigator is working correctly');
       }
     } catch (error) {
       console.error('Error loading user data:', error);

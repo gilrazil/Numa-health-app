@@ -41,7 +41,7 @@ export const SignupScreen = ({ navigation, route }) => {
   };
 
   const handleOnSignUp = async (values, actions) => {
-    const { firstName, lastName, email, password } = values;
+    const { email, password } = values;
     
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -49,26 +49,31 @@ export const SignupScreen = ({ navigation, route }) => {
       
       console.log('User created successfully:', user.uid);
       
-      // Create user document in Firestore
+      // Save complete user profile data from onboarding flow
       const userDataToSave = {
         userId: user.uid,
-        firstName,
-        lastName,
         email: user.email,
         createdAt: serverTimestamp(),
-        profileCompleted: false
+        // Include all onboarding data if available
+        ...(userData.gender && { gender: userData.gender }),
+        ...(userData.age && { age: userData.age }),
+        ...(userData.height && { height: userData.height }),
+        ...(userData.weight && { weight: userData.weight }),
+        ...(userData.goal && { goal: userData.goal }),
+        // Mark profile as completed if we have all required fields
+        profileCompleted: !!(userData.gender && userData.age && userData.height && userData.weight && userData.goal)
       };
       
       try {
         await setDoc(doc(db, 'users', user.uid), userDataToSave);
-        console.log('User document created in Firestore');
+        console.log('Complete user profile saved to Firestore:', userDataToSave);
       } catch (firestoreError) {
         console.log('Firestore error (user still created):', firestoreError);
         // Still save basic data
         await setDoc(doc(db, 'users', user.uid), userDataToSave, { merge: true });
       }
       
-      console.log('Signup process completed successfully');
+      console.log('Signup and profile setup completed successfully');
     } catch (error) {
       console.log('Signup error:', error.message);
       actions.setFieldError('general', error.message);

@@ -5,10 +5,12 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import * as LocalAuthentication from 'expo-local-authentication';
 
 import { View, TextInput, Logo, Button, FormErrorMessage, BiometricSetupModal } from "../components";
-import { Images, Colors, auth, db, firebase } from "../config";
+import { Images, Colors, auth, db } from "../config";
 import { useTogglePasswordVisibility } from "../hooks";
 import { signupValidationSchema } from "../utils";
 import { BiometricService } from "../services/BiometricService";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export const SignupScreen = ({ navigation, route }) => {
   // Get user data from previous screens
@@ -38,90 +40,38 @@ export const SignupScreen = ({ navigation, route }) => {
     setBiometricAvailable(isAvailable);
   };
 
-  const handleSignUp = async (values) => {
-    const { email, password } = values;
-    
-    if (!email || !password) {
-      setErrorState('Please fill in all fields');
-      return;
-    }
-
-    if (password.length < 6) {
-      setErrorState('Password must be at least 6 characters');
-      return;
-    }
-
-    setIsLoading(true);
-    setErrorState('');
+  const handleOnSignUp = async (values, actions) => {
+    const { firstName, lastName, email, password } = values;
     
     try {
-      // Create user account
-      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-      const user = userCredential.user;
-
-      // Prepare user data from route params
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const { user } = userCredential;
+      
+      console.log('User created successfully:', user.uid);
+      
+      // Create user document in Firestore
       const userDataToSave = {
         userId: user.uid,
+        firstName,
+        lastName,
         email: user.email,
-        gender: route.params?.gender || null,
-        age: route.params?.age || null,
-        height: route.params?.height || null,
-        weight: route.params?.weight || null,
-        goal: route.params?.goal || null,
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
+        profileCompleted: false
       };
-
-      // Try to save to Firestore
+      
       try {
-        // Ensure Firestore is online before attempting to save
-        await db.enableNetwork();
-        await db.collection('users').doc(user.uid).set(userDataToSave);
-        console.log('✅ User data saved to Firestore successfully');
+        await setDoc(doc(db, 'users', user.uid), userDataToSave);
+        console.log('User document created in Firestore');
       } catch (firestoreError) {
-        console.log('❌ Could not save to Firestore:', firestoreError.code, firestoreError.message);
-        
-        // Try alternative approach if the first attempt fails
-        if (firestoreError.code === 'invalid-argument' || firestoreError.message.includes('stream token')) {
-          console.log('🔄 Retrying Firestore save with different approach...');
-          try {
-            // Wait a moment and try again
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            await db.collection('users').doc(user.uid).set(userDataToSave, { merge: true });
-            console.log('✅ User data saved to Firestore on retry');
-          } catch (retryError) {
-            console.log('❌ Retry also failed:', retryError.code, retryError.message);
-            // Don't show error to user as account was created successfully
-          }
-        }
-      }
-
-      // Store credentials for biometric setup
-      setUserCredentials({ email, password });
-
-      // Check if biometric authentication is available and show setup modal
-      const isAvailable = await BiometricService.isBiometricAvailable();
-      if (isAvailable) {
-        setShowBiometricModal(true);
+        console.log('Firestore error (user still created):', firestoreError);
+        // Still save basic data
+        await setDoc(doc(db, 'users', user.uid), userDataToSave, { merge: true });
       }
       
-      // Navigation will be handled by auth state change
+      console.log('Signup process completed successfully');
     } catch (error) {
-      console.error('Signup error:', error);
-      let errorMessage = 'An error occurred during signup. Please try again.';
-      
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'This email is already registered. Please try logging in instead.';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Please enter a valid email address';
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'Password should be at least 6 characters';
-      } else if (error.code === 'auth/network-request-failed') {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
-      }
-      
-      setErrorState(errorMessage);
-    } finally {
-      setIsLoading(false);
+      console.log('Signup error:', error.message);
+      actions.setFieldError('general', error.message);
     }
   };
 
@@ -149,7 +99,7 @@ export const SignupScreen = ({ navigation, route }) => {
             confirmPassword: "",
           }}
           validationSchema={signupValidationSchema}
-          onSubmit={(values) => handleSignUp(values)}
+          onSubmit={(values) => handleOnSignUp(values)}
         >
           {({
             values,
@@ -158,6 +108,7 @@ export const SignupScreen = ({ navigation, route }) => {
             handleChange,
             handleSubmit,
             handleBlur,
+            actions,
           }) => (
             <>
               {/* Input fields */}
@@ -267,13 +218,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 24,
-    backgroundColor: Colors.orange,
-    padding: 16,
+    backgroundColor: '#6B4EFF',
     borderRadius: 12,
+    padding: 16,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 24,
   },
   buttonText: {
     fontSize: 18,

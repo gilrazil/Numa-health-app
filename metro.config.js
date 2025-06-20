@@ -1,7 +1,10 @@
-// Learn more at https://docs.expo.dev/guides/using-firebase/#configure-metro
-const { getDefaultConfig } = require("@expo/metro-config");
+// Firebase compatibility fixes for Expo SDK 53
+const { getDefaultConfig } = require('expo/metro-config');
 
-const defaultConfig = getDefaultConfig(__dirname);
-defaultConfig.resolver.sourceExts.push("cjs");
+const config = getDefaultConfig(__dirname);
 
-module.exports = defaultConfig;
+// Fix for "Component auth has not been registered yet" error
+config.resolver.sourceExts.push('cjs');
+config.resolver.unstable_enablePackageExports = false;
+
+module.exports = config;

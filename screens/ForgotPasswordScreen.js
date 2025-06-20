@@ -1,23 +1,29 @@
 import React, { useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, Alert } from "react-native";
 import { Formik } from "formik";
 
 import { passwordResetSchema } from "../utils";
 import { Colors, auth } from "../config";
 import { View, TextInput, Button, FormErrorMessage } from "../components";
+import { sendPasswordResetEmail } from "firebase/auth";
 
 export const ForgotPasswordScreen = ({ navigation }) => {
   const [errorState, setErrorState] = useState("");
 
-  const handleSendPasswordResetEmail = (values) => {
+  const handleSendPasswordResetEmail = async (values, actions) => {
     const { email } = values;
-
-    auth.sendPasswordResetEmail(email)
-      .then(() => {
-        console.log("Success: Password Reset Email sent.");
-        navigation.navigate("Login");
-      })
-      .catch((error) => setErrorState(error.message));
+    
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Alert.alert(
+        'Password Reset Email Sent',
+        'Check your email for password reset instructions.',
+        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+      );
+    } catch (error) {
+      console.log('Password reset error:', error.message);
+      actions.setFieldError('general', error.message);
+    }
   };
 
   return (
@@ -28,7 +34,7 @@ export const ForgotPasswordScreen = ({ navigation }) => {
       <Formik
         initialValues={{ email: "" }}
         validationSchema={passwordResetSchema}
-        onSubmit={(values) => handleSendPasswordResetEmail(values)}
+        onSubmit={(values, actions) => handleSendPasswordResetEmail(values, actions)}
       >
         {({
           values,
@@ -90,13 +96,12 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   button: {
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 8,
-    backgroundColor: Colors.orange,
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: '#6B4EFF',
+    borderRadius: 12,
+    padding: 16,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 24,
   },
   buttonText: {
     fontSize: 20,

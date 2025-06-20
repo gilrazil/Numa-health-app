@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   setupButton: {
-    backgroundColor: Colors.orange,
+    backgroundColor: '#6B4EFF',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',

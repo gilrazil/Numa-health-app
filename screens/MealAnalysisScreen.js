@@ -10,12 +10,17 @@ import {
   Pressable,
   Dimensions,
   TouchableOpacity,
-  Animated
+  Animated,
+  TextInput,
+  Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, auth, db } from '../config';
+import { collection, addDoc } from 'firebase/firestore';
 import { MealAnalysisService } from '../services/MealAnalysisService';
+import { TextEditingService } from '../services/TextEditingService';
 import { Ionicons } from '@expo/vector-icons';
+import * as MediaLibrary from 'expo-media-library';
 
 const { width } = Dimensions.get('window');
 
@@ -26,6 +31,14 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
   const [error, setError] = useState(null);
   const [showAllIngredients, setShowAllIngredients] = useState(false);
   const [heightAnimation] = useState(new Animated.Value(140));
+  const [progress] = useState(new Animated.Value(0));
+
+  // Text editing states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingAnimation] = useState(new Animated.Value(1));
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editText, setEditText] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     // Only analyze if we don't have existing analysis
@@ -42,10 +55,23 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
     }).start();
   }, [showAllIngredients]);
 
+  const simulateProgress = () => {
+    // Reset progress
+    progress.setValue(0);
+    
+    // Animate progress from 0 to 90%
+    Animated.timing(progress, {
+      toValue: 0.9,
+      duration: 15000, // 15 seconds
+      useNativeDriver: false,
+    }).start();
+  };
+
   const analyzeMeal = async () => {
     try {
       setLoading(true);
       setError(null);
+      simulateProgress();
       
       // Get user's daily intake (you can implement this later)
       const dailyIntake = [];
@@ -57,10 +83,17 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
         dailyIntake
       );
       
+      // Complete the progress animation
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: false,
+      }).start();
+      
       setAnalysis(result);
       
       // Save analysis to Firestore
-      await saveMealAnalysis(result);
+      await saveMeal();
       
     } catch (error) {
       console.error('שגיאה בניתוח ארוחה:', error);
@@ -70,23 +103,80 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
     }
   };
 
-  const saveMealAnalysis = async (analysisData) => {
+  const uploadImageToFirebase = async (imageUri) => {
     try {
       const currentUser = auth.currentUser;
-      if (currentUser) {
-        const mealData = {
-          userId: currentUser.uid,
-          imageUri: imageUri,
-          analysis: analysisData,
-          timestamp: new Date().toISOString(),
-          date: new Date().toDateString()
-        };
-        
-        await db.collection('meals').add(mealData);
-        console.log('✅ ניתוח הארוחה נשמר בהצלחה');
+      if (!currentUser) {
+        throw new Error('User not authenticated');
       }
+
+      // Create a unique filename
+      const filename = `meals/${currentUser.uid}/${Date.now()}.jpg`;
+      
+      // Upload image to Firebase Storage
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      const ref = storage.ref().child(filename);
+      
+      // Add upload progress tracking
+      const uploadTask = ref.put(blob);
+      
+      return new Promise((resolve, reject) => {
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            console.log('Upload progress:', progress);
+          },
+          (error) => {
+            console.error('Upload error:', error);
+            reject(error);
+          },
+          async () => {
+            try {
+              const downloadURL = await ref.getDownloadURL();
+              resolve(downloadURL);
+            } catch (error) {
+              reject(error);
+            }
+          }
+        );
+      });
     } catch (error) {
-      console.error('❌ שגיאה בשמירת ניתוח:', error);
+      console.error('Error uploading to Firebase:', error);
+      throw error;
+    }
+  };
+
+  const saveMeal = async () => {
+    try {
+      setSaving(true);
+      
+      const mealData = {
+        userId: auth.currentUser.uid,
+        imageUrl: imageUri,
+        analysis: analysis,
+        timestamp: new Date().toISOString(),
+        createdAt: new Date()
+      };
+
+      await addDoc(collection(db, 'meals'), mealData);
+      
+      Alert.alert(
+        'Success', 
+        'Meal saved successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Home')
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error saving meal:', error);
+      Alert.alert('Error', 'Failed to save meal. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -117,7 +207,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
     if (!analysis?.ingredients?.ingredients) return [];
     
     const ingredients = analysis.ingredients.ingredients;
-    const maxVisible = 3; // מספר מרכיבים מקסימלי להצגה בתחילה - הקטנתי ל-3
+    const maxVisible = 1; // מספר מרכיבים מקסימלי להצגה בתחילה - שונה ל-1
     
     if (showAllIngredients || ingredients.length <= maxVisible) {
       return ingredients;
@@ -127,7 +217,115 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
   };
 
   const hasMoreIngredients = () => {
-    return analysis?.ingredients?.ingredients?.length > 3; // שינוי ל-3
+    return analysis?.ingredients?.ingredients?.length > 1; // שינוי ל-1
+  };
+
+  // Text editing functions
+  const startTextEdit = async () => {
+    try {
+      setShowEditModal(true);
+      setEditText('');
+    } catch (error) {
+      console.error('שגיאה בהתחלת עריכה טקסטית:', error);
+      Alert.alert('שגיאה', 'לא הצלחתי להתחיל העריכה.');
+    }
+  };
+
+  const finishTextEdit = async () => {
+    if (!editText.trim()) {
+      Alert.alert('שגיאה', 'אנא הכנס פקודת עריכה');
+      return;
+    }
+
+    try {
+      setEditLoading(true);
+      
+      const command = await TextEditingService.parseEditCommand(editText, analysis.ingredients.ingredients);
+      
+      if (TextEditingService.validateCommand(command)) {
+        // Apply the text command to ingredients
+        applyTextCommand(command);
+        
+        Alert.alert(
+          '✅ הבנתי!',
+          `${command.explanation}`,
+          [{ text: 'מעולה', style: 'default' }]
+        );
+        
+        setShowEditModal(false);
+        setEditText('');
+      } else {
+        Alert.alert('שגיאה', 'לא הצלחתי להבין את הפקודה. נסה שוב.');
+      }
+    } catch (error) {
+      console.error('שגיאה בסיום עריכה טקסטית:', error);
+      Alert.alert('שגיאה', 'לא הצלחתי לעבד את העריכה.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const cancelTextEdit = async () => {
+    setShowEditModal(false);
+    setEditText('');
+    setIsEditing(false);
+  };
+
+  const applyTextCommand = (command) => {
+    try {
+      const updatedAnalysis = { ...analysis };
+      let ingredients = [...updatedAnalysis.ingredients.ingredients];
+
+      switch (command.action) {
+        case 'add':
+          // Add new ingredient
+          ingredients.push({
+            name: command.ingredient.name,
+            quantity: command.ingredient.quantity,
+            unit: command.ingredient.unit,
+            confidence: command.ingredient.confidence
+          });
+          break;
+
+        case 'edit':
+          // Edit existing ingredient
+          if (command.targetIndex !== null && command.targetIndex < ingredients.length) {
+            ingredients[command.targetIndex] = {
+              ...ingredients[command.targetIndex],
+              name: command.ingredient.name || ingredients[command.targetIndex].name,
+              quantity: command.ingredient.quantity || ingredients[command.targetIndex].quantity,
+              unit: command.ingredient.unit || ingredients[command.targetIndex].unit,
+              confidence: command.ingredient.confidence || ingredients[command.targetIndex].confidence
+            };
+          }
+          break;
+
+        case 'remove':
+          // Remove ingredient
+          if (command.targetIndex !== null && command.targetIndex < ingredients.length) {
+            ingredients.splice(command.targetIndex, 1);
+          }
+          break;
+
+        default:
+          console.warn('פעולה לא מוכרת:', command.action);
+          return;
+      }
+
+      // Update analysis with new ingredients
+      updatedAnalysis.ingredients.ingredients = ingredients;
+      
+      // Recalculate nutrition (simplified - in real app you'd call the nutrition service)
+      // For now, just update the analysis state
+      setAnalysis(updatedAnalysis);
+      
+      // Save updated analysis
+      saveMealAnalysis(updatedAnalysis);
+      
+    } catch (error) {
+      console.error('שגיאה ביישום פקודה טקסטית:', error);
+      Alert.alert('שגיאה', 'לא הצלחתי ליישם את העריכה.');
+    }
   };
 
   if (loading) {
@@ -208,11 +406,44 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
           ]}>
             <View style={styles.sectionHeader}>
               <Ionicons name="restaurant" size={16} color="#007AFF" />
-              <Text style={styles.sectionTitle}>מרכיבים שזוהו</Text>
+              <Text style={styles.sectionTitle}>
+                מרכיבים שזוהו ({analysis.ingredients.ingredients.length})
+              </Text>
               {analysis.ingredients.totalEstimatedWeight && (
                 <Text style={styles.totalWeight}>
-                  ({analysis.ingredients.totalEstimatedWeight})
+                  {analysis.ingredients.totalEstimatedWeight}
                 </Text>
+              )}
+              
+              {/* Text Edit Button */}
+              {!isHistorical && (
+                <TouchableOpacity 
+                  style={[
+                    styles.textEditButton,
+                    isEditing && styles.textEditButtonEditing
+                  ]}
+                  onPress={startTextEdit}
+                  disabled={isEditing}
+                >
+                  <Animated.View style={{ transform: [{ scale: editingAnimation }] }}>
+                    {isEditing ? (
+                      <ActivityIndicator size="small" color="#007AFF" />
+                    ) : (
+                      <Ionicons 
+                        name="create" 
+                        size={16} 
+                        color="#007AFF" 
+                      />
+                    )}
+                  </Animated.View>
+                </TouchableOpacity>
+              )}
+              
+              {/* Visual indicator for more content */}
+              {hasMoreIngredients() && !showAllIngredients && (
+                <View style={styles.moreIndicator}>
+                  <Ionicons name="ellipsis-horizontal" size={12} color="#8E8E93" />
+                </View>
               )}
             </View>
             <ScrollView 
@@ -310,6 +541,77 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Text Editing Modal */}
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={cancelTextEdit}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={cancelTextEdit} style={styles.modalCancelButton}>
+              <Text style={styles.modalCancelText}>בטל</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>עריכת מרכיבים</Text>
+            <TouchableOpacity 
+              onPress={finishTextEdit} 
+              style={[styles.modalDoneButton, editLoading && styles.modalDoneButtonDisabled]}
+              disabled={editLoading}
+            >
+              {editLoading ? (
+                <ActivityIndicator size="small" color="#007AFF" />
+              ) : (
+                <Text style={styles.modalDoneText}>בצע</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.modalContent}>
+            <Text style={styles.modalSubtitle}>
+              הכנס פקודת עריכה למרכיבים:
+            </Text>
+
+            <TextInput
+              style={styles.modalTextInput}
+              value={editText}
+              onChangeText={setEditText}
+              placeholder="למשל: הוסף 100 גרם אורז"
+              placeholderTextColor="#8E8E93"
+              multiline={false}
+              autoFocus={true}
+              returnKeyType="done"
+              onSubmitEditing={finishTextEdit}
+            />
+
+            <View style={styles.examplesContainer}>
+              <Text style={styles.examplesTitle}>דוגמאות פקודות:</Text>
+              {TextEditingService.getExampleCommands().map((example, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.exampleButton}
+                  onPress={() => setEditText(example)}
+                >
+                  <Text style={styles.exampleText}>{example}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.currentIngredientsContainer}>
+              <Text style={styles.currentIngredientsTitle}>מרכיבים נוכחיים:</Text>
+              {analysis.ingredients.ingredients.map((ingredient, index) => (
+                <View key={index} style={styles.currentIngredientItem}>
+                  <Text style={styles.currentIngredientIndex}>{index}.</Text>
+                  <Text style={styles.currentIngredientText}>
+                    {ingredient.name} - {ingredient.quantity} {ingredient.unit}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -377,7 +679,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   retryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#6B4EFF',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 10,
@@ -392,7 +694,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   backButtonText: {
-    color: '#007AFF',
+    color: '#6B4EFF',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -701,5 +1003,127 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8E8E93',
     fontWeight: '500',
+  },
+  progressContainer: {
+    width: '80%',
+    height: 8,
+    backgroundColor: '#E5E5EA',
+    borderRadius: 4,
+    marginTop: 30,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#6B4EFF',
+    borderRadius: 4,
+  },
+  loadingSteps: {
+    marginTop: 30,
+    alignItems: 'flex-start',
+    width: '80%',
+  },
+  loadingStep: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginBottom: 8,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalCancelButton: {
+    padding: 8,
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    flex: 1,
+  },
+  modalDoneButton: {
+    padding: 8,
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+  },
+  modalDoneButtonDisabled: {
+    backgroundColor: '#E5E5EA',
+  },
+  modalDoneText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: 16,
+  },
+  modalTextInput: {
+    flex: 1,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 6,
+  },
+  examplesContainer: {
+    marginBottom: 16,
+  },
+  examplesTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: 8,
+  },
+  exampleButton: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  exampleText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1C1C1E',
+  },
+  currentIngredientsContainer: {
+    marginBottom: 16,
+  },
+  currentIngredientsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: 8,
+  },
+  currentIngredientItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  currentIngredientIndex: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#8E8E93',
+    marginRight: 8,
+  },
+  currentIngredientText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#1C1C1E',
   },
 }); 

@@ -9,9 +9,11 @@ import {
 } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 import { TextInput, Button, FormErrorMessage } from '../components';
-import { Colors, auth, db, firebase } from '../config';
+import { Colors, auth, db } from '../config';
 
 const profileValidationSchema = Yup.object().shape({
   gender: Yup.string().required('Gender is required'),
@@ -29,51 +31,93 @@ const profileValidationSchema = Yup.object().shape({
     .max(500, 'Weight must be less than 500kg'),
 });
 
-const UserProfileScreen = ({ navigation, route }) => {
-  const [loading, setLoading] = useState(false);
-  const [userData, setUserData] = useState(null);
+const UserProfileScreen = ({ navigation }) => {
+  const [profile, setProfile] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    age: '',
+    gender: '',
+    height: '',
+    weight: '',
+    goal: ''
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [errorState, setErrorState] = useState('');
   
-  // Check if there's existing user data
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        setLoading(true);
-        const userDoc = await db.collection('users').doc(auth.currentUser.uid).get();
-        if (userDoc.exists) {
-          setUserData(userDoc.data());
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchUserData();
+    loadProfile();
   }, []);
   
-  const handleSaveProfile = async (values) => {
+  const loadProfile = async () => {
     try {
-      setLoading(true);
-      const userRef = db.collection('users').doc(auth.currentUser.uid);
+      if (!auth.currentUser) {
+        Alert.alert('Error', 'Please log in first');
+        navigation.navigate('Login');
+        return;
+      }
+
+      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
       
-      await userRef.update({
-        gender: values.gender,
-        age: Number(values.age),
-        height: Number(values.height),
-        weight: Number(values.weight),
-        profileCompleted: true,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      
-      Alert.alert('Success', 'Your profile has been updated successfully');
-      navigation.navigate('Home');
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setProfile({
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          email: userData.email || auth.currentUser.email || '',
+          age: userData.age?.toString() || '',
+          gender: userData.gender || '',
+          height: userData.height?.toString() || '',
+          weight: userData.weight?.toString() || '',
+          goal: userData.goal || ''
+        });
+      } else {
+        // Set default values if no profile exists
+        setProfile(prev => ({
+          ...prev,
+          email: auth.currentUser.email || ''
+        }));
+      }
     } catch (error) {
-      console.error('Error updating profile:', error);
-      setErrorState(error.message);
+      console.error('Error loading profile:', error);
+      Alert.alert('Error', 'Failed to load profile');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const saveProfile = async () => {
+    try {
+      setSaving(true);
+      
+      if (!auth.currentUser) {
+        Alert.alert('Error', 'Please log in first');
+        return;
+      }
+
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      
+      const profileData = {
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        email: profile.email,
+        age: profile.age ? parseInt(profile.age) : null,
+        gender: profile.gender,
+        height: profile.height ? parseFloat(profile.height) : null,
+        weight: profile.weight ? parseFloat(profile.weight) : null,
+        goal: profile.goal,
+        updatedAt: serverTimestamp()
+      };
+
+      await setDoc(userRef, profileData, { merge: true });
+      
+      Alert.alert('Success', 'Profile updated successfully');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      Alert.alert('Error', 'Failed to save profile');
+    } finally {
+      setSaving(false);
     }
   };
   
@@ -83,24 +127,25 @@ const UserProfileScreen = ({ navigation, route }) => {
     Alert.alert('Coming Soon', 'Account upgrade will be available soon!');
   };
   
-  if (loading && !userData) {
+  if (loading && !profile.email) {
     return <ActivityIndicator size="large" color={Colors.orange} style={styles.loader} />;
   }
   
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>Your Profile</Text>
         
         <Formik
           initialValues={{
-            gender: userData?.gender || '',
-            age: userData?.age ? String(userData.age) : '',
-            height: userData?.height ? String(userData.height) : '',
-            weight: userData?.weight ? String(userData.weight) : ''
+            gender: profile.gender || '',
+            age: profile.age || '',
+            height: profile.height || '',
+            weight: profile.weight || '',
+            goal: profile.goal || ''
           }}
           validationSchema={profileValidationSchema}
-          onSubmit={handleSaveProfile}
+          onSubmit={saveProfile}
         >
           {({
             values,
@@ -158,6 +203,17 @@ const UserProfileScreen = ({ navigation, route }) => {
               />
               <FormErrorMessage error={errors.weight} visible={touched.weight} />
               
+              <Text style={styles.label}>Goal</Text>
+              <TextInput
+                name="goal"
+                placeholder="Your fitness goal"
+                value={values.goal}
+                onChangeText={handleChange('goal')}
+                onBlur={handleBlur('goal')}
+                leftIconName="target"
+              />
+              <FormErrorMessage error={errors.goal} visible={touched.goal} />
+              
               {errorState ? (
                 <FormErrorMessage error={errorState} visible={true} />
               ) : null}
@@ -165,10 +221,10 @@ const UserProfileScreen = ({ navigation, route }) => {
               <Button 
                 style={styles.button} 
                 onPress={handleSubmit}
-                disabled={loading}
+                disabled={saving}
               >
                 <Text style={styles.buttonText}>
-                  {loading ? 'Saving...' : 'Save Profile'}
+                  {saving ? 'Saving...' : 'Save Profile'}
                 </Text>
               </Button>
               
@@ -184,7 +240,7 @@ const UserProfileScreen = ({ navigation, route }) => {
           )}
         </Formik>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -208,13 +264,12 @@ const styles = StyleSheet.create({
     color: Colors.black,
   },
   button: {
+    backgroundColor: '#6B4EFF',
+    borderRadius: 12,
+    padding: 16,
     width: '100%',
-    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
-    backgroundColor: Colors.orange,
-    padding: 15,
-    borderRadius: 8,
+    marginTop: 24,
   },
   upgradeButton: {
     backgroundColor: '#8a56ac', // Purple color for Numa

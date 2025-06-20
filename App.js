@@ -1,8 +1,7 @@
-import 'react-native-gesture-handler';
 import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-// Import Firebase - must be imported somewhere in the app before using it
+// Import Firebase configuration to ensure it's initialized
 import "./config/firebase";
 import { RootNavigator } from "./navigation/RootNavigator";
 import { AuthenticatedUserProvider } from "./providers";

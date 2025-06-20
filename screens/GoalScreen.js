@@ -120,8 +120,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.lightGrey
   },
   selectedOption: {
-    backgroundColor: Colors.orange + '20',
-    borderColor: Colors.orange
+    backgroundColor: '#6B4EFF20',
+    borderColor: '#6B4EFF'
   },
   optionTitle: {
     fontSize: 18,
@@ -133,18 +133,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.darkgrey
   },
+  optionText: {
+    fontSize: 18,
+    color: Colors.darkgrey,
+    fontWeight: '500'
+  },
+  selectedOptionText: {
+    color: '#6B4EFF',
+    fontWeight: '600'
+  },
   buttonContainer: {
     marginTop: 40
   },
   button: {
-    backgroundColor: Colors.orange,
+    backgroundColor: '#6B4EFF',
     borderRadius: 12,
     padding: 16,
     width: '100%',
     alignItems: 'center'
   },
   disabledButton: {
-    backgroundColor: Colors.orange + '80'
+    backgroundColor: '#6B4EFF80'
   },
   buttonText: {
     color: Colors.white,

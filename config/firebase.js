@@ -1,52 +1,22 @@
-// config/firebase.js
+// Firebase v9 configuration with Expo SDK 53 compatibility
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
-import firebase from 'firebase/app';
-import 'firebase/auth';
-import 'firebase/firestore';
-import 'firebase/storage';
-import firebaseConfig from "./firebaseConfig";
+const firebaseConfig = {
+  apiKey: "AIzaSyBwdZ-r61PbfPEE1UVQfTvAQMrBQhQGvC8",
+  authDomain: "numa-app-34ede.firebaseapp.com",
+  projectId: "numa-app-34ede",
+  storageBucket: "numa-app-34ede.firebasestorage.app",
+  messagingSenderId: "859592733394",
+  appId: "1:859592733394:web:3cfc8ebd8e7a99b82fb30b"
+};
 
-// Initialize Firebase only once
-let app;
-let auth;
-let db;
-let storage;
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
-if (firebase.apps.length === 0) {
-  // Initialize Firebase app
-  app = firebase.initializeApp(firebaseConfig);
-  
-  // Get services
-  auth = firebase.auth();
-  db = firebase.firestore();
-  storage = firebase.storage();
-  
-  // Configure Firestore settings
-  try {
-    db.settings({
-      experimentalForceLongPolling: true, // Helps with connection issues
-      merge: true,
-    });
-  } catch (error) {
-    console.log("Firestore settings error (can be ignored):", error.message);
-  }
-  
-  // Configure auth persistence for better reliability
-  try {
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-  } catch (error) {
-    console.log("Auth persistence error (can be ignored):", error.message);
-  }
-  
-  console.log("Firebase initialized successfully");
-} else {
-  // Use existing app
-  app = firebase.app();
-  auth = firebase.auth();
-  db = firebase.firestore();
-  storage = firebase.storage();
-}
-
-export { auth, db, storage };
-export default firebase;
+// Initialize services - Metro config fixes the CJS module loading issue
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export default app;
 

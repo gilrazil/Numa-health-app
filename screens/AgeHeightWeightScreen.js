@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../config';
 import { Button } from '../components';
@@ -10,16 +10,22 @@ export const AgeHeightWeightScreen = ({ navigation, route }) => {
   const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
+  const [isMetric, setIsMetric] = useState(true);
 
   const isFormValid = age !== '' && height !== '' && weight !== '';
 
   const handleContinue = () => {
     if (isFormValid) {
+      // Convert to metric if using US units
+      const heightInCm = isMetric ? parseInt(height) : Math.round(parseInt(height) * 2.54);
+      const weightInKg = isMetric ? parseInt(weight) : Math.round(parseInt(weight) * 0.453592);
+
       const dataToPass = { 
         gender,
         age: parseInt(age),
-        height: parseInt(height),
-        weight: parseInt(weight)
+        height: heightInCm,
+        weight: weightInKg,
+        preferredUnit: isMetric ? 'metric' : 'us'
       };
       
       console.log('=== AGE/HEIGHT/WEIGHT SCREEN DEBUG ===');
@@ -28,6 +34,23 @@ export const AgeHeightWeightScreen = ({ navigation, route }) => {
       console.log('Data to pass to Goal screen:', JSON.stringify(dataToPass, null, 2));
       
       navigation.navigate('Goal', dataToPass);
+    }
+  };
+
+  const toggleUnitSystem = () => {
+    setIsMetric(!isMetric);
+    // Convert values when switching units
+    if (height) {
+      setHeight(isMetric 
+        ? Math.round(parseInt(height) / 2.54).toString() 
+        : Math.round(parseInt(height) * 2.54).toString()
+      );
+    }
+    if (weight) {
+      setWeight(isMetric 
+        ? Math.round(parseInt(weight) / 0.453592).toString() 
+        : Math.round(parseInt(weight) * 0.453592).toString()
+      );
     }
   };
 
@@ -42,6 +65,25 @@ export const AgeHeightWeightScreen = ({ navigation, route }) => {
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.title}>Tell us about yourself</Text>
+          
+          <View style={styles.unitToggleContainer}>
+            <TouchableOpacity 
+              style={[styles.unitToggle, isMetric && styles.unitToggleActive]} 
+              onPress={() => !isMetric && toggleUnitSystem()}
+            >
+              <Text style={[styles.unitToggleText, isMetric && styles.unitToggleTextActive]}>
+                Metric
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.unitToggle, !isMetric && styles.unitToggleActive]} 
+              onPress={() => isMetric && toggleUnitSystem()}
+            >
+              <Text style={[styles.unitToggleText, !isMetric && styles.unitToggleTextActive]}>
+                US
+              </Text>
+            </TouchableOpacity>
+          </View>
           
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Age</Text>
@@ -59,7 +101,7 @@ export const AgeHeightWeightScreen = ({ navigation, route }) => {
             <Text style={styles.label}>Height</Text>
             <TextInput
               style={styles.input}
-              placeholder="cm"
+              placeholder={isMetric ? "cm" : "inches"}
               keyboardType="number-pad"
               value={height}
               onChangeText={setHeight}
@@ -71,7 +113,7 @@ export const AgeHeightWeightScreen = ({ navigation, route }) => {
             <Text style={styles.label}>Weight</Text>
             <TextInput
               style={styles.input}
-              placeholder="kg"
+              placeholder={isMetric ? "kg" : "lbs"}
               keyboardType="number-pad"
               value={weight}
               onChangeText={setWeight}
@@ -111,8 +153,35 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '600',
     color: Colors.black,
-    marginBottom: 40,
+    marginBottom: 20,
     textAlign: 'center'
+  },
+  unitToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: Colors.lightGrey + '40',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 40,
+    alignSelf: 'center',
+    width: '60%'
+  },
+  unitToggle: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center'
+  },
+  unitToggleActive: {
+    backgroundColor: '#6B4EFF'
+  },
+  unitToggleText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.black
+  },
+  unitToggleTextActive: {
+    color: Colors.white
   },
   inputContainer: {
     marginBottom: 24
@@ -136,14 +205,14 @@ const styles = StyleSheet.create({
     marginTop: 30
   },
   button: {
-    backgroundColor: Colors.orange,
+    backgroundColor: '#6B4EFF',
     borderRadius: 12,
     padding: 16,
     width: '100%',
     alignItems: 'center'
   },
   disabledButton: {
-    backgroundColor: Colors.orange + '80'
+    backgroundColor: '#6B4EFF' + '80'
   },
   buttonText: {
     color: Colors.white,

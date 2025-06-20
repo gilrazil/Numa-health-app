@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
+import { onAuthStateChanged } from "firebase/auth";
 
 import { AuthStack } from "./AuthStack";
 import { AppStack } from "./AppStack";
@@ -13,7 +14,7 @@ export const RootNavigator = () => {
 
   useEffect(() => {
     // onAuthStateChanged returns an unsubscriber
-    const unsubscribeAuthStateChanged = auth.onAuthStateChanged(
+    const unsubscribeAuthStateChanged = onAuthStateChanged(auth,
       (authenticatedUser) => {
         // Set user to authenticated user or null
         setUser(authenticatedUser);

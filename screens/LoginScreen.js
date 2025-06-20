@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { Formik } from "formik";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 import { View, TextInput, Logo, Button, FormErrorMessage } from "../components";
 import { Images, Colors, auth } from "../config";
@@ -16,8 +17,14 @@ export const LoginScreen = ({ navigation }) => {
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [biometricType, setBiometricType] = useState('Biometric');
   
-  const { passwordVisibility, handlePasswordVisibility, rightIcon } =
-    useTogglePasswordVisibility();
+  const {
+    passwordVisibility,
+    handlePasswordVisibility,
+    rightIcon,
+    handleConfirmPasswordVisibility,
+    confirmPasswordIcon,
+    confirmPasswordVisibility
+  } = useTogglePasswordVisibility();
 
   useEffect(() => {
     checkBiometricStatus();
@@ -32,59 +39,55 @@ export const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async (values) => {
     const { email, password } = values;
-    setIsLoading(true);
+
     setErrorState('');
+    setIsLoading(true);
 
     try {
-      await auth.signInWithEmailAndPassword(email, password);
-      // Navigation will be handled by auth state change
+      console.log('Attempting login with email:', email);
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log('Login successful!');
     } catch (error) {
-      console.error('Login error:', error);
-      let errorMessage = 'Login failed. Please try again.';
+      console.error('Login error:', error.code, error.message);
       
-      if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email. Please sign up first.';
-      } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password. Please try again.';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Please enter a valid email address';
-      } else if (error.code === 'auth/user-disabled') {
-        errorMessage = 'This account has been disabled';
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many failed attempts. Please try again later.';
-      } else if (error.code === 'auth/network-request-failed') {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
-      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
-        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+      // Provide more user-friendly error messages
+      switch (error.code) {
+        case 'auth/invalid-login-credentials':
+          setErrorState('Invalid email or password. Please check your credentials and try again.');
+          break;
+        case 'auth/user-not-found':
+          setErrorState('No account found with this email address.');
+          break;
+        case 'auth/wrong-password':
+          setErrorState('Incorrect password.');
+          break;
+        case 'auth/invalid-email':
+          setErrorState('Please enter a valid email address.');
+          break;
+        case 'auth/user-disabled':
+          setErrorState('This account has been disabled.');
+          break;
+        case 'auth/too-many-requests':
+          setErrorState('Too many failed attempts. Please try again later.');
+          break;
+        default:
+          setErrorState(error.message);
       }
-      
-      setErrorState(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleBiometricLogin = async () => {
-    setIsLoading(true);
-    setErrorState("");
-
     try {
-      const result = await BiometricService.loginWithBiometrics();
-      
-      if (result.success && result.credentials) {
-        // Sign in with stored credentials
-        await auth.signInWithEmailAndPassword(
-          result.credentials.email,
-          result.credentials.password
-        );
-      } else if (result.error) {
-        setErrorState(result.error);
+      const credentials = await BiometricService.getCredentials();
+      if (credentials) {
+        await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
+      } else {
+        Alert.alert('No biometric credentials found', 'Please log in with email and password first.');
       }
     } catch (error) {
-      console.error('Biometric login error:', error);
-      setErrorState('Biometric authentication failed');
-    } finally {
-      setIsLoading(false);
+      Alert.alert('Biometric authentication failed', error.message);
     }
   };
 
@@ -241,7 +244,15 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   biometricContainer: {
-    marginVertical: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6B4EFF10',
+    borderWidth: 1,
+    borderColor: '#6B4EFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
   },
   biometricButton: {
     flexDirection: 'row',
@@ -255,10 +266,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   biometricText: {
-    marginLeft: 10,
+    marginLeft: 8,
+    color: '#6B4EFF',
     fontSize: 16,
-    fontWeight: '600',
-    color: Colors.orange,
+    fontWeight: '500',
   },
   divider: {
     flexDirection: 'row',
@@ -288,13 +299,12 @@ const styles = StyleSheet.create({
     color: Colors.orange,
   },
   button: {
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 8,
-    backgroundColor: Colors.orange,
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: '#6B4EFF',
+    borderRadius: 12,
+    padding: 16,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 24,
   },
   buttonText: {
     fontSize: 20,

@@ -13,9 +13,10 @@ export const WelcomeScreen = ({ navigation }) => {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.tagline}>
-          Track your meals. Achieve your goals.
-        </Text>
+        <View style={styles.taglineContainer}>
+          <Text style={styles.tagline}>Track your meals.</Text>
+          <Text style={styles.tagline}>Achieve your goals.</Text>
+        </View>
       </View>
       
       <View style={styles.buttonContainer}>
@@ -47,18 +48,22 @@ const styles = StyleSheet.create({
     height: 200,
     marginBottom: 20
   },
+  taglineContainer: {
+    alignItems: 'center',
+    marginTop: 20
+  },
   tagline: {
     fontSize: 24,
     color: Colors.black,
     textAlign: 'center',
     fontWeight: '500',
-    marginTop: 20
+    marginBottom: 8
   },
   buttonContainer: {
     marginBottom: 30
   },
   button: {
-    backgroundColor: Colors.orange,
+    backgroundColor: '#6B4EFF',
     borderRadius: 12,
     padding: 16,
     width: '100%',

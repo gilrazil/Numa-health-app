@@ -8,88 +8,142 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
+  Platform,
+  Linking,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, auth, db, storage } from '../config';
-import { Button } from '../components';
+import { Button, LoadingIndicator } from '../components';
+import { collection, addDoc, doc, getDoc, query, where, orderBy, limit, getDocs, deleteDoc } from 'firebase/firestore';
 
 export const MealCameraScreen = ({ navigation }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [permissionStatus, setPermissionStatus] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [error, setError] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [mealsLoading, setMealsLoading] = useState(true);
 
   useEffect(() => {
     requestPermissions();
-    loadMeals();
+    fetchMeals();
+    checkUserProfile();
     // Clean up old meals periodically
     cleanupOldMeals();
-  }, []);
+
+    // Add focus listener to clear selected image when returning to this screen
+    const unsubscribe = navigation.addListener('focus', () => {
+      setSelectedImage(null);
+      setError(null);
+    });
+
+    // Cleanup listener on unmount
+    return unsubscribe;
+  }, [navigation]);
 
   const requestPermissions = async () => {
-    // Request camera permissions
-    const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
-    const mediaLibraryPermission = await MediaLibrary.requestPermissionsAsync();
-    
-    if (cameraPermission.status !== 'granted' || mediaLibraryPermission.status !== 'granted') {
-      Alert.alert(
-        'Permissions Required',
-        'We need camera and photo library permissions to let you take meal photos.',
-        [{ text: 'OK' }]
-      );
-    }
-  };
-
-  const loadMeals = async () => {
     try {
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        // Simplified query to avoid composite index requirement
-        const mealsSnapshot = await db
-          .collection('meals')
-          .where('userId', '==', currentUser.uid)
-          .limit(20) // Increased limit to get more meals
-          .get();
-        
-        // Sort the results in JavaScript instead of Firestore
-        const mealsData = mealsSnapshot.docs
-          .map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              // Normalize the timestamp field
-              sortTimestamp: data.timestamp || data.createdAt || data.date || new Date().toISOString()
-            };
-          })
-          .sort((a, b) => {
-            // Sort by timestamp descending (newest first)
-            const dateA = new Date(a.sortTimestamp);
-            const dateB = new Date(b.sortTimestamp);
-            return dateB.getTime() - dateA.getTime();
-          })
-          .slice(0, 10); // Take only the 10 most recent
-        
-        console.log('Loaded meals:', mealsData.length);
-        console.log('Sample meal data:', mealsData[0]);
-        setMeals(mealsData);
+      setLoading(true);
+      // Request camera permissions
+      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+      const mediaLibraryPermission = await MediaLibrary.requestPermissionsAsync();
+      
+      setPermissionStatus({
+        camera: cameraPermission.status,
+        mediaLibrary: mediaLibraryPermission.status
+      });
+      
+      if (cameraPermission.status !== 'granted' || mediaLibraryPermission.status !== 'granted') {
+        Alert.alert(
+          'Permissions Required',
+          'We need camera and photo library permissions to let you take meal photos. Please enable them in your device settings.',
+          [
+            { 
+              text: 'Open Settings', 
+              onPress: () => {
+                if (Platform.OS === 'ios') {
+                  Linking.openURL('app-settings:');
+                } else {
+                  Linking.openSettings();
+                }
+              }
+            },
+            { text: 'Cancel', style: 'cancel' }
+          ]
+        );
       }
     } catch (error) {
-      console.error('Error loading meals:', error);
+      console.error('Error requesting permissions:', error);
+      setError('Failed to request permissions. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchMeals = async () => {
+    try {
+      setMealsLoading(true);
+      const currentUser = auth.currentUser;
+      
+      if (currentUser) {
+        const mealsQuery = query(
+          collection(db, 'meals'),
+          where('userId', '==', currentUser.uid),
+          orderBy('timestamp', 'desc'),
+          limit(10)
+        );
+        
+        const querySnapshot = await getDocs(mealsQuery);
+        const mealsData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        setMeals(mealsData);
+      }
+    } catch (error) {
+      console.error('Error fetching meals:', error);
+      setError('Failed to load meal history');
+    } finally {
+      setMealsLoading(false);
+    }
+  };
+
+  const checkUserProfile = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUserProfile(userData);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
+
   const takePhoto = async () => {
     try {
+      setError(null);
+      if (permissionStatus?.camera !== 'granted') {
+        await requestPermissions();
+        return;
+      }
+
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 0.6,
+        allowsEditing: true,
+        quality: 0.8,
         aspect: [4, 3],
         exif: false,
       });
@@ -99,16 +153,30 @@ export const MealCameraScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo. Please try again.');
+      setError('Failed to take photo. Please try again.');
+      Alert.alert(
+        'Camera Error',
+        'There was a problem accessing the camera. Please make sure the camera is not being used by another app.',
+        [
+          { text: 'Retry', onPress: takePhoto },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
     }
   };
 
   const pickFromGallery = async () => {
     try {
+      setError(null);
+      if (permissionStatus?.mediaLibrary !== 'granted') {
+        await requestPermissions();
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 0.6,
+        allowsEditing: true,
+        quality: 0.8,
         aspect: [4, 3],
         exif: false,
       });
@@ -118,7 +186,15 @@ export const MealCameraScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error picking from gallery:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      setError('Failed to pick image. Please try again.');
+      Alert.alert(
+        'Gallery Error',
+        'There was a problem accessing your photo library. Please make sure you have granted permission.',
+        [
+          { text: 'Retry', onPress: pickFromGallery },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
     }
   };
 
@@ -136,11 +212,31 @@ export const MealCameraScreen = ({ navigation }) => {
       const response = await fetch(imageUri);
       const blob = await response.blob();
       const ref = storage.ref().child(filename);
-      await ref.put(blob);
       
-      // Get download URL
-      const downloadURL = await ref.getDownloadURL();
-      return downloadURL;
+      // Add upload progress tracking
+      const uploadTask = ref.put(blob);
+      
+      return new Promise((resolve, reject) => {
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            console.log('Upload progress:', progress);
+          },
+          (error) => {
+            console.error('Upload error:', error);
+            reject(error);
+          },
+          async () => {
+            try {
+              const downloadURL = await ref.getDownloadURL();
+              resolve(downloadURL);
+            } catch (error) {
+              reject(error);
+            }
+          }
+        );
+      });
     } catch (error) {
       console.error('Error uploading to Firebase:', error);
       throw error;
@@ -152,57 +248,30 @@ export const MealCameraScreen = ({ navigation }) => {
 
     try {
       setUploading(true);
+      setError(null);
       
       // Get user profile for analysis
       const userProfile = await getUserProfile();
       
-      // Navigate to analysis immediately (don't wait for save)
+      // Navigate to analysis with image
       navigation.navigate('MealAnalysis', {
         imageUri: selectedImage.uri,
         userProfile: userProfile
       });
       
-      // Save meal in background (async, don't wait)
-      saveMealInBackground(selectedImage.uri);
-      
     } catch (error) {
       console.error('Error starting meal analysis:', error);
-      Alert.alert('Error', 'Failed to start analysis. Please try again.');
+      setError('Failed to start analysis. Please try again.');
+      Alert.alert(
+        'Upload Error',
+        'There was a problem starting the analysis. Would you like to retry?',
+        [
+          { text: 'Retry', onPress: uploadMeal },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
     } finally {
       setUploading(false);
-    }
-  };
-
-  // Background save function (doesn't block navigation)
-  const saveMealInBackground = async (imageUri) => {
-    try {
-      console.log('🔄 Saving meal in background...');
-      
-      // Upload to Firebase Storage
-      const downloadURL = await uploadImageToFirebase(imageUri);
-      
-      // Save meal record to Firestore
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const mealData = {
-          userId: currentUser.uid,
-          imageUrl: downloadURL,
-          imageUri: imageUri,
-          localUri: imageUri,
-          timestamp: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          date: new Date().toDateString(),
-        };
-        
-        await db.collection('meals').add(mealData);
-        console.log('✅ Meal saved to history in background');
-        
-        // Refresh meals list after save
-        await loadMeals();
-      }
-    } catch (error) {
-      console.error('❌ Error saving meal in background:', error);
-      // Don't show alert since user is already in analysis screen
     }
   };
 
@@ -219,9 +288,6 @@ export const MealCameraScreen = ({ navigation }) => {
         userProfile: userProfile
       });
       
-      // Save meal in background (including device storage)
-      saveMealWithDeviceStorage(photo.uri);
-      
     } catch (error) {
       console.error('Error starting meal analysis:', error);
       Alert.alert('Error', 'Failed to start analysis. Please try again.');
@@ -230,49 +296,13 @@ export const MealCameraScreen = ({ navigation }) => {
     }
   };
 
-  // Background save with device storage
-  const saveMealWithDeviceStorage = async (imageUri) => {
-    try {
-      console.log('🔄 Saving meal with device storage in background...');
-      
-      // Save photo to device storage
-      const asset = await MediaLibrary.createAssetAsync(imageUri);
-      console.log('📱 Photo saved to gallery:', asset.uri);
-      
-      // Upload to Firebase Storage
-      const downloadURL = await uploadImageToFirebase(imageUri);
-      
-      // Save meal record to Firestore
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const mealData = {
-          userId: currentUser.uid,
-          imageUrl: downloadURL,
-          imageUri: imageUri,
-          localUri: imageUri,
-          timestamp: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          date: new Date().toDateString(),
-        };
-        
-        await db.collection('meals').add(mealData);
-        console.log('✅ Meal saved to history in background');
-        
-        // Refresh meals list after save
-        await loadMeals();
-      }
-    } catch (error) {
-      console.error('❌ Error saving meal with device storage:', error);
-      // Don't show alert since user is already in analysis screen
-    }
-  };
-
   const getUserProfile = async () => {
     try {
       const currentUser = auth.currentUser;
       if (currentUser) {
-        const userDoc = await db.collection('users').doc(currentUser.uid).get();
-        if (userDoc.exists) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
           return userDoc.data();
         }
       }
@@ -397,10 +427,11 @@ export const MealCameraScreen = ({ navigation }) => {
       twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
       // Get all meals for the user
-      const mealsSnapshot = await db
-        .collection('meals')
-        .where('userId', '==', currentUser.uid)
-        .get();
+      const mealsQuery = query(
+        collection(db, 'meals'),
+        where('userId', '==', currentUser.uid)
+      );
+      const mealsSnapshot = await getDocs(mealsQuery);
 
       const meals = mealsSnapshot.docs.map(doc => ({
         id: doc.id,
@@ -440,6 +471,41 @@ export const MealCameraScreen = ({ navigation }) => {
     }
   };
 
+  const deleteMeal = async (mealId) => {
+    try {
+      await deleteDoc(doc(db, 'meals', mealId));
+      
+      // Remove from local state
+      setMeals(prevMeals => prevMeals.filter(meal => meal.id !== mealId));
+      
+      Alert.alert('Success', 'Meal deleted successfully');
+    } catch (error) {
+      console.error('Error deleting meal:', error);
+      Alert.alert('Error', 'Failed to delete meal');
+    }
+  };
+
+  const handleGoBack = async () => {
+    if (analysisResult) {
+      try {
+        // Save the analyzed meal to history
+        const mealData = {
+          imageUrl: imageUri,
+          timestamp: new Date().toISOString(),
+          analysis: analysisResult,
+          userId: user.uid
+        };
+
+        await addDoc(collection(db, 'meals'), mealData);
+        Alert.alert('Success', 'Meal saved to history');
+      } catch (error) {
+        console.error('Error saving meal:', error);
+        Alert.alert('Error', 'Failed to save meal to history');
+      }
+    }
+    navigation.goBack();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -453,14 +519,39 @@ export const MealCameraScreen = ({ navigation }) => {
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={fetchMeals}
+            colors={[Colors.orange]}
+            tintColor={Colors.orange}
+          />
+        }
+      >
+        {error && (
+          <View style={styles.errorContainer}>
+            <MaterialCommunityIcons name="alert-circle" size={24} color={Colors.error} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
         {selectedImage ? (
           <View style={styles.imageContainer}>
-            <Image source={{ uri: selectedImage.uri }} style={styles.selectedImage} />
+            <Image 
+              source={{ uri: selectedImage.uri }} 
+              style={styles.selectedImage}
+              onError={() => setError('Failed to load image. Please try again.')}
+            />
             <View style={styles.imageActions}>
               <TouchableOpacity
                 style={styles.retakeButton}
-                onPress={() => setSelectedImage(null)}
+                onPress={() => {
+                  setSelectedImage(null);
+                  setError(null);
+                }}
               >
                 <Text style={styles.retakeButtonText}>Retake</Text>
               </TouchableOpacity>
@@ -482,16 +573,29 @@ export const MealCameraScreen = ({ navigation }) => {
             <View style={styles.cameraPlaceholder}>
               <MaterialCommunityIcons name="camera" size={80} color={Colors.lightGrey} />
               <Text style={styles.cameraText}>Take a photo of your meal</Text>
+              {permissionStatus?.camera !== 'granted' && (
+                <Text style={styles.permissionText}>
+                  Camera permission is required
+                </Text>
+              )}
             </View>
             
             <View style={styles.cameraActions}>
-              <TouchableOpacity style={styles.cameraButton} onPress={takePhoto}>
+              <TouchableOpacity 
+                style={[styles.cameraButton, permissionStatus?.camera !== 'granted' && styles.disabledButton]} 
+                onPress={takePhoto}
+                disabled={permissionStatus?.camera !== 'granted'}
+              >
                 <MaterialCommunityIcons name="camera" size={30} color="#fff" />
                 <Text style={styles.cameraButtonText}>Take Photo</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity style={styles.galleryButton} onPress={pickFromGallery}>
-                <MaterialCommunityIcons name="image" size={30} color={Colors.orange} />
+              <TouchableOpacity 
+                style={[styles.galleryButton, permissionStatus?.mediaLibrary !== 'granted' && styles.disabledButton]} 
+                onPress={pickFromGallery}
+                disabled={permissionStatus?.mediaLibrary !== 'granted'}
+              >
+                <MaterialCommunityIcons name="image" size={30} color="#6B4EFF" />
                 <Text style={styles.galleryButtonText}>Choose from Gallery</Text>
               </TouchableOpacity>
             </View>
@@ -502,7 +606,7 @@ export const MealCameraScreen = ({ navigation }) => {
         <View style={styles.recentMeals}>
           <Text style={styles.sectionTitle}>Recent Meals</Text>
           {loading ? (
-            <ActivityIndicator size="large" color={Colors.orange} style={styles.loader} />
+            <LoadingIndicator size="large" color={Colors.orange} />
           ) : meals.length > 0 ? (
             <View style={styles.mealsGrid}>
               {meals.map(renderMealItem)}
@@ -569,7 +673,7 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   cameraButton: {
-    backgroundColor: Colors.orange,
+    backgroundColor: '#6B4EFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -585,7 +689,7 @@ const styles = StyleSheet.create({
   galleryButton: {
     backgroundColor: '#fff',
     borderWidth: 2,
-    borderColor: Colors.orange,
+    borderColor: '#6B4EFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -594,7 +698,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   galleryButtonText: {
-    color: Colors.orange,
+    color: '#6B4EFF',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -626,7 +730,7 @@ const styles = StyleSheet.create({
   },
   usePhotoButton: {
     flex: 2,
-    backgroundColor: Colors.orange,
+    backgroundColor: '#6B4EFF',
     paddingVertical: 15,
     borderRadius: 12,
     alignItems: 'center',
@@ -712,5 +816,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.error + '10',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: Colors.error,
+    marginLeft: 8,
+    flex: 1,
+  },
+  permissionText: {
+    color: Colors.error,
+    fontSize: 14,
+    marginTop: 8,
   },
 }); 

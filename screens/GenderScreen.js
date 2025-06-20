@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../config';
-import { Button } from '../components';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export const GenderScreen = ({ navigation }) => {
   const [selectedGender, setSelectedGender] = useState(null);
@@ -14,76 +14,51 @@ export const GenderScreen = ({ navigation }) => {
     }
   };
 
+  const renderGenderOption = (gender, label, icon) => (
+    <TouchableOpacity
+      style={[
+        styles.option,
+        selectedGender === gender && styles.selectedOption
+      ]}
+      onPress={() => setSelectedGender(gender)}
+    >
+      <View style={styles.optionContent}>
+        <MaterialCommunityIcons 
+          name={icon} 
+          size={32} 
+          color={selectedGender === gender ? '#6B4EFF' : Colors.darkgrey} 
+        />
+        <Text style={[
+          styles.optionText,
+          selectedGender === gender && styles.selectedOptionText
+        ]}>
+          {label}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>What's your gender?</Text>
-        
-        <View style={styles.optionsContainer}>
-          <TouchableOpacity
-            style={[
-              styles.option,
-              selectedGender === 'male' && styles.selectedOption
-            ]}
-            onPress={() => setSelectedGender('male')}
-          >
-            <Text 
-              style={[
-                styles.optionText, 
-                selectedGender === 'male' && styles.selectedOptionText
-              ]}
-            >
-              Male
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.option,
-              selectedGender === 'female' && styles.selectedOption
-            ]}
-            onPress={() => setSelectedGender('female')}
-          >
-            <Text 
-              style={[
-                styles.optionText, 
-                selectedGender === 'female' && styles.selectedOptionText
-              ]}
-            >
-              Female
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.option,
-              selectedGender === 'other' && styles.selectedOption
-            ]}
-            onPress={() => setSelectedGender('other')}
-          >
-            <Text 
-              style={[
-                styles.optionText, 
-                selectedGender === 'other' && styles.selectedOptionText
-              ]}
-            >
-              Other
-            </Text>
-          </TouchableOpacity>
-        </View>
+      <Text style={styles.title}>What's your gender?</Text>
+      
+      <View style={styles.optionsContainer}>
+        {renderGenderOption('male', 'Male', 'gender-male')}
+        {renderGenderOption('female', 'Female', 'gender-female')}
+        {renderGenderOption('other', 'Other', 'gender-non-binary')}
       </View>
       
       <View style={styles.buttonContainer}>
-        <Button 
+        <TouchableOpacity 
           style={[
-            styles.button, 
+            styles.button,
             !selectedGender && styles.disabledButton
-          ]} 
+          ]}
           onPress={handleContinue}
           disabled={!selectedGender}
         >
           <Text style={styles.buttonText}>Continue</Text>
-        </Button>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -94,12 +69,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.white,
     paddingHorizontal: 25,
-    justifyContent: 'space-between',
-    paddingVertical: 50
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center'
+    paddingVertical: 40
   },
   title: {
     fontSize: 28,
@@ -109,20 +79,23 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   optionsContainer: {
-    width: '100%',
     gap: 16
   },
   option: {
-    backgroundColor: Colors.lightGrey,
+    borderWidth: 1,
+    borderColor: Colors.lightGrey,
     borderRadius: 12,
     padding: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.lightGrey
+    backgroundColor: Colors.white
   },
   selectedOption: {
-    backgroundColor: Colors.orange + '20',
-    borderColor: Colors.orange
+    backgroundColor: '#6B4EFF20',
+    borderColor: '#6B4EFF'
+  },
+  optionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16
   },
   optionText: {
     fontSize: 18,
@@ -130,21 +103,21 @@ const styles = StyleSheet.create({
     fontWeight: '500'
   },
   selectedOptionText: {
-    color: Colors.orange,
+    color: '#6B4EFF',
     fontWeight: '600'
   },
   buttonContainer: {
     marginTop: 40
   },
   button: {
-    backgroundColor: Colors.orange,
+    backgroundColor: '#6B4EFF',
     borderRadius: 12,
     padding: 16,
     width: '100%',
     alignItems: 'center'
   },
   disabledButton: {
-    backgroundColor: Colors.orange + '80'
+    backgroundColor: '#6B4EFF80'
   },
   buttonText: {
     color: Colors.white,

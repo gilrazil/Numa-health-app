@@ -60,8 +60,14 @@ export const RootNavigator = () => {
   };
 
   const shouldShowOnboarding = () => {
-    if (!user) return false; // Not logged in
-    if (!userProfile) return true; // New user, no profile document
+    if (!user) {
+      console.log('🚫 No user - showing AuthStack');
+      return false; // Not logged in
+    }
+    if (!userProfile) {
+      console.log('👤 No profile document - showing onboarding');
+      return true; // New user, no profile document
+    }
     
     // Check if profile is complete
     const hasEssentialFields = userProfile.gender && 
@@ -70,7 +76,22 @@ export const RootNavigator = () => {
                               userProfile.weight && 
                               userProfile.goal;
     
-    return !userProfile.profileCompleted || !hasEssentialFields;
+    const shouldShowOnboard = !userProfile.profileCompleted || !hasEssentialFields;
+    
+    console.log('🎯 shouldShowOnboarding decision:', {
+      profileCompleted: userProfile.profileCompleted,
+      hasEssentialFields,
+      shouldShowOnboard,
+      userProfile: {
+        gender: userProfile.gender,
+        age: userProfile.age,
+        height: userProfile.height,
+        weight: userProfile.weight,
+        goal: userProfile.goal
+      }
+    });
+    
+    return shouldShowOnboard;
   };
 
   if (isLoading) {

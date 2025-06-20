@@ -16,6 +16,8 @@ export const SignupScreen = ({ navigation, route }) => {
   // Get user data from previous screens
   const userData = route.params || {};
   
+  console.log('🔍 SignupScreen - Received userData:', JSON.stringify(userData, null, 2));
+  
   const [errorState, setErrorState] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showBiometricModal, setShowBiometricModal] = useState(false);
@@ -63,6 +65,9 @@ export const SignupScreen = ({ navigation, route }) => {
         // Mark profile as completed if we have all required fields
         profileCompleted: !!(userData.gender && userData.age && userData.height && userData.weight && userData.goal)
       };
+      
+      console.log('💾 SignupScreen - Data to save:', JSON.stringify(userDataToSave, null, 2));
+      console.log('✅ Profile completed will be set to:', userDataToSave.profileCompleted);
       
       try {
         await setDoc(doc(db, 'users', user.uid), userDataToSave);

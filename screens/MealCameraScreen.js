@@ -96,7 +96,7 @@ export const MealCameraScreen = ({ navigation }) => {
         const mealsQuery = query(
           collection(db, 'meals'),
           where('userId', '==', currentUser.uid),
-          orderBy('timestamp', 'desc'),
+          // orderBy('timestamp', 'desc'), // Temporarily commented - uncomment after creating Firebase index
           limit(10)
         );
         

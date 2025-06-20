@@ -9,6 +9,7 @@ import { Images, Colors, auth, db } from "../config";
 import { useTogglePasswordVisibility } from "../hooks";
 import { signupValidationSchema } from "../utils";
 import { BiometricService } from "../services/BiometricService";
+import { FirstLaunchService } from "../services/FirstLaunchService";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
@@ -77,6 +78,10 @@ export const SignupScreen = ({ navigation, route }) => {
         // Still save basic data
         await setDoc(doc(db, 'users', user.uid), userDataToSave, { merge: true });
       }
+      
+      // Mark onboarding as completed
+      await FirstLaunchService.markOnboardingCompleted();
+      await FirstLaunchService.markAsLaunched();
       
       console.log('Signup and profile setup completed successfully');
     } catch (error) {

@@ -10,6 +10,7 @@ import { Images, Colors, auth } from "../config";
 import { useTogglePasswordVisibility } from "../hooks";
 import { loginValidationSchema } from "../utils";
 import { BiometricService } from "../services/BiometricService";
+import { FirstLaunchService } from "../services/FirstLaunchService";
 
 export const LoginScreen = ({ navigation }) => {
   const [errorState, setErrorState] = useState("");
@@ -46,6 +47,10 @@ export const LoginScreen = ({ navigation }) => {
     try {
       console.log('Attempting login with email:', email);
       await signInWithEmailAndPassword(auth, email, password);
+      
+      // Mark app as launched since user successfully logged in
+      await FirstLaunchService.markAsLaunched();
+      
       console.log('Login successful!');
     } catch (error) {
       console.error('Login error:', error.code, error.message);
@@ -208,7 +213,7 @@ export const LoginScreen = ({ navigation }) => {
           <Button
             style={styles.borderlessButtonContainer}
             borderless
-            title={"Create a new account?"}
+            title={"New user? Get started"}
             onPress={() => navigation.navigate("Welcome")}
           />
           <Button

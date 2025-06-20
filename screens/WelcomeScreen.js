@@ -26,6 +26,13 @@ export const WelcomeScreen = ({ navigation }) => {
         >
           <Text style={styles.buttonText}>Let's get started</Text>
         </Button>
+        
+        <Button 
+          style={styles.secondaryButton} 
+          onPress={() => navigation.navigate('Login')}
+        >
+          <Text style={styles.secondaryButtonText}>Already have an account? Sign In</Text>
+        </Button>
       </View>
     </SafeAreaView>
   );
@@ -67,11 +74,26 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     width: '100%',
-    alignItems: 'center'
+    alignItems: 'center',
+    marginBottom: 16
   },
   buttonText: {
     color: Colors.white,
     fontSize: 18,
     fontWeight: '600'
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    padding: 16,
+    width: '100%',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#6B4EFF'
+  },
+  secondaryButtonText: {
+    color: '#6B4EFF',
+    fontSize: 16,
+    fontWeight: '500'
   }
 }); 

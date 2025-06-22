@@ -9,15 +9,11 @@ import { View, TextInput, Logo, Button, FormErrorMessage } from "../components";
 import { Images, Colors, auth } from "../config";
 import { useTogglePasswordVisibility } from "../hooks";
 import { loginValidationSchema } from "../utils";
-import { BiometricService } from "../services/BiometricService";
 import { FirstLaunchService } from "../services/FirstLaunchService";
 
 export const LoginScreen = ({ navigation }) => {
   const [errorState, setErrorState] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricType, setBiometricType] = useState('Biometric');
   
   const {
     passwordVisibility,
@@ -28,32 +24,7 @@ export const LoginScreen = ({ navigation }) => {
     confirmPasswordVisibility
   } = useTogglePasswordVisibility();
 
-  useEffect(() => {
-    checkBiometricStatus();
-  }, []);
 
-  // Auto-trigger biometric authentication when screen loads for biometric users
-  useEffect(() => {
-    if (biometricEnabled && biometricAvailable && !isLoading) {
-      const timer = setTimeout(() => {
-        handleBiometricLogin();
-      }, 1000); // Small delay for better UX
-
-      return () => clearTimeout(timer);
-    }
-  }, [biometricEnabled, biometricAvailable, isLoading]);
-
-  const checkBiometricStatus = async () => {
-    const isEnabled = await BiometricService.isBiometricEnabled();
-    const biometricInfo = await BiometricService.isBiometricAvailable();
-    const typeName = await BiometricService.getBiometricTypeName();
-    
-    setBiometricEnabled(isEnabled);
-    setBiometricAvailable(biometricInfo.isAvailable);
-    setBiometricType(typeName);
-    
-    console.log('Biometric status:', { isEnabled, isAvailable: biometricInfo.isAvailable, typeName });
-  };
 
   const handleLogin = async (values) => {
     const { email, password } = values;
@@ -76,29 +47,6 @@ export const LoginScreen = ({ navigation }) => {
       await FirstLaunchService.markAsLaunched();
       
       console.log('Login successful!');
-      
-      // If biometric is available but not enabled, offer to set it up
-      if (biometricAvailable && !biometricEnabled) {
-        setTimeout(() => {
-          Alert.alert(
-            `Set up ${biometricType}?`,
-            `Enable ${biometricType} for faster sign-in next time?`,
-            [
-              { text: 'Not Now', style: 'cancel' },
-              { 
-                text: 'Enable', 
-                onPress: async () => {
-                  const success = await BiometricService.enableBiometricLogin(email, password);
-                  if (success) {
-                    setBiometricEnabled(true);
-                    console.log('✅ Biometric login enabled successfully');
-                  }
-                }
-              }
-            ]
-          );
-        }, 500); // Small delay for better UX
-      }
     } catch (error) {
       console.error('Login error:', error.code, error.message);
       
@@ -130,67 +78,7 @@ export const LoginScreen = ({ navigation }) => {
     }
   };
 
-  const handleBiometricLogin = async () => {
-    try {
-      setIsLoading(true);
-      setErrorState('');
 
-      // If biometric is not enabled, offer to set it up now
-      if (!biometricEnabled) {
-        Alert.alert(
-          `Set up ${biometricType}?`,
-          `Enable ${biometricType} for secure and convenient sign-in. You'll need to log in with your email and password once to set it up.`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Set Up', onPress: () => {
-              // Focus on email field to encourage login
-              console.log('User wants to set up biometric login');
-            }}
-          ]
-        );
-        setIsLoading(false);
-        return;
-      }
-
-      const result = await BiometricService.loginWithBiometrics();
-      
-      if (result.success && result.credentials) {
-        console.log('✅ Biometric authentication successful');
-        
-        // Sign in with Firebase
-        await signInWithEmailAndPassword(
-          auth, 
-          result.credentials.email, 
-          result.credentials.password
-        );
-        
-        // Mark app as launched
-        await FirstLaunchService.markAsLaunched();
-        
-        console.log('🎉 Biometric login successful!');
-      } else if (result.error && result.error !== 'UserCancel') {
-        setErrorState(`Biometric authentication failed: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Biometric login error:', error);
-      if (!error.message.includes('UserCancel')) {
-        setErrorState(`Authentication failed: ${error.message}`);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getBiometricIcon = () => {
-    switch (biometricType) {
-      case 'Face ID':
-        return 'face-recognition';
-      case 'Touch ID':
-        return 'fingerprint';
-      default:
-        return 'shield-check';
-    }
-  };
   
   return (
     <>
@@ -202,51 +90,7 @@ export const LoginScreen = ({ navigation }) => {
             <Text style={styles.screenTitle}>Welcome back!</Text>
           </View>
           
-          {/* Apple-style Face ID Button */}
-          {biometricAvailable && (
-            <View style={styles.biometricSection}>
-              <TouchableOpacity
-                style={[
-                  styles.faceIdButton,
-                  biometricEnabled ? styles.faceIdButtonEnabled : styles.faceIdButtonDisabled
-                ]}
-                onPress={handleBiometricLogin}
-                disabled={isLoading}
-                activeOpacity={0.8}
-              >
-                <View style={[
-                  styles.faceIdIconContainer,
-                  biometricEnabled ? styles.faceIdIconEnabled : styles.faceIdIconDisabled
-                ]}>
-                  <MaterialCommunityIcons 
-                    name={getBiometricIcon()} 
-                    size={28} 
-                    color={biometricEnabled ? '#FFFFFF' : '#6B4EFF'} 
-                  />
-                </View>
-                <View style={styles.faceIdTextContainer}>
-                  <Text style={[
-                    styles.faceIdMainText,
-                    biometricEnabled ? styles.faceIdMainTextEnabled : styles.faceIdMainTextDisabled
-                  ]}>
-                    {biometricType}
-                  </Text>
-                  <Text style={[
-                    styles.faceIdSubText,
-                    biometricEnabled ? styles.faceIdSubTextEnabled : styles.faceIdSubTextDisabled
-                  ]}>
-                    {biometricEnabled ? 'Touch to sign in' : 'Tap to set up'}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-              
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or continue with</Text>
-                <View style={styles.dividerLine} />
-              </View>
-            </View>
-          )}
+
           
           <Formik
             initialValues={{
@@ -273,7 +117,7 @@ export const LoginScreen = ({ navigation }) => {
                   autoCapitalize="none"
                   keyboardType="email-address"
                   textContentType="emailAddress"
-                  autoFocus={!biometricEnabled}
+                  autoFocus={true}
                   value={values.email}
                   onChangeText={handleChange("email")}
                   onBlur={handleBlur("email")}
@@ -353,92 +197,7 @@ const styles = StyleSheet.create({
     color: Colors.black,
     paddingTop: 20,
   },
-  biometricSection: {
-    marginBottom: 25,
-    marginTop: 10,
-  },
-  faceIdButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 14,
-    marginBottom: 20,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  faceIdButtonEnabled: {
-    backgroundColor: '#6B4EFF',
-    shadowColor: '#6B4EFF',
-    shadowOpacity: 0.25,
-    borderWidth: 0,
-  },
-  faceIdButtonDisabled: {
-    backgroundColor: '#F8F9FB',
-    borderWidth: 1.5,
-    borderColor: '#E1E4E8',
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-  },
-  faceIdIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  faceIdIconEnabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  faceIdIconDisabled: {
-    backgroundColor: '#F0EDFF',
-  },
-  faceIdTextContainer: {
-    flex: 1,
-  },
-  faceIdMainText: {
-    fontSize: 17,
-    fontWeight: '600',
-    letterSpacing: -0.24,
-    marginBottom: 2,
-  },
-  faceIdMainTextEnabled: {
-    color: '#FFFFFF',
-  },
-  faceIdMainTextDisabled: {
-    color: '#1D1D1F',
-  },
-  faceIdSubText: {
-    fontSize: 13,
-    fontWeight: '400',
-    letterSpacing: -0.08,
-  },
-  faceIdSubTextEnabled: {
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  faceIdSubTextDisabled: {
-    color: '#86868B',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E1E4E8',
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 13,
-    color: '#86868B',
-    fontWeight: '400',
-    letterSpacing: -0.08,
-  },
+
   footer: {
     backgroundColor: Colors.white,
     paddingHorizontal: 12,

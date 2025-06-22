@@ -76,6 +76,29 @@ export const LoginScreen = ({ navigation }) => {
       await FirstLaunchService.markAsLaunched();
       
       console.log('Login successful!');
+      
+      // If biometric is available but not enabled, offer to set it up
+      if (biometricAvailable && !biometricEnabled) {
+        setTimeout(() => {
+          Alert.alert(
+            `Set up ${biometricType}?`,
+            `Enable ${biometricType} for faster sign-in next time?`,
+            [
+              { text: 'Not Now', style: 'cancel' },
+              { 
+                text: 'Enable', 
+                onPress: async () => {
+                  const success = await BiometricService.enableBiometricLogin(email, password);
+                  if (success) {
+                    setBiometricEnabled(true);
+                    console.log('✅ Biometric login enabled successfully');
+                  }
+                }
+              }
+            ]
+          );
+        }, 500); // Small delay for better UX
+      }
     } catch (error) {
       console.error('Login error:', error.code, error.message);
       
@@ -112,12 +135,18 @@ export const LoginScreen = ({ navigation }) => {
       setIsLoading(true);
       setErrorState('');
 
-      // If biometric is not enabled, show a message and return
+      // If biometric is not enabled, offer to set it up now
       if (!biometricEnabled) {
         Alert.alert(
-          'Biometric Login Not Set Up',
-          'To use biometric login, please log in with your email and password first. You can then enable biometric login in your profile settings.',
-          [{ text: 'OK' }]
+          `Set up ${biometricType}?`,
+          `Enable ${biometricType} for secure and convenient sign-in. You'll need to log in with your email and password once to set it up.`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Set Up', onPress: () => {
+              // Focus on email field to encourage login
+              console.log('User wants to set up biometric login');
+            }}
+          ]
         );
         setIsLoading(false);
         return;
@@ -206,7 +235,7 @@ export const LoginScreen = ({ navigation }) => {
                     styles.faceIdSubText,
                     biometricEnabled ? styles.faceIdSubTextEnabled : styles.faceIdSubTextDisabled
                   ]}>
-                    {biometricEnabled ? 'Touch to sign in' : 'Set up after first login'}
+                    {biometricEnabled ? 'Touch to sign in' : 'Tap to set up'}
                   </Text>
                 </View>
               </TouchableOpacity>

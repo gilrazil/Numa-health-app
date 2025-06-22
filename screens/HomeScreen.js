@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ActivityIndicator, Alert, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { Colors, auth, db } from '../config';
@@ -86,7 +87,7 @@ export const HomeScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Modern Header with Gradient */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -157,7 +158,7 @@ export const HomeScreen = ({ navigation }) => {
           <Text style={styles.signOutText}>Sign Out</Text>
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -171,7 +172,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 30,
     paddingHorizontal: 20,
     backgroundColor: '#6B4EFF',

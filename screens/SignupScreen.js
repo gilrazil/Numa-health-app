@@ -79,11 +79,23 @@ export const SignupScreen = ({ navigation, route }) => {
         await setDoc(doc(db, 'users', user.uid), userDataToSave, { merge: true });
       }
       
+      // Store user credentials for potential biometric setup
+      setUserCredentials({ email: values.email, password: values.password });
+      
       // Mark onboarding as completed
       await FirstLaunchService.markOnboardingCompleted();
       await FirstLaunchService.markAsLaunched();
       
       console.log('Signup and profile setup completed successfully');
+      
+      // Show biometric setup modal if available
+      if (biometricAvailable) {
+        setShowBiometricModal(true);
+        console.log('🔐 Showing biometric setup modal');
+      } else {
+        console.log('⚠️ Biometric not available on this device');
+      }
+      // If biometric not available, user will be automatically navigated by auth state change
     } catch (error) {
       console.log('Signup error:', error.message);
       actions.setFieldError('general', error.message);
@@ -233,16 +245,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    backgroundColor: '#6B4EFF',
+    backgroundColor: '#6B4EFF', // Explicit purple color
     borderRadius: 12,
     padding: 16,
     width: '100%',
     alignItems: 'center',
     marginTop: 24,
+    shadowColor: Colors.primaryShadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
   },
   buttonText: {
     fontSize: 18,
-    color: Colors.white,
+    color: '#ffffff', // Explicit white color
     fontWeight: "700",
   },
   borderlessButtonContainer: {

@@ -31,6 +31,17 @@ export const LoginScreen = ({ navigation }) => {
     checkBiometricStatus();
   }, []);
 
+  // Auto-trigger biometric authentication when screen loads for biometric users
+  useEffect(() => {
+    if (biometricEnabled && !isLoading) {
+      const timer = setTimeout(() => {
+        handleBiometricLogin();
+      }, 1000); // Small delay for better UX
+
+      return () => clearTimeout(timer);
+    }
+  }, [biometricEnabled, isLoading]);
+
   const checkBiometricStatus = async () => {
     const isEnabled = await BiometricService.isBiometricEnabled();
     const typeName = await BiometricService.getBiometricTypeName();
@@ -85,14 +96,35 @@ export const LoginScreen = ({ navigation }) => {
 
   const handleBiometricLogin = async () => {
     try {
-      const credentials = await BiometricService.getCredentials();
-      if (credentials) {
-        await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
-      } else {
-        Alert.alert('No biometric credentials found', 'Please log in with email and password first.');
+      setIsLoading(true);
+      setErrorState('');
+
+      const result = await BiometricService.loginWithBiometrics();
+      
+      if (result.success && result.credentials) {
+        console.log('✅ Biometric authentication successful');
+        
+        // Sign in with Firebase
+        await signInWithEmailAndPassword(
+          auth, 
+          result.credentials.email, 
+          result.credentials.password
+        );
+        
+        // Mark app as launched
+        await FirstLaunchService.markAsLaunched();
+        
+        console.log('🎉 Biometric login successful!');
+      } else if (result.error && result.error !== 'UserCancel') {
+        setErrorState(`Biometric authentication failed: ${result.error}`);
       }
     } catch (error) {
-      Alert.alert('Biometric authentication failed', error.message);
+      console.error('Biometric login error:', error);
+      if (!error.message.includes('UserCancel')) {
+        setErrorState(`Authentication failed: ${error.message}`);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -128,7 +160,7 @@ export const LoginScreen = ({ navigation }) => {
                 <MaterialCommunityIcons 
                   name={getBiometricIcon()} 
                   size={24} 
-                  color={Colors.orange} 
+                  color={Colors.primary} 
                 />
                 <Text style={styles.biometricText}>
                   Sign in with {biometricType}
@@ -263,12 +295,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.orange + '10',
+    backgroundColor: Colors.primaryBackground,
     borderWidth: 1,
-    borderColor: Colors.orange,
+    borderColor: Colors.primary,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
+    shadowColor: Colors.primaryShadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
   },
   biometricText: {
     marginLeft: 8,
@@ -301,19 +338,24 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 14,
     fontWeight: "700",
-    color: Colors.orange,
+    color: Colors.primary,
   },
   button: {
-    backgroundColor: '#6B4EFF',
+    backgroundColor: '#6B4EFF', // Explicit purple color
     borderRadius: 12,
     padding: 16,
     width: '100%',
     alignItems: 'center',
     marginTop: 24,
+    shadowColor: Colors.primaryShadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
   },
   buttonText: {
     fontSize: 20,
-    color: Colors.white,
+    color: '#ffffff', // Explicit white color
     fontWeight: "700",
   },
   borderlessButtonContainer: {

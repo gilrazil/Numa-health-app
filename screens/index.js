@@ -9,6 +9,7 @@ import { AgeHeightWeightScreen } from "./AgeHeightWeightScreen";
 import { GoalScreen } from "./GoalScreen";
 import { MealCameraScreen } from "./MealCameraScreen";
 import { MealAnalysisScreen } from "./MealAnalysisScreen";
+import { AutoBiometricScreen } from "./AutoBiometricScreen";
 
 export { 
   LoginScreen, 
@@ -21,5 +22,6 @@ export {
   AgeHeightWeightScreen,
   GoalScreen,
   MealCameraScreen,
-  MealAnalysisScreen
+  MealAnalysisScreen,
+  AutoBiometricScreen
 };

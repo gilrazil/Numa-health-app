@@ -79,7 +79,7 @@ export const HomeScreen = ({ navigation }) => {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={Colors.orange} />
+                  <ActivityIndicator size="large" color={Colors.primary} />
         <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
@@ -118,7 +118,7 @@ export const HomeScreen = ({ navigation }) => {
             style={[styles.featureButton, styles.secondaryButton]}
             onPress={() => navigation.navigate('LogMeal')}
           >
-            <MaterialCommunityIcons name="notebook-plus" size={32} color={Colors.orange} />
+            <MaterialCommunityIcons name="notebook-plus" size={32} color={Colors.primary} />
             <Text style={[styles.featureButtonText, styles.secondaryButtonText]}>Manual Log</Text>
             <Text style={[styles.featureButtonSubtext, styles.secondaryButtonSubtext]}>Add meal details manually</Text>
           </Pressable>
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: 60,
-    backgroundColor: Colors.orange,
+    backgroundColor: Colors.primary,
   },
   welcomeText: {
     fontSize: 24,
@@ -181,20 +181,20 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   featureButton: {
-    backgroundColor: Colors.orange,
+    backgroundColor: Colors.primary,
     padding: 20,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowColor: Colors.primaryShadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
   },
   secondaryButton: {
     backgroundColor: Colors.white,
     borderWidth: 2,
-    borderColor: Colors.orange,
+    borderColor: Colors.primary,
   },
   featureButtonText: {
     fontSize: 18,
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   secondaryButtonText: {
-    color: Colors.orange,
+    color: Colors.primary,
   },
   featureButtonSubtext: {
     fontSize: 14,

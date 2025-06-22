@@ -12,7 +12,7 @@ export default {
     splash: {
       image: "./assets/splash.png",
       resizeMode: "cover",
-      backgroundColor: "#007AFF",
+      backgroundColor: "#6B4EFF",
     },
     updates: {
       url: "https://u.expo.dev/f8a7c205-a5a5-4ac0-b6e9-a084d95662fa",
@@ -39,7 +39,7 @@ export default {
       package: "com.numahealth.app",
       adaptiveIcon: {
         foregroundImage: "./assets/numa-logo.png",
-        backgroundColor: "#007AFF"
+        backgroundColor: "#6B4EFF"
       },
       permissions: [
         "CAMERA",

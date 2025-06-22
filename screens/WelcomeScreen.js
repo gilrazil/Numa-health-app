@@ -1,8 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, View, Image } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../config';
-import { Button } from '../components';
 
 export const WelcomeScreen = ({ navigation }) => {
   return (
@@ -20,19 +19,21 @@ export const WelcomeScreen = ({ navigation }) => {
       </View>
       
       <View style={styles.buttonContainer}>
-        <Button 
+        <TouchableOpacity 
           style={styles.button} 
           onPress={() => navigation.navigate('Gender')}
+          activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Let's get started</Text>
-        </Button>
+          <Text style={styles.buttonText}>Get Started</Text>
+        </TouchableOpacity>
         
-        <Button 
+        <TouchableOpacity 
           style={styles.secondaryButton} 
           onPress={() => navigation.navigate('Login')}
+          activeOpacity={0.7}
         >
           <Text style={styles.secondaryButtonText}>Already have an account? Sign In</Text>
-        </Button>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -70,30 +71,48 @@ const styles = StyleSheet.create({
     marginBottom: 30
   },
   button: {
-    backgroundColor: '#6B4EFF',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#6B4EFF', // Explicit purple color
+    shadowColor: Colors.primaryShadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 12,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
     width: '100%',
     alignItems: 'center',
-    marginBottom: 16
+    marginBottom: 20,
+    // Add gradient-like effect with border
+    borderWidth: 1,
+    borderColor: Colors.primaryLight,
   },
   buttonText: {
-    color: Colors.white,
+    color: '#ffffff', // Explicit white color
     fontSize: 18,
-    fontWeight: '600'
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textShadow: '0px 1px 2px rgba(0,0,0,0.1)'
   },
   secondaryButton: {
-    backgroundColor: 'transparent',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: Colors.primaryBackground,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
     width: '100%',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#6B4EFF'
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    shadowColor: Colors.primaryShadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6,
   },
   secondaryButtonText: {
-    color: '#6B4EFF',
+    color: Colors.primary,
     fontSize: 16,
-    fontWeight: '500'
+    fontWeight: '600',
+    letterSpacing: 0.3
   }
 }); 

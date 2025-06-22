@@ -2,13 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Text, StyleSheet, Alert } from "react-native";
 import { Formik } from "formik";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import * as LocalAuthentication from 'expo-local-authentication';
 
-import { View, TextInput, Logo, Button, FormErrorMessage, BiometricSetupModal } from "../components";
+
+import { View, TextInput, Logo, Button, FormErrorMessage } from "../components";
 import { Images, Colors, auth, db } from "../config";
 import { useTogglePasswordVisibility } from "../hooks";
 import { signupValidationSchema } from "../utils";
-import { BiometricService } from "../services/BiometricService";
 import { FirstLaunchService } from "../services/FirstLaunchService";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -21,9 +20,6 @@ export const SignupScreen = ({ navigation, route }) => {
   
   const [errorState, setErrorState] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showBiometricModal, setShowBiometricModal] = useState(false);
-  const [userCredentials, setUserCredentials] = useState(null);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
 
   const {
     passwordVisibility,
@@ -34,14 +30,7 @@ export const SignupScreen = ({ navigation, route }) => {
     confirmPasswordVisibility,
   } = useTogglePasswordVisibility();
 
-  useEffect(() => {
-    checkBiometricAvailability();
-  }, []);
 
-  const checkBiometricAvailability = async () => {
-    const { isAvailable } = await BiometricService.isBiometricAvailable();
-    setBiometricAvailable(isAvailable);
-  };
 
   const handleOnSignUp = async (values, actions) => {
     const { email, password } = values;
@@ -79,33 +68,20 @@ export const SignupScreen = ({ navigation, route }) => {
         await setDoc(doc(db, 'users', user.uid), userDataToSave, { merge: true });
       }
       
-      // Store user credentials for potential biometric setup
-      setUserCredentials({ email: values.email, password: values.password });
-      
       // Mark onboarding as completed
       await FirstLaunchService.markOnboardingCompleted();
       await FirstLaunchService.markAsLaunched();
       
       console.log('Signup and profile setup completed successfully');
       
-      // Show biometric setup modal if available
-      if (biometricAvailable) {
-        setShowBiometricModal(true);
-        console.log('🔐 Showing biometric setup modal');
-      } else {
-        console.log('⚠️ Biometric not available on this device');
-      }
-      // If biometric not available, user will be automatically navigated by auth state change
+      // User will be automatically navigated to HomeScreen by the auth state change
     } catch (error) {
       console.log('Signup error:', error.message);
       actions.setFieldError('general', error.message);
     }
   };
 
-  const handleBiometricSetupComplete = (wasSetup) => {
-    console.log(`Biometric setup ${wasSetup ? 'completed' : 'skipped'}`);
-    // User will be automatically navigated to HomeScreen by the auth state change
-  };
+
 
   return (
     <View isSafe style={styles.container}>
@@ -211,13 +187,7 @@ export const SignupScreen = ({ navigation, route }) => {
         />
       </KeyboardAwareScrollView>
 
-      {/* Biometric Setup Modal */}
-      <BiometricSetupModal
-        visible={showBiometricModal}
-        onClose={() => setShowBiometricModal(false)}
-        onSetupComplete={handleBiometricSetupComplete}
-        userCredentials={userCredentials}
-      />
+
     </View>
   );
 };

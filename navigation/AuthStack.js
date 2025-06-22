@@ -8,11 +8,9 @@ import {
   WelcomeScreen,
   GenderScreen,
   AgeHeightWeightScreen,
-  GoalScreen,
-  AutoBiometricScreen
+  GoalScreen
 } from "../screens";
 import { FirstLaunchService } from "../services/FirstLaunchService";
-import { BiometricService } from "../services/BiometricService";
 
 const Stack = createStackNavigator();
 
@@ -26,21 +24,13 @@ export const AuthStack = () => {
 
   const determineInitialRoute = async () => {
     try {
-      const [experienceType, hasBiometric] = await Promise.all([
-        FirstLaunchService.getUserExperienceType(),
-        BiometricService.isBiometricEnabled()
-      ]);
+      const experienceType = await FirstLaunchService.getUserExperienceType();
       
       console.log('🎯 Auth Experience Type:', experienceType);
-      console.log('🔐 Has Biometric:', hasBiometric);
 
-      // Smart routing based on user experience  
-      if (hasBiometric && experienceType === 'returning') {
-        // Returning user with biometric - auto face recognition
-        setInitialRoute('AutoBiometric');
-        console.log('🔐 Biometric user detected - showing Auto Face Recognition');
-      } else if (experienceType === 'returning') {
-        // Returning user without biometric - go to login
+      // Simple routing based on user experience  
+      if (experienceType === 'returning') {
+        // Returning user - go to login
         setInitialRoute('Login');
         console.log('👋 Returning user detected - showing Login screen');
       } else if (experienceType === 'incomplete') {
@@ -73,7 +63,7 @@ export const AuthStack = () => {
       <Stack.Screen name="Gender" component={GenderScreen} />
       <Stack.Screen name="AgeHeightWeight" component={AgeHeightWeightScreen} />
       <Stack.Screen name="Goal" component={GoalScreen} />
-      <Stack.Screen name="AutoBiometric" component={AutoBiometricScreen} />
+
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />

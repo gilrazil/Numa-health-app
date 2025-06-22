@@ -61,6 +61,13 @@ export const LoginScreen = ({ navigation }) => {
     setErrorState('');
     setIsLoading(true);
 
+    // Handle empty email gracefully
+    if (!email.trim()) {
+      setErrorState('Please enter your email address.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       console.log('Attempting login with email:', email);
       await signInWithEmailAndPassword(auth, email, password);

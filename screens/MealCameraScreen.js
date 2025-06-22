@@ -21,7 +21,7 @@ import { Button, LoadingIndicator } from '../components';
 import { collection, addDoc, doc, getDoc, query, where, orderBy, limit, getDocs, deleteDoc } from 'firebase/firestore';
 
 export const MealCameraScreen = ({ navigation }) => {
-  const [selectedImage, setSelectedImage] = useState(null);
+
   const [uploading, setUploading] = useState(false);
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,10 +38,10 @@ export const MealCameraScreen = ({ navigation }) => {
     // Clean up old meals periodically
     cleanupOldMeals();
 
-    // Add focus listener to clear selected image when returning to this screen
+    // Add focus listener to clear error and refresh meals when returning to this screen
     const unsubscribe = navigation.addListener('focus', () => {
-      setSelectedImage(null);
       setError(null);
+      fetchMeals(); // Refresh meals when screen is focused
     });
 
     // Cleanup listener on unmount
@@ -93,6 +93,8 @@ export const MealCameraScreen = ({ navigation }) => {
       const currentUser = auth.currentUser;
       
       if (currentUser) {
+        console.log('🔍 Fetching meals for user:', currentUser.uid);
+        
         const mealsQuery = query(
           collection(db, 'meals'),
           where('userId', '==', currentUser.uid),
@@ -106,7 +108,12 @@ export const MealCameraScreen = ({ navigation }) => {
           ...doc.data()
         }));
         
+        console.log('📋 Fetched meals:', mealsData.length, 'meals found');
+        console.log('📋 First meal data:', mealsData[0] || 'No meals');
+        
         setMeals(mealsData);
+      } else {
+        console.log('❌ No current user found');
       }
     } catch (error) {
       console.error('Error fetching meals:', error);
@@ -142,14 +149,15 @@ export const MealCameraScreen = ({ navigation }) => {
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        allowsEditing: false,
         quality: 0.8,
-        aspect: [4, 3],
         exif: false,
+        presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
       });
 
       if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0]);
+        // Directly navigate to meal analysis after taking photo
+        await navigateToMealAnalysis(result.assets[0]);
       }
     } catch (error) {
       console.error('Error taking photo:', error);
@@ -175,14 +183,14 @@ export const MealCameraScreen = ({ navigation }) => {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        allowsEditing: false,
         quality: 0.8,
-        aspect: [4, 3],
         exif: false,
       });
 
       if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0]);
+        // Directly navigate to meal analysis after picking from gallery
+        await navigateToMealAnalysis(result.assets[0]);
       }
     } catch (error) {
       console.error('Error picking from gallery:', error);
@@ -243,37 +251,7 @@ export const MealCameraScreen = ({ navigation }) => {
     }
   };
 
-  const uploadMeal = async () => {
-    if (!selectedImage) return;
 
-    try {
-      setUploading(true);
-      setError(null);
-      
-      // Get user profile for analysis
-      const userProfile = await getUserProfile();
-      
-      // Navigate to analysis with image
-      navigation.navigate('MealAnalysis', {
-        imageUri: selectedImage.uri,
-        userProfile: userProfile
-      });
-      
-    } catch (error) {
-      console.error('Error starting meal analysis:', error);
-      setError('Failed to start analysis. Please try again.');
-      Alert.alert(
-        'Upload Error',
-        'There was a problem starting the analysis. Would you like to retry?',
-        [
-          { text: 'Retry', onPress: uploadMeal },
-          { text: 'Cancel', style: 'cancel' }
-        ]
-      );
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handlePhotoTaken = async (photo) => {
     try {
@@ -293,6 +271,37 @@ export const MealCameraScreen = ({ navigation }) => {
       Alert.alert('Error', 'Failed to start analysis. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const navigateToMealAnalysis = async (imageAsset) => {
+    try {
+      setUploading(true);
+      setError(null);
+      
+      // Get user profile for analysis
+      const userProfile = await getUserProfile();
+      
+      // Navigate directly to meal analysis screen
+      navigation.navigate('MealAnalysis', {
+        imageUri: imageAsset.uri,
+        userProfile: userProfile,
+        autoSave: true // Flag to indicate this should be auto-saved
+      });
+      
+    } catch (error) {
+      console.error('Error navigating to meal analysis:', error);
+      setError('Failed to start analysis. Please try again.');
+      Alert.alert(
+        'Analysis Error',
+        'There was a problem starting the meal analysis. Would you like to retry?',
+        [
+          { text: 'Retry', onPress: () => navigateToMealAnalysis(imageAsset) },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -330,6 +339,15 @@ export const MealCameraScreen = ({ navigation }) => {
   const renderMealItem = (meal) => {
     const imageUri = meal.imageUrl || meal.imageUri || meal.localUri;
     
+    console.log('🖼️ Rendering meal item:', {
+      id: meal.id,
+      hasImageUrl: !!meal.imageUrl,
+      hasImageUri: !!meal.imageUri,
+      hasLocalUri: !!meal.localUri,
+      finalImageUri: imageUri?.substring(0, 50) + '...',
+      timestamp: meal.timestamp
+    });
+    
     return (
       <TouchableOpacity 
         key={meal.id} 
@@ -342,7 +360,11 @@ export const MealCameraScreen = ({ navigation }) => {
             source={{ uri: imageUri }} 
             style={styles.mealImage}
             onError={(error) => {
-              console.log('Image load error for meal:', meal.id, error);
+              console.log('❌ Image load error for meal:', meal.id, error);
+              console.log('❌ Problematic image URI:', imageUri);
+            }}
+            onLoad={() => {
+              console.log('✅ Image loaded successfully for meal:', meal.id);
             }}
           />
         ) : (
@@ -538,74 +560,48 @@ export const MealCameraScreen = ({ navigation }) => {
           </View>
         )}
 
-        {selectedImage ? (
-          <View style={styles.imageContainer}>
-            <Image 
-              source={{ uri: selectedImage.uri }} 
-              style={styles.selectedImage}
-              onError={() => setError('Failed to load image. Please try again.')}
-            />
-            <View style={styles.imageActions}>
-              <TouchableOpacity
-                style={styles.retakeButton}
-                onPress={() => {
-                  setSelectedImage(null);
-                  setError(null);
-                }}
-              >
-                <Text style={styles.retakeButtonText}>Retake</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.usePhotoButton, uploading && styles.disabledButton]}
-                onPress={uploadMeal}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={styles.usePhotoButtonText}>Use Photo</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+        <View style={styles.cameraContainer}>
+          <View style={styles.cameraPlaceholder}>
+            <MaterialCommunityIcons name="camera" size={80} color={Colors.lightGrey} />
+            <Text style={styles.cameraText}>Take a photo of your meal</Text>
+            {permissionStatus?.camera !== 'granted' && (
+              <Text style={styles.permissionText}>
+                Camera permission is required
+              </Text>
+            )}
           </View>
-        ) : (
-          <View style={styles.cameraContainer}>
-            <View style={styles.cameraPlaceholder}>
-              <MaterialCommunityIcons name="camera" size={80} color={Colors.lightGrey} />
-              <Text style={styles.cameraText}>Take a photo of your meal</Text>
-              {permissionStatus?.camera !== 'granted' && (
-                <Text style={styles.permissionText}>
-                  Camera permission is required
-                </Text>
+          
+          <View style={styles.cameraActions}>
+            <TouchableOpacity 
+              style={[styles.cameraButton, (permissionStatus?.camera !== 'granted' || uploading) && styles.disabledButton]} 
+              onPress={takePhoto}
+              disabled={permissionStatus?.camera !== 'granted' || uploading}
+            >
+              {uploading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="camera" size={30} color="#fff" />
+                  <Text style={styles.cameraButtonText}>Take Photo</Text>
+                </>
               )}
-            </View>
+            </TouchableOpacity>
             
-            <View style={styles.cameraActions}>
-              <TouchableOpacity 
-                style={[styles.cameraButton, permissionStatus?.camera !== 'granted' && styles.disabledButton]} 
-                onPress={takePhoto}
-                disabled={permissionStatus?.camera !== 'granted'}
-              >
-                <MaterialCommunityIcons name="camera" size={30} color="#fff" />
-                <Text style={styles.cameraButtonText}>Take Photo</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.galleryButton, permissionStatus?.mediaLibrary !== 'granted' && styles.disabledButton]} 
-                onPress={pickFromGallery}
-                disabled={permissionStatus?.mediaLibrary !== 'granted'}
-              >
-                <MaterialCommunityIcons name="image" size={30} color="#6B4EFF" />
-                <Text style={styles.galleryButtonText}>Choose from Gallery</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              style={[styles.galleryButton, (permissionStatus?.mediaLibrary !== 'granted' || uploading) && styles.disabledButton]} 
+              onPress={pickFromGallery}
+              disabled={permissionStatus?.mediaLibrary !== 'granted' || uploading}
+            >
+              <MaterialCommunityIcons name="image" size={30} color="#6B4EFF" />
+              <Text style={styles.galleryButtonText}>Choose from Gallery</Text>
+            </TouchableOpacity>
           </View>
-        )}
+        </View>
 
         {/* Recent Meals */}
         <View style={styles.recentMeals}>
           <Text style={styles.sectionTitle}>Recent Meals</Text>
-          {loading ? (
+          {mealsLoading ? (
             <LoadingIndicator size="large" color={Colors.orange} />
           ) : meals.length > 0 ? (
             <View style={styles.mealsGrid}>

@@ -18,17 +18,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, auth, db } from '../config';
 import { collection, addDoc } from 'firebase/firestore';
 import { MealAnalysisService } from '../services/MealAnalysisService';
-import { TextEditingService } from '../services/TextEditingService';
+import TextEditingService from '../services/TextEditingService';
 import { Ionicons } from '@expo/vector-icons';
 import * as MediaLibrary from 'expo-media-library';
 
 const { width } = Dimensions.get('window');
 
 export const MealAnalysisScreen = ({ navigation, route }) => {
-  const { imageUri, userProfile, existingAnalysis, isHistorical } = route.params;
+  const { imageUri, userProfile, existingAnalysis, isHistorical, autoSave } = route.params;
   const [analysis, setAnalysis] = useState(existingAnalysis || null);
   const [loading, setLoading] = useState(!existingAnalysis);
   const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [showAllIngredients, setShowAllIngredients] = useState(false);
   const [heightAnimation] = useState(new Animated.Value(140));
   const [progress] = useState(new Animated.Value(0));
@@ -39,13 +40,51 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editText, setEditText] = useState('');
   const [editLoading, setEditLoading] = useState(false);
+  
+  // Track if meal was saved
+  const [mealSaved, setMealSaved] = useState(false);
+  
+  // Track current analysis step
+  const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
     // Only analyze if we don't have existing analysis
     if (!existingAnalysis) {
       analyzeMeal();
+    } else {
+      // If we have existing analysis and it's historical, mark as already saved
+      if (isHistorical) {
+        setMealSaved(true);
+      }
     }
   }, []);
+
+  // Handle hardware back button and gesture navigation
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      // If meal is already saved or historical, allow navigation
+      if (mealSaved || isHistorical || !analysis) {
+        return;
+      }
+
+      // Prevent default behavior of leaving the screen
+      e.preventDefault();
+
+      console.log('🚨 Preventing navigation to save meal first...');
+
+      // Save meal and then navigate
+      ensureMealSaved('beforeRemove').then(() => {
+        console.log('✅ Meal saved, now navigating...');
+        navigation.dispatch(e.data.action);
+      }).catch((error) => {
+        console.error('❌ Failed to save meal:', error);
+        // Even if save fails, allow navigation
+        navigation.dispatch(e.data.action);
+      });
+    });
+
+    return unsubscribe;
+  }, [navigation, mealSaved, isHistorical, analysis]);
 
   useEffect(() => {
     Animated.timing(heightAnimation, {
@@ -55,22 +94,62 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
     }).start();
   }, [showAllIngredients]);
 
+  // Handle component cleanup - ensure meal is saved
+  useEffect(() => {
+    return () => {
+      // This will run when component is unmounted
+      if (analysis && !mealSaved && !isHistorical) {
+        console.log('🔄 Component unmounting, attempting to save meal...');
+        saveMealToHistory(analysis).catch(error => {
+          console.error('Failed to save meal during cleanup:', error);
+        });
+      }
+    };
+  }, [analysis, mealSaved, isHistorical]);
+
   const simulateProgress = () => {
-    // Reset progress
+    // Reset progress and step
     progress.setValue(0);
+    setCurrentStep(0);
     
-    // Animate progress from 0 to 90%
+    // Phase 1: Quick initial analysis (0-25%)
+    setTimeout(() => setCurrentStep(0), 100);
     Animated.timing(progress, {
-      toValue: 0.9,
-      duration: 15000, // 15 seconds
+      toValue: 0.25,
+      duration: 2000,
       useNativeDriver: false,
-    }).start();
+    }).start(() => {
+      // Phase 2: Ingredient identification (25-60%)
+      setCurrentStep(1);
+      Animated.timing(progress, {
+        toValue: 0.6,
+        duration: 5000,
+        useNativeDriver: false,
+      }).start(() => {
+        // Phase 3: Nutrition calculation (60-85%)
+        setCurrentStep(2);
+        Animated.timing(progress, {
+          toValue: 0.85,
+          duration: 4000,
+          useNativeDriver: false,
+        }).start(() => {
+          // Phase 4: Final recommendations (85-95%)
+          setCurrentStep(3);
+          Animated.timing(progress, {
+            toValue: 0.95,
+            duration: 3000,
+            useNativeDriver: false,
+          }).start();
+        });
+      });
+    });
   };
 
   const analyzeMeal = async () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('🚀 Starting meal analysis - calling simulateProgress');
       simulateProgress();
       
       // Get user's daily intake (you can implement this later)
@@ -92,8 +171,11 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
       
       setAnalysis(result);
       
-      // Save analysis to Firestore
-      await saveMeal();
+      // Always auto-save analysis to Firestore (unless it's historical)
+      if (!isHistorical) {
+        console.log('📊 Analysis complete, auto-saving meal...');
+        await saveMealToHistory(result);
+      }
       
     } catch (error) {
       console.error('שגיאה בניתוח ארוחה:', error);
@@ -145,6 +227,45 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
     } catch (error) {
       console.error('Error uploading to Firebase:', error);
       throw error;
+    }
+  };
+
+  const saveMealToHistory = async (analysisData) => {
+    // Prevent duplicate saves
+    if (mealSaved || saving) {
+      console.log('🚫 Skipping save - already saved or saving in progress', { mealSaved, saving });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      const mealData = {
+        userId: auth.currentUser.uid,
+        imageUrl: imageUri,
+        analysis: analysisData,
+        timestamp: new Date().toISOString(),
+        createdAt: new Date()
+      };
+
+      console.log('💾 Saving meal to history:', {
+        userId: mealData.userId,
+        hasImageUrl: !!mealData.imageUrl,
+        imageUrl: mealData.imageUrl?.substring(0, 50) + '...',
+        hasAnalysis: !!mealData.analysis,
+        timestamp: mealData.timestamp
+      });
+
+      const docRef = await addDoc(collection(db, 'meals'), mealData);
+      console.log('✅ Meal automatically saved to history with ID:', docRef.id);
+      setMealSaved(true);
+      
+    } catch (error) {
+      console.error('❌ Error auto-saving meal:', error);
+      console.error('Error details:', error.message);
+      // Don't show alert for auto-save failures, just log
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -271,6 +392,37 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
     setIsEditing(false);
   };
 
+  // Ensure meal is saved before navigation
+  const ensureMealSaved = async (caller = 'unknown') => {
+    if (analysis && !mealSaved && !isHistorical) {
+      console.log(`📝 [${caller}] Ensuring meal is saved before navigation...`, {
+        hasAnalysis: !!analysis,
+        mealSaved,
+        isHistorical,
+        analysisId: analysis?.id || 'no-id'
+      });
+      await saveMealToHistory(analysis);
+    } else {
+      console.log(`📝 [${caller}] Skipping save - meal already saved or historical`, {
+        hasAnalysis: !!analysis,
+        mealSaved,
+        isHistorical
+      });
+    }
+  };
+
+  // Handle back navigation - let beforeRemove listener handle saving
+  const handleGoBack = () => {
+    console.log('🔙 Back button pressed - letting beforeRemove handle saving');
+    navigation.goBack();
+  };
+
+  // Handle camera navigation - let beforeRemove listener handle saving  
+  const handleGoToCamera = () => {
+    console.log('📷 Camera button pressed - letting beforeRemove handle saving');
+    navigation.navigate('MealCamera');
+  };
+
   const applyTextCommand = (command) => {
     try {
       const updatedAnalysis = { ...analysis };
@@ -319,8 +471,11 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
       // For now, just update the analysis state
       setAnalysis(updatedAnalysis);
       
-      // Save updated analysis
-      saveMealAnalysis(updatedAnalysis);
+      // Save updated analysis - mark as not saved since we modified it
+      setMealSaved(false);
+      
+      // Save the updated analysis to history
+      saveMealToHistory(updatedAnalysis);
       
     } catch (error) {
       console.error('שגיאה ביישום פקודה טקסטית:', error);
@@ -329,12 +484,49 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
   };
 
   if (loading) {
+    console.log('🔄 LOADING SCREEN - New version with progress bar', { imageUri });
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>מנתח את הארוחה שלך...</Text>
-          <Text style={styles.loadingSubtext}>זה יכול לקחת כמה שניות</Text>
+          {/* Meal Image Preview */}
+          <Image source={{ uri: imageUri }} style={styles.loadingMealImage} />
+          
+          {/* Progress Indicator */}
+          <View style={styles.analysisProgressContainer}>
+            <Text style={styles.loadingText}>מנתח את הארוחה שלך...</Text>
+            
+            {/* Animated Progress Bar */}
+            <View style={styles.progressContainer}>
+              <Animated.View 
+                style={[
+                  styles.progressBar,
+                  {
+                    width: progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0%', '100%'],
+                    }),
+                  }
+                ]} 
+              />
+            </View>
+            
+            {/* Progress Steps */}
+            <View style={styles.loadingSteps}>
+              <Text style={[styles.loadingStep, currentStep === 0 && styles.activeStep]}>
+                🔍 זיהוי מרכיבים...
+              </Text>
+              <Text style={[styles.loadingStep, currentStep === 1 && styles.activeStep]}>
+                🧮 חישוב ערכים תזונתיים...
+              </Text>
+              <Text style={[styles.loadingStep, currentStep === 2 && styles.activeStep]}>
+                ⚖️ הערכת התאמה לפרופיל שלך...
+              </Text>
+              <Text style={[styles.loadingStep, currentStep === 3 && styles.activeStep]}>
+                💡 הכנת המלצות אישיות...
+              </Text>
+            </View>
+
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -350,7 +542,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
           <Pressable style={styles.retryButton} onPress={analyzeMeal}>
             <Text style={styles.retryButtonText}>נסה שוב</Text>
           </Pressable>
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Pressable style={styles.backButton} onPress={handleGoBack}>
             <Text style={styles.backButtonText}>חזור</Text>
           </Pressable>
         </View>
@@ -370,7 +562,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
       
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
         <View style={styles.titleContainer}>
@@ -533,7 +725,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
         <View style={styles.actionsContainer}>
           <TouchableOpacity 
             style={styles.primaryButton} 
-            onPress={() => navigation.navigate('MealCamera')}
+            onPress={handleGoToCamera}
           >
             <Text style={styles.primaryButtonText}>
               {isHistorical ? 'צלם ארוחה חדשה' : 'צלם ארוחה נוספת'}
@@ -652,8 +844,56 @@ const styles = StyleSheet.create({
   loadingSubtext: {
     fontSize: 14,
     color: '#8E8E93',
-    marginTop: 8,
+    marginTop: 16,
     textAlign: 'center',
+  },
+  loadingMealImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 16,
+    marginBottom: 30,
+    resizeMode: 'cover',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  analysisProgressContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  progressContainer: {
+    width: '80%',
+    height: 8,
+    backgroundColor: '#E5E5EA',
+    borderRadius: 4,
+    marginTop: 20,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#6B4EFF',
+    borderRadius: 4,
+  },
+  loadingSteps: {
+    marginTop: 10,
+    alignItems: 'flex-start',
+    width: '80%',
+  },
+  loadingStep: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginBottom: 8,
+    textAlign: 'right',
+  },
+  activeStep: {
+    color: '#6B4EFF',
+    fontWeight: '600',
   },
   errorContainer: {
     flex: 1,

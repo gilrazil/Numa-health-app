@@ -5,7 +5,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { Colors, auth, db } from '../config';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Button } from '../components';
+import { Button, AlphaBadge } from '../components';
 
 export const HomeScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
@@ -91,9 +91,12 @@ export const HomeScreen = ({ navigation }) => {
       {/* Modern Header with Gradient */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Text style={styles.welcomeText}>
-            Welcome to Numa
-          </Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.welcomeText}>
+              Welcome to Numa
+            </Text>
+            <AlphaBadge style={styles.alphaBadgeHeader} />
+          </View>
           {user && (
             <Text style={styles.userText}>
               Hello, {user.email?.split('@')[0] || 'User'}! 👋
@@ -123,26 +126,24 @@ export const HomeScreen = ({ navigation }) => {
             </View>
           </Pressable>
           
-          <Pressable 
-            style={styles.secondaryFeatureCard}
-            onPress={() => navigation.navigate('LogMeal')}
-            android_ripple={{ color: 'rgba(107, 78, 255, 0.1)' }}
+          <View 
+            style={[styles.secondaryFeatureCard, styles.disabledCard]}
           >
-            <View style={styles.secondaryFeatureIconContainer}>
-              <MaterialCommunityIcons name="notebook-plus" size={28} color="#6B4EFF" />
+            <View style={[styles.secondaryFeatureIconContainer, styles.disabledIconContainer]}>
+              <MaterialCommunityIcons name="notebook-plus" size={28} color="#C1C1C6" />
             </View>
             <View style={styles.featureTextContainer}>
-              <Text style={styles.secondaryFeatureTitle}>Manual Log</Text>
-              <Text style={styles.secondaryFeatureSubtitle}>Add meal details manually</Text>
+              <Text style={[styles.secondaryFeatureTitle, styles.disabledTitle]}>Manual Log</Text>
+              <Text style={[styles.secondaryFeatureSubtitle, styles.disabledSubtitle]}>Coming soon...</Text>
             </View>
-          </Pressable>
+          </View>
         </View>
         
         {/* Modern Stats Card */}
-        <View style={styles.statsCard}>
-          <MaterialCommunityIcons name="chart-line" size={24} color="#6B4EFF" />
-          <Text style={styles.statsText}>
-            Ready to track your nutrition and health goals!
+        <View style={[styles.statsCard, styles.disabledCard]}>
+          <MaterialCommunityIcons name="chart-line" size={24} color="#C1C1C6" />
+          <Text style={[styles.statsText, styles.disabledText]}>
+            Advanced tracking coming soon!
           </Text>
         </View>
       </View>
@@ -183,6 +184,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
+    position: 'relative',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  alphaBadgeHeader: {
+    transform: [{ scale: 0.9 }],
   },
   headerContent: {
     alignItems: 'center',
@@ -344,5 +355,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#86868B',
     fontWeight: '400',
+  },
+  // Disabled states
+  disabledCard: {
+    opacity: 0.6,
+    borderColor: '#F0F0F0',
+    backgroundColor: '#FAFAFA',
+  },
+  disabledIconContainer: {
+    backgroundColor: '#F0F0F0',
+  },
+  disabledTitle: {
+    color: '#C1C1C6',
+  },
+  disabledSubtitle: {
+    color: '#C1C1C6',
+  },
+  disabledText: {
+    color: '#C1C1C6',
   },
 });

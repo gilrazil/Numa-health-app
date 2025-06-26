@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../config';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { AlphaBadge } from '../components';
 
 export const GenderScreen = ({ navigation }) => {
   const [selectedGender, setSelectedGender] = useState(null);
@@ -40,7 +41,10 @@ export const GenderScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>What's your gender?</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>What's your gender?</Text>
+        <AlphaBadge style={styles.alphaBadge} />
+      </View>
       
       <View style={styles.optionsContainer}>
         {renderGenderOption('male', 'Male', 'gender-male')}
@@ -69,13 +73,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.white,
     paddingHorizontal: 25,
-    paddingVertical: 40
+    paddingVertical: 40,
+    position: 'relative',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 40,
+  },
+  alphaBadge: {
+    marginTop: 2,
   },
   title: {
     fontSize: 28,
     fontWeight: '600',
     color: Colors.black,
-    marginBottom: 40,
     textAlign: 'center'
   },
   optionsContainer: {

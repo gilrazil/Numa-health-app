@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, Image, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../config';
+import { AlphaBadge } from '../components';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -20,6 +21,7 @@ export const WelcomeScreen = ({ navigation }) => {
         <View style={styles.taglineContainer}>
           <Text style={styles.tagline}>Track your meals.</Text>
           <Text style={styles.tagline}>Achieve your goals.</Text>
+          <AlphaBadge style={styles.alphaBadge} />
         </View>
       </View>
       
@@ -53,6 +55,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.white,
     paddingHorizontal: 20,
+    position: 'relative',
+  },
+  alphaBadge: {
+    marginTop: 20,
+    alignSelf: 'center',
   },
   topSection: {
     flex: 1,

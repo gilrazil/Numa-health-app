@@ -17,7 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, auth, db, storage } from '../config';
-import { Button, LoadingIndicator } from '../components';
+import { Button, LoadingIndicator, AlphaBadge } from '../components';
 import { collection, addDoc, doc, getDoc, query, where, orderBy, limit, getDocs, deleteDoc } from 'firebase/firestore';
 
 export const MealCameraScreen = ({ navigation }) => {
@@ -537,7 +537,10 @@ export const MealCameraScreen = ({ navigation }) => {
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.black} />
         </TouchableOpacity>
-        <Text style={styles.title}>Meal Tracker</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Meal Tracker</Text>
+          <AlphaBadge style={styles.alphaBadgeHeader} />
+        </View>
         <View style={styles.placeholder} />
       </View>
 
@@ -620,6 +623,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    position: 'relative',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  alphaBadgeHeader: {
+    transform: [{ scale: 0.8 }],
   },
   header: {
     flexDirection: 'row',

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../config';
-import { Button } from '../components';
+import { Button, AlphaBadge } from '../components';
 
 export const AgeHeightWeightScreen = ({ navigation, route }) => {
   const { gender } = route.params || {};
@@ -56,6 +56,7 @@ export const AgeHeightWeightScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <AlphaBadge style={styles.alphaBadge} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -142,7 +143,14 @@ export const AgeHeightWeightScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white
+    backgroundColor: Colors.white,
+    position: 'relative',
+  },
+  alphaBadge: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 10,
   },
   scrollContent: {
     paddingHorizontal: 25,

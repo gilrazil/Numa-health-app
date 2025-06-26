@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../config';
-import { Button } from '../components';
+import { Button, AlphaBadge } from '../components';
 
 export const GoalScreen = ({ navigation, route }) => {
   const userInfo = route.params || {};
@@ -28,6 +28,7 @@ export const GoalScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <AlphaBadge style={styles.alphaBadge} />
       <View style={styles.content}>
         <Text style={styles.title}>What's your goal?</Text>
         
@@ -95,7 +96,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     paddingHorizontal: 25,
     justifyContent: 'space-between',
-    paddingVertical: 50
+    paddingVertical: 50,
+    position: 'relative',
+  },
+  alphaBadge: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 10,
   },
   content: {
     flex: 1,

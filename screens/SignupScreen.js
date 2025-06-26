@@ -4,7 +4,7 @@ import { Formik } from "formik";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 
-import { View, TextInput, Logo, Button, FormErrorMessage } from "../components";
+import { View, TextInput, Logo, Button, FormErrorMessage, AlphaBadge } from "../components";
 import { Images, Colors, auth, db } from "../config";
 import { useTogglePasswordVisibility } from "../hooks";
 import { signupValidationSchema } from "../utils";
@@ -85,6 +85,7 @@ export const SignupScreen = ({ navigation, route }) => {
 
   return (
     <View isSafe style={styles.container}>
+      <AlphaBadge style={styles.alphaBadge} />
       <KeyboardAwareScrollView enableOnAndroid={true}>
         {/* LogoContainer: consist app logo and screen title */}
         <View style={styles.logoContainer}>
@@ -197,6 +198,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.white,
     paddingHorizontal: 12,
+    position: 'relative',
+  },
+  alphaBadge: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    zIndex: 10,
   },
   logoContainer: {
     alignItems: "center",

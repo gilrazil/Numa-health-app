@@ -21,6 +21,7 @@ import { MealAnalysisService } from '../services/MealAnalysisService';
 import TextEditingService from '../services/TextEditingService';
 import { Ionicons } from '@expo/vector-icons';
 import * as MediaLibrary from 'expo-media-library';
+import { AlphaBadge } from '../components';
 
 const { width } = Dimensions.get('window');
 
@@ -487,6 +488,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
     console.log('🔄 LOADING SCREEN - New version with progress bar', { imageUri });
     return (
       <SafeAreaView style={styles.container}>
+        <AlphaBadge style={styles.alphaBadge} />
         <View style={styles.loadingContainer}>
           {/* Meal Image Preview */}
           <Image source={{ uri: imageUri }} style={styles.loadingMealImage} />
@@ -535,6 +537,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
+        <AlphaBadge style={styles.alphaBadge} />
         <View style={styles.errorContainer}>
           <Text style={styles.errorEmoji}>😔</Text>
           <Text style={styles.errorTitle}>אופס! משהו השתבש</Text>
@@ -552,6 +555,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <AlphaBadge style={styles.alphaBadge} />
       {/* Demo Mode Indicator */}
       {isDemoMode && (
         <TouchableOpacity style={styles.demoIndicator} onPress={showDemoInfo}>

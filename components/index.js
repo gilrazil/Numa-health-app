@@ -6,6 +6,7 @@ import { Button } from './Button';
 import { FormErrorMessage } from './FormErrorMessage';
 import { LoadingIndicator } from './LoadingIndicator';
 import { BiometricSetupModal } from './BiometricSetupModal';
+import { AlphaBadge } from './AlphaBadge';
 
 export {
   View,
@@ -15,5 +16,6 @@ export {
   Button,
   FormErrorMessage,
   LoadingIndicator,
-  BiometricSetupModal
+  BiometricSetupModal,
+  AlphaBadge
 };

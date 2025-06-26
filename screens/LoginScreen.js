@@ -5,7 +5,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
-import { View, TextInput, Logo, Button, FormErrorMessage } from "../components";
+import { View, TextInput, Logo, Button, FormErrorMessage, AlphaBadge } from "../components";
 import { Images, Colors, auth } from "../config";
 import { useTogglePasswordVisibility } from "../hooks";
 import { loginValidationSchema } from "../utils";
@@ -87,7 +87,10 @@ export const LoginScreen = ({ navigation }) => {
           {/* LogoContainer: consist app logo and screen title */}
           <View style={styles.logoContainer}>
             <Logo uri={Images.logo} />
-            <Text style={styles.screenTitle}>Welcome back!</Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.screenTitle}>Welcome back!</Text>
+              <AlphaBadge style={styles.alphaBadge} />
+            </View>
           </View>
           
 
@@ -187,6 +190,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.white,
     paddingHorizontal: 12,
+    position: 'relative',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  alphaBadge: {
+    marginTop: 2,
   },
   logoContainer: {
     alignItems: "center",

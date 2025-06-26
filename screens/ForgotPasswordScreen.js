@@ -4,7 +4,7 @@ import { Formik } from "formik";
 
 import { passwordResetSchema } from "../utils";
 import { Colors, auth } from "../config";
-import { View, TextInput, Button, FormErrorMessage } from "../components";
+import { View, TextInput, Button, FormErrorMessage, AlphaBadge } from "../components";
 import { sendPasswordResetEmail } from "firebase/auth";
 
 export const ForgotPasswordScreen = ({ navigation }) => {
@@ -28,6 +28,7 @@ export const ForgotPasswordScreen = ({ navigation }) => {
 
   return (
     <View isSafe style={styles.container}>
+      <AlphaBadge style={styles.alphaBadge} />
       <View style={styles.innerContainer}>
         <Text style={styles.screenTitle}>Reset your password</Text>
       </View>
@@ -85,6 +86,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.white,
     paddingHorizontal: 12,
+    position: 'relative',
+  },
+  alphaBadge: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    zIndex: 10,
   },
   innerContainer: {
     alignItems: "center",

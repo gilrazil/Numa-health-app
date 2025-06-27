@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { Text, StyleSheet, TouchableOpacity, Alert, Platform, ScrollView } from "react-native";
 import { Formik } from "formik";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -78,103 +78,114 @@ export const LoginScreen = ({ navigation }) => {
     }
   };
 
+  // Render scroll view content
+  const renderContent = () => (
+    <>
+      {/* LogoContainer: consist app logo and screen title */}
+      <View style={styles.logoContainer}>
+        <Logo uri={Images.logo} />
+        <View style={styles.titleRow}>
+          <Text style={styles.screenTitle}>Welcome back!</Text>
+          <AlphaBadge style={styles.alphaBadge} />
+        </View>
+      </View>
+      
 
+      
+      <Formik
+        initialValues={{
+          email: "",
+          password: "",
+        }}
+        validationSchema={loginValidationSchema}
+        onSubmit={(values) => handleLogin(values)}
+      >
+        {({
+          values,
+          touched,
+          errors,
+          handleChange,
+          handleSubmit,
+          handleBlur,
+        }) => (
+          <>
+            {/* Input fields */}
+            <TextInput
+              name="email"
+              leftIconName="email"
+              placeholder="Enter email"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              autoFocus={true}
+              value={values.email}
+              onChangeText={handleChange("email")}
+              onBlur={handleBlur("email")}
+            />
+            <FormErrorMessage
+              error={errors.email}
+              visible={touched.email}
+            />
+            <TextInput
+              name="password"
+              leftIconName="key-variant"
+              placeholder="Enter password"
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry={passwordVisibility}
+              textContentType="password"
+              rightIcon={rightIcon}
+              handlePasswordVisibility={handlePasswordVisibility}
+              value={values.password}
+              onChangeText={handleChange("password")}
+              onBlur={handleBlur("password")}
+            />
+            <FormErrorMessage
+              error={errors.password}
+              visible={touched.password}
+            />
+            {/* Display Screen Error Messages */}
+            {errorState !== "" ? (
+              <FormErrorMessage error={errorState} visible={true} />
+            ) : null}
+            {/* Login button */}
+            <Button style={styles.button} onPress={handleSubmit} disabled={isLoading}>
+              <Text style={styles.buttonText}>
+                {isLoading ? "Logging in..." : "Login"}
+              </Text>
+            </Button>
+          </>
+        )}
+      </Formik>
+      
+      {/* Button to navigate to SignupScreen to create a new account */}
+      <Button
+        style={styles.borderlessButtonContainer}
+        borderless
+        title={"New user? Get started"}
+        onPress={() => navigation.navigate("Welcome")}
+      />
+      <Button
+        style={styles.borderlessButtonContainer}
+        borderless
+        title={"Forgot Password"}
+        onPress={() => navigation.navigate("ForgotPassword")}
+      />
+    </>
+  );
   
   return (
     <>
       <View isSafe style={styles.container}>
-        <KeyboardAwareScrollView enableOnAndroid={true}>
-          {/* LogoContainer: consist app logo and screen title */}
-          <View style={styles.logoContainer}>
-            <Logo uri={Images.logo} />
-            <View style={styles.titleRow}>
-              <Text style={styles.screenTitle}>Welcome back!</Text>
-              <AlphaBadge style={styles.alphaBadge} />
-            </View>
-          </View>
-          
-
-          
-          <Formik
-            initialValues={{
-              email: "",
-              password: "",
-            }}
-            validationSchema={loginValidationSchema}
-            onSubmit={(values) => handleLogin(values)}
-          >
-            {({
-              values,
-              touched,
-              errors,
-              handleChange,
-              handleSubmit,
-              handleBlur,
-            }) => (
-              <>
-                {/* Input fields */}
-                <TextInput
-                  name="email"
-                  leftIconName="email"
-                  placeholder="Enter email"
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  textContentType="emailAddress"
-                  autoFocus={true}
-                  value={values.email}
-                  onChangeText={handleChange("email")}
-                  onBlur={handleBlur("email")}
-                />
-                <FormErrorMessage
-                  error={errors.email}
-                  visible={touched.email}
-                />
-                <TextInput
-                  name="password"
-                  leftIconName="key-variant"
-                  placeholder="Enter password"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  secureTextEntry={passwordVisibility}
-                  textContentType="password"
-                  rightIcon={rightIcon}
-                  handlePasswordVisibility={handlePasswordVisibility}
-                  value={values.password}
-                  onChangeText={handleChange("password")}
-                  onBlur={handleBlur("password")}
-                />
-                <FormErrorMessage
-                  error={errors.password}
-                  visible={touched.password}
-                />
-                {/* Display Screen Error Messages */}
-                {errorState !== "" ? (
-                  <FormErrorMessage error={errorState} visible={true} />
-                ) : null}
-                {/* Login button */}
-                <Button style={styles.button} onPress={handleSubmit} disabled={isLoading}>
-                  <Text style={styles.buttonText}>
-                    {isLoading ? "Logging in..." : "Login"}
-                  </Text>
-                </Button>
-              </>
-            )}
-          </Formik>
-          
-          {/* Button to navigate to SignupScreen to create a new account */}
-          <Button
-            style={styles.borderlessButtonContainer}
-            borderless
-            title={"New user? Get started"}
-            onPress={() => navigation.navigate("Welcome")}
-          />
-          <Button
-            style={styles.borderlessButtonContainer}
-            borderless
-            title={"Forgot Password"}
-            onPress={() => navigation.navigate("ForgotPassword")}
-          />
-        </KeyboardAwareScrollView>
+        {Platform.OS === 'ios' ? (
+          <KeyboardAwareScrollView enableOnAndroid={true}>
+            {renderContent()}
+          </KeyboardAwareScrollView>
+        ) : (
+          <ScrollView keyboardShouldPersistTaps="handled">
+            {renderContent()}
+          </ScrollView>
+        )}
       </View>
 
       {/* App info footer */}

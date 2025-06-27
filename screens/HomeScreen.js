@@ -12,19 +12,49 @@ export const HomeScreen = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
+  const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     // Listen for auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
+    const unsubscribe = onAuthStateChanged(
+      auth, 
+      (user) => {
+        if (!isMounted) return;
+        
+        setUser(user);
+        setAuthError(null);
+        
+        if (user) {
+          loadUserData(user);
+        } else {
+          setLoading(false);
+        }
+      },
+      (error) => {
+        console.error('Auth state change error in HomeScreen:', error);
+        if (isMounted) {
+          setAuthError('Authentication error occurred');
+          setLoading(false);
+        }
+      }
+    );
 
     // Cleanup subscription
-    return unsubscribe;
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const loadUserData = async (currentUser) => {
+    if (!currentUser?.uid) {
+      console.log('⚠️ No valid user provided to loadUserData');
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       setIsOffline(false);
@@ -34,17 +64,25 @@ export const HomeScreen = ({ navigation }) => {
       
       if (userDoc.exists()) {
         const data = userDoc.data();
-        setUserData(data);
-        console.log('✅ User data loaded for HomeScreen:', { 
-          email: data.email,
-          profileCompleted: data.profileCompleted,
-          hasEssentialFields: !!(data.gender && data.age && data.height && data.weight && data.goal)
-        });
+        // Validate data before setting state
+        if (data && typeof data === 'object') {
+          setUserData(data);
+          console.log('✅ User data loaded for HomeScreen:', { 
+            email: data.email,
+            profileCompleted: data.profileCompleted,
+            hasEssentialFields: !!(data.gender && data.age && data.height && data.weight && data.goal)
+          });
+        } else {
+          console.log('⚠️ Invalid user data received');
+          setUserData(null);
+        }
       } else {
         console.log('⚠️ No user document found - this should not happen if RootNavigator is working correctly');
+        setUserData(null);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
+      setIsOffline(true);
       Alert.alert('Error', 'Failed to load user data');
     } finally {
       setLoading(false);
@@ -62,7 +100,9 @@ export const HomeScreen = ({ navigation }) => {
   };
 
   const handleRetry = () => {
-    loadUserData(user);
+    if (user) {
+      loadUserData(user);
+    }
   };
 
   const handleStartTracking = () => {
@@ -70,6 +110,8 @@ export const HomeScreen = ({ navigation }) => {
   };
 
   const isProfileIncomplete = () => {
+    if (!userData || typeof userData !== 'object') return false;
+    
     return userData?.gender === 'Not set' || 
            userData?.age === 'Not set' || 
            userData?.height === 'Not set' || 
@@ -77,11 +119,37 @@ export const HomeScreen = ({ navigation }) => {
            userData?.goal === 'Not set';
   };
 
+  // Show error state for auth errors
+  if (authError) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <MaterialCommunityIcons name="alert-circle" size={48} color={Colors.red} />
+        <Text style={styles.errorText}>Authentication Error</Text>
+        <Text style={styles.errorSubtext}>{authError}</Text>
+        <Button onPress={() => setAuthError(null)} style={styles.retryButton}>
+          <Text>Retry</Text>
+        </Button>
+      </View>
+    );
+  }
+
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-                  <ActivityIndicator size="large" color={Colors.primary} />
+        <ActivityIndicator size="large" color={Colors.primary} />
         <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  // Safety check for user
+  if (!user?.email) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.errorText}>No user session found</Text>
+        <Button onPress={handleSignOut} style={styles.retryButton}>
+          <Text>Sign Out</Text>
+        </Button>
       </View>
     );
   }
@@ -97,11 +165,9 @@ export const HomeScreen = ({ navigation }) => {
             </Text>
             <AlphaBadge style={styles.alphaBadgeHeader} />
           </View>
-          {user && (
-            <Text style={styles.userText}>
-              Hello, {user.email?.split('@')[0] || 'User'}! 👋
-            </Text>
-          )}
+          <Text style={styles.userText}>
+            Hello, {user.email?.split('@')[0] || 'User'}! 👋
+          </Text>
         </View>
       </View>
 
@@ -171,6 +237,25 @@ const styles = StyleSheet.create({
   centerContent: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.red,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: Colors.mediumGray,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
   },
   header: {
     paddingTop: 20,

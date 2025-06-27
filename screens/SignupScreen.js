@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Text, StyleSheet, Alert } from "react-native";
+import { Text, StyleSheet, Alert, Platform, ScrollView } from "react-native";
 import { Formik } from "formik";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
@@ -81,114 +81,123 @@ export const SignupScreen = ({ navigation, route }) => {
     }
   };
 
-
+  // Render scroll view content
+  const renderContent = () => (
+    <>
+      {/* LogoContainer: consist app logo and screen title */}
+      <View style={styles.logoContainer}>
+        <Logo uri={Images.logo} />
+        <Text style={styles.screenTitle}>Create your account</Text>
+        <Text style={styles.subtitle}>
+          Last step! Set up your login details
+        </Text>
+      </View>
+      {/* Formik Wrapper */}
+      <Formik
+        initialValues={{
+          email: "",
+          password: "",
+          confirmPassword: "",
+        }}
+        validationSchema={signupValidationSchema}
+        onSubmit={(values) => handleOnSignUp(values)}
+      >
+        {({
+          values,
+          touched,
+          errors,
+          handleChange,
+          handleSubmit,
+          handleBlur,
+          actions,
+        }) => (
+          <>
+            {/* Input fields */}
+            <TextInput
+              name="email"
+              leftIconName="email"
+              placeholder="Enter email"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              autoFocus={true}
+              value={values.email}
+              onChangeText={handleChange("email")}
+              onBlur={handleBlur("email")}
+            />
+            <FormErrorMessage error={errors.email} visible={touched.email} />
+            <TextInput
+              name="password"
+              leftIconName="key-variant"
+              placeholder="Enter password"
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry={passwordVisibility}
+              textContentType="newPassword"
+              rightIcon={rightIcon}
+              handlePasswordVisibility={handlePasswordVisibility}
+              value={values.password}
+              onChangeText={handleChange("password")}
+              onBlur={handleBlur("password")}
+            />
+            <FormErrorMessage
+              error={errors.password}
+              visible={touched.password}
+            />
+            <TextInput
+              name="confirmPassword"
+              leftIconName="key-variant"
+              placeholder="Confirm password"
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry={confirmPasswordVisibility}
+              textContentType="password"
+              rightIcon={confirmPasswordIcon}
+              handlePasswordVisibility={handleConfirmPasswordVisibility}
+              value={values.confirmPassword}
+              onChangeText={handleChange("confirmPassword")}
+              onBlur={handleBlur("confirmPassword")}
+            />
+            <FormErrorMessage
+              error={errors.confirmPassword}
+              visible={touched.confirmPassword}
+            />
+            {/* Display Screen Error Messages */}
+            {errorState !== "" ? (
+              <FormErrorMessage error={errorState} visible={true} />
+            ) : null}
+            {/* Signup button */}
+            <Button style={styles.button} onPress={handleSubmit} disabled={isLoading}>
+              <Text style={styles.buttonText}>
+                {isLoading ? "Creating Account..." : "Create Account"}
+              </Text>
+            </Button>
+          </>
+        )}
+      </Formik>
+      
+      {/* Button to navigate to Login screen */}
+      <Button
+        style={styles.borderlessButtonContainer}
+        borderless
+        title={"Already have an account?"}
+        onPress={() => navigation.navigate("Login")}
+      />
+    </>
+  );
 
   return (
     <View isSafe style={styles.container}>
       <AlphaBadge style={styles.alphaBadge} />
-      <KeyboardAwareScrollView enableOnAndroid={true}>
-        {/* LogoContainer: consist app logo and screen title */}
-        <View style={styles.logoContainer}>
-          <Logo uri={Images.logo} />
-          <Text style={styles.screenTitle}>Create your account</Text>
-          <Text style={styles.subtitle}>
-            Last step! Set up your login details
-          </Text>
-        </View>
-        {/* Formik Wrapper */}
-        <Formik
-          initialValues={{
-            email: "",
-            password: "",
-            confirmPassword: "",
-          }}
-          validationSchema={signupValidationSchema}
-          onSubmit={(values) => handleOnSignUp(values)}
-        >
-          {({
-            values,
-            touched,
-            errors,
-            handleChange,
-            handleSubmit,
-            handleBlur,
-            actions,
-          }) => (
-            <>
-              {/* Input fields */}
-              <TextInput
-                name="email"
-                leftIconName="email"
-                placeholder="Enter email"
-                autoCapitalize="none"
-                keyboardType="email-address"
-                textContentType="emailAddress"
-                autoFocus={true}
-                value={values.email}
-                onChangeText={handleChange("email")}
-                onBlur={handleBlur("email")}
-              />
-              <FormErrorMessage error={errors.email} visible={touched.email} />
-              <TextInput
-                name="password"
-                leftIconName="key-variant"
-                placeholder="Enter password"
-                autoCapitalize="none"
-                autoCorrect={false}
-                secureTextEntry={passwordVisibility}
-                textContentType="newPassword"
-                rightIcon={rightIcon}
-                handlePasswordVisibility={handlePasswordVisibility}
-                value={values.password}
-                onChangeText={handleChange("password")}
-                onBlur={handleBlur("password")}
-              />
-              <FormErrorMessage
-                error={errors.password}
-                visible={touched.password}
-              />
-              <TextInput
-                name="confirmPassword"
-                leftIconName="key-variant"
-                placeholder="Confirm password"
-                autoCapitalize="none"
-                autoCorrect={false}
-                secureTextEntry={confirmPasswordVisibility}
-                textContentType="password"
-                rightIcon={confirmPasswordIcon}
-                handlePasswordVisibility={handleConfirmPasswordVisibility}
-                value={values.confirmPassword}
-                onChangeText={handleChange("confirmPassword")}
-                onBlur={handleBlur("confirmPassword")}
-              />
-              <FormErrorMessage
-                error={errors.confirmPassword}
-                visible={touched.confirmPassword}
-              />
-              {/* Display Screen Error Messages */}
-              {errorState !== "" ? (
-                <FormErrorMessage error={errorState} visible={true} />
-              ) : null}
-              {/* Signup button */}
-              <Button style={styles.button} onPress={handleSubmit} disabled={isLoading}>
-                <Text style={styles.buttonText}>
-                  {isLoading ? "Creating Account..." : "Create Account"}
-                </Text>
-              </Button>
-            </>
-          )}
-        </Formik>
-        
-        {/* Button to navigate to Login screen */}
-        <Button
-          style={styles.borderlessButtonContainer}
-          borderless
-          title={"Already have an account?"}
-          onPress={() => navigation.navigate("Login")}
-        />
-      </KeyboardAwareScrollView>
-
-
+      {Platform.OS === 'ios' ? (
+        <KeyboardAwareScrollView enableOnAndroid={true}>
+          {renderContent()}
+        </KeyboardAwareScrollView>
+      ) : (
+        <ScrollView keyboardShouldPersistTaps="handled">
+          {renderContent()}
+        </ScrollView>
+      )}
     </View>
   );
 };

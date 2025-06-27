@@ -13,40 +13,75 @@ export const RootNavigator = () => {
   const { user, setUser } = useContext(AuthenticatedUserContext);
   const [isLoading, setIsLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
+  const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
+    let isMounted = true; // Track if component is still mounted
+    
     // onAuthStateChanged returns an unsubscriber
     const unsubscribeAuthStateChanged = onAuthStateChanged(auth,
       async (authenticatedUser) => {
-        setUser(authenticatedUser);
-        
-        if (authenticatedUser) {
-          // Check user profile completion status
-          await checkUserProfile(authenticatedUser);
-        } else {
-          setUserProfile(null);
+        try {
+          if (!isMounted) return; // Prevent state updates on unmounted component
+          
+          setUser(authenticatedUser);
+          setAuthError(null); // Clear any previous errors
+          
+          if (authenticatedUser) {
+            // Check user profile completion status
+            await checkUserProfile(authenticatedUser);
+          } else {
+            if (isMounted) {
+              setUserProfile(null);
+              setIsLoading(false);
+            }
+          }
+        } catch (error) {
+          console.error('Auth state change error:', error);
+          if (isMounted) {
+            setAuthError('Authentication error occurred');
+            setIsLoading(false);
+          }
+        }
+      },
+      (error) => {
+        // Handle auth errors
+        console.error('Firebase auth error:', error);
+        if (isMounted) {
+          setAuthError('Firebase authentication failed');
           setIsLoading(false);
         }
       }
     );
 
-    // unsubscribe auth listener on unmount
-    return unsubscribeAuthStateChanged;
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      unsubscribeAuthStateChanged();
+    };
   }, []);
 
   const checkUserProfile = async (user) => {
+    if (!user) return;
+    
     try {
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
       
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        setUserProfile(userData);
-        
-        console.log('🔍 Profile check:', { 
-          profileCompleted: userData.profileCompleted,
-          hasEssentialFields: !!(userData.gender && userData.age && userData.height && userData.weight && userData.goal)
-        });
+        // Ensure userData is valid before setting
+        if (userData && typeof userData === 'object') {
+          setUserProfile(userData);
+          
+          console.log('🔍 Profile check:', { 
+            profileCompleted: userData.profileCompleted,
+            hasEssentialFields: !!(userData.gender && userData.age && userData.height && userData.weight && userData.goal)
+          });
+        } else {
+          console.log('⚠️ Invalid user data received');
+          setUserProfile(null);
+        }
       } else {
         console.log('👤 New user - no profile document');
         setUserProfile(null);
@@ -67,6 +102,12 @@ export const RootNavigator = () => {
     if (!userProfile) {
       console.log('👤 No profile document - showing onboarding');
       return true; // New user, no profile document
+    }
+    
+    // Additional safety checks for userProfile
+    if (typeof userProfile !== 'object') {
+      console.log('⚠️ Invalid userProfile type');
+      return true;
     }
     
     // Check if profile is complete
@@ -93,6 +134,15 @@ export const RootNavigator = () => {
     
     return shouldShowOnboard;
   };
+
+  // Show error state if auth failed
+  if (authError) {
+    return (
+      <NavigationContainer>
+        <AuthStack />
+      </NavigationContainer>
+    );
+  }
 
   if (isLoading) {
     return <LoadingIndicator />;

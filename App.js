@@ -83,32 +83,72 @@ const App = () => {
     };
   }, []);
 
-  // Cache clearing on first launch
+  // Safe cache clearing on first launch
   const clearCacheOnFirstLaunch = async () => {
     try {
       setInitializationProgress('Checking cache status...');
       
       const hasClearedCache = await AsyncStorage.getItem('hasClearedCache');
-      
-      if (!hasClearedCache && FileSystem.cacheDirectory) {
-        console.log('🧹 First launch detected, clearing Expo cache...');
-        setInitializationProgress('Clearing cache...');
-        
-        // Clear cache directory
-        await FileSystem.deleteAsync(FileSystem.cacheDirectory, { 
-          idempotent: true 
-        });
-        
-        // Mark as cleared to prevent future clears
-        await AsyncStorage.setItem('hasClearedCache', 'true');
-        
-        console.log('✅ Cache cleared successfully on first launch');
-      } else {
-        console.log('ℹ️ Cache clearing skipped (not first launch or no cache directory)');
+      if (hasClearedCache) {
+        console.log('ℹ️ Cache clearing skipped (already cleared)');
+        return;
       }
+
+      if (!FileSystem.cacheDirectory) {
+        console.log('ℹ️ Cache clearing skipped (no cache directory available)');
+        return;
+      }
+
+      console.log('🧹 First launch detected, safely clearing Expo cache...');
+      setInitializationProgress('Clearing cache safely...');
+      
+      // Target specific cache subdirectories safely
+      const safeCachePaths = [
+        `${FileSystem.cacheDirectory}ImageManipulator`,
+        `${FileSystem.cacheDirectory}CachedImages`,
+        `${FileSystem.cacheDirectory}Camera`,
+        `${FileSystem.cacheDirectory}ExpoImagePicker`,
+        `${FileSystem.cacheDirectory}ExpoFileSystem`,
+        `${FileSystem.cacheDirectory}RNImagePicker`,
+      ];
+
+      let clearedCount = 0;
+      let skippedCount = 0;
+
+      for (const path of safeCachePaths) {
+        try {
+          // Check if directory exists before attempting deletion
+          const dirInfo = await FileSystem.getInfoAsync(path);
+          if (dirInfo.exists) {
+            await FileSystem.deleteAsync(path, { idempotent: true });
+            clearedCount++;
+            if (__DEV__) {
+              console.log(`🗑️ Cleared cache path: ${path}`);
+            }
+          } else {
+            skippedCount++;
+          }
+        } catch (pathError) {
+          skippedCount++;
+          if (__DEV__) {
+            console.warn(`⚠️ Could not clear cache path ${path}:`, pathError.message);
+          }
+        }
+      }
+      
+      // Mark as cleared to prevent future clears
+      await AsyncStorage.setItem('hasClearedCache', 'true');
+      
+      console.log(`✅ Cache cleared safely: ${clearedCount} cleared, ${skippedCount} skipped`);
     } catch (error) {
-      console.error('⚠️ Cache clearing failed (non-fatal):', error);
-      // Non-fatal error, continue with app initialization
+      console.warn('⚠️ Cache clearing failed (non-fatal):', error.message);
+      
+      // Still mark as attempted to prevent repeated failures
+      try {
+        await AsyncStorage.setItem('hasClearedCache', 'true');
+      } catch (storageError) {
+        console.warn('⚠️ Could not save cache clearing status:', storageError.message);
+      }
     }
   };
 

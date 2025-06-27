@@ -16,7 +16,9 @@ export default {
     },
     updates: {
       url: "https://u.expo.dev/f8a7c205-a5a5-4ac0-b6e9-a084d95662fa",
-      fallbackToCacheTimeout: 0
+      fallbackToCacheTimeout: 0,
+      checkAutomatically: "ON_ERROR_RECOVERY",
+      enabled: false // Disable updates to prevent cache conflicts
     },
     runtimeVersion: {
       policy: "appVersion"
@@ -29,11 +31,14 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.numahealth.app",
-      buildNumber: "2",
+      buildNumber: "3",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "This app uses the camera to let you take photos of your meals for tracking.",
-        NSPhotoLibraryUsageDescription: "This app accesses your photo library to let you select meal photos."
+        NSPhotoLibraryUsageDescription: "This app accesses your photo library to let you select meal photos.",
+        // Prevent cache-related crashes
+        UIFileSharingEnabled: false,
+        LSSupportsOpeningDocumentsInPlace: false
       }
     },
     android: {
@@ -53,5 +58,9 @@ export default {
         projectId: "f8a7c205-a5a5-4ac0-b6e9-a084d95662fa"
       }
     },
+    jsEngine: "hermes",
+    packagerOpts: {
+      config: "metro.config.js"
+    }
   },
 };

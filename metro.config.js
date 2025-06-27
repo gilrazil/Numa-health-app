@@ -3,6 +3,34 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
+// Prevent cache corruption issues
+config.resetCache = true;
+config.cacheStores = [];
+
+// Enhanced transformer options for stability
+config.transformer = {
+  ...config.transformer,
+  minifierConfig: {
+    keep_classnames: true,
+    keep_fnames: true,
+    mangle: {
+      keep_classnames: true,
+      keep_fnames: true,
+    },
+  },
+  // Disable experimental features that might cause crashes
+  experimentalImportSupport: false,
+  unstable_allowRequireContext: false,
+};
+
+// Resolver configuration for stability
+config.resolver = {
+  ...config.resolver,
+  // Disable symlinks to prevent path resolution issues
+  resolverMainFields: ['react-native', 'browser', 'main'],
+  platforms: ['ios', 'android', 'native', 'web'],
+};
+
 // Fix for "Component auth has not been registered yet" error
 config.resolver.sourceExts.push('cjs');
 config.resolver.unstable_enablePackageExports = false;

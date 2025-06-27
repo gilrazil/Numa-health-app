@@ -134,3 +134,301 @@ Apple TestFlight build 1.0.0 was experiencing SIGABRT (abort trap 6) crashes due
 ---
 *Applied on: $(date)*  
 *Branch: fix/apple-crash* 
+
+# CRASH FIXES APPLIED TO NUMA HEALTH APP
+
+## Executive Summary
+This document details comprehensive fixes applied to resolve SIGABRT crashes in Apple TestFlight builds affecting app startup and user experience.
+
+## Crash Analysis Timeline
+
+### Initial Problem (Build 1.0.0 - Build 1)
+- **Issue**: SIGABRT (abort trap 6) crashes during app startup
+- **Root Cause**: React Native → Objective-C bridging failures
+- **Stack Trace**: `__exceptionPreprocess` → `objc_exception_throw` → `-[NSException _isUnarchived]`
+
+### Secondary Problem (Build 1.0.0 - Build 2)
+- **Issue**: Expo framework-level crashes before React Native initialization
+- **Root Cause**: `ErrorRecovery.tryRelaunchFromCache()` failures
+- **Stack Trace**: `StartupProcedure.throwException()` → `ErrorRecovery.crash()`
+
+## Applied Fixes by Build
+
+### Build 1.0.0 (2) - React Native Level Fixes
+
+#### 1. RootNavigator.js - Enhanced Auth State Management
+```javascript
+// Added mount tracking and comprehensive error handling
+let isMounted = true;
+const unsubscribeAuthStateChanged = onAuthStateChanged(auth,
+  async (authenticatedUser) => {
+    try {
+      if (!isMounted) return; // Prevent updates on unmounted components
+      // Enhanced null safety and validation
+    } catch (error) {
+      console.error('Auth state change error:', error);
+      setAuthError('Authentication error occurred');
+    }
+  }
+);
+```
+
+#### 2. LoginScreen.js & SignupScreen.js - iOS KeyboardAwareScrollView Fix
+```javascript
+// Platform-specific keyboard handling
+{Platform.OS === 'ios' ? (
+  <KeyboardAwareScrollView
+    keyboardShouldPersistTaps="handled"
+    contentContainerStyle={styles.container}
+  >
+    {renderContent()}
+  </KeyboardAwareScrollView>
+) : (
+  <ScrollView contentContainerStyle={styles.container}>
+    {renderContent()}
+  </ScrollView>
+)}
+```
+
+#### 3. HomeScreen.js - Robust Error Handling
+```javascript
+// Added mount tracking and safe user access
+let isMounted = true;
+const unsubscribeAuthStateChanged = onAuthStateChanged(auth, (user) => {
+  if (!isMounted) return;
+  if (user && user.email) { // Safe property access
+    setUser(user);
+  }
+});
+```
+
+#### 4. AuthenticatedUserProvider.js - Context Safety
+```javascript
+// Enhanced context with default values
+const AuthenticatedUserContext = createContext({
+  user: null,
+  setUser: () => {}, // Safe default function
+});
+```
+
+### Build 1.0.0 (3) - Expo Framework Level Fixes
+
+#### 1. App.js - Global Error Protection
+```javascript
+// Global error handler with retry limits
+let reloadAttempts = 0;
+const MAX_RELOAD_ATTEMPTS = 2;
+
+ErrorUtils.setGlobalHandler((error, isFatal) => {
+  if (isFatal && reloadAttempts < MAX_RELOAD_ATTEMPTS) {
+    reloadAttempts++;
+    Updates.reloadAsync();
+  } else {
+    setAppError(error); // Show error UI
+  }
+});
+```
+
+#### 2. app.config.js - Cache Control
+```javascript
+"updates": {
+  "fallbackToCacheTimeout": 0, // Force fresh updates
+  "checkAutomatically": "ON_ERROR_RECOVERY",
+  "enabled": false // Disable updates to prevent cache conflicts
+}
+```
+
+#### 3. metro.config.js - Bundle Stability
+```javascript
+module.exports = {
+  resetCache: true, // Prevent cache corruption
+  transformer: {
+    minifierConfig: {
+      keep_classnames: true,
+      keep_fnames: true,
+    },
+  },
+};
+```
+
+### Build 1.0.0 (3) - Additional Hardening Measures ✅
+
+#### 4. App.js - Enhanced Startup Protection
+```javascript
+// Cache clearing on first launch
+const clearCacheOnFirstLaunch = async () => {
+  const hasClearedCache = await AsyncStorage.getItem('hasClearedCache');
+  if (!hasClearedCache && FileSystem.cacheDirectory) {
+    await FileSystem.deleteAsync(FileSystem.cacheDirectory, { idempotent: true });
+    await AsyncStorage.setItem('hasClearedCache', 'true');
+  }
+};
+
+// Retry limit enforcement
+if (reloadAttempts < MAX_RELOAD_ATTEMPTS) {
+  reloadAttempts++;
+  Updates.reloadAsync();
+} else {
+  setAppError(new Error('Maximum retry attempts reached'));
+}
+
+// Progressive initialization with status tracking
+setInitializationProgress('Initializing app...');
+await clearCacheOnFirstLaunch();
+setInitializationProgress('Loading native modules...');
+await new Promise(resolve => setTimeout(resolve, 200));
+setInitializationProgress('Ready!');
+```
+
+#### 5. RootNavigator.js - Comprehensive Safety
+```javascript
+// Enhanced initialization with service validation
+const initializeNavigation = async () => {
+  if (!auth || !db) {
+    throw new Error('Firebase services not initialized');
+  }
+  
+  // Enhanced auth state handling with validation
+  if (authenticatedUser && typeof authenticatedUser === 'object') {
+    await checkUserProfileSafely(authenticatedUser);
+  }
+};
+
+// Try/catch protection for all major functions
+const shouldShowOnboarding = () => {
+  try {
+    // Enhanced validation logic
+    const hasEssentialFields = Boolean(
+      userProfile.gender && 
+      userProfile.age && 
+      userProfile.height && 
+      userProfile.weight && 
+      userProfile.goal
+    );
+    return !userProfile.profileCompleted || !hasEssentialFields;
+  } catch (error) {
+    return true; // Default to onboarding on error
+  }
+};
+```
+
+## Technical Implementation Details
+
+### Error Recovery Strategy
+1. **Global Error Handler**: Catches all unhandled exceptions
+2. **Retry Mechanism**: Limited to 2 attempts to prevent infinite loops
+3. **Cache Management**: Automatic clearing on first launch
+4. **Fallback UI**: User-friendly error screens with retry options
+
+### State Management Safety
+1. **Mount Tracking**: Prevents state updates on unmounted components
+2. **Null Safety**: Comprehensive validation of user/auth objects
+3. **Error Boundaries**: Graceful handling of component failures
+4. **Default Values**: Safe fallbacks for all context providers
+
+### Platform-Specific Considerations
+1. **iOS KeyboardAwareScrollView**: Platform-conditional rendering
+2. **Expo Updates**: Controlled reload attempts with iOS detection
+3. **Cache Control**: iOS-specific plist configurations
+4. **Bundle Stability**: Metro config optimizations for iOS builds
+
+## Build Management
+
+### Version History
+- **Build 1**: Initial version with SIGABRT crashes
+- **Build 2**: React Native level fixes applied
+- **Build 3**: Expo framework fixes + additional hardening ✅
+
+### Build Number Management
+```javascript
+// app.config.js
+ios: {
+  buildNumber: "3", // Incremented for each fix iteration
+}
+```
+
+## Crash Prevention Checklist ✅
+
+### React Native Level
+- [x] Mount tracking in all auth-related components
+- [x] Null safety checks for user objects
+- [x] Error boundaries for component failures
+- [x] Platform-specific keyboard handling
+- [x] Safe context provider defaults
+
+### Expo Framework Level
+- [x] Global error handler implementation
+- [x] Retry limit enforcement (max 2 attempts)
+- [x] Cache control and clearing on first launch
+- [x] Bundle stability configurations
+- [x] Fallback UI for startup errors
+
+### Additional Hardening ✅
+- [x] FileSystem cache clearing on first launch
+- [x] Progressive initialization with status tracking
+- [x] Service validation before initialization
+- [x] Enhanced retry logic with manual restart option
+- [x] Comprehensive try/catch wrapping of all init logic
+
+## Git Management
+
+### Branch Strategy
+- **Branch**: `fix/apple-crash`
+- **Commits**: Comprehensive commit messages documenting each fix
+- **Status**: All changes committed and pushed to GitHub
+
+### Commit History
+1. Initial React Native fixes (Build 2)
+2. Expo framework fixes (Build 3)
+3. Additional hardening measures (Build 3 enhanced) ✅
+
+## Testing Strategy
+
+### Pre-Release Testing
+1. **Development Testing**: All fixes tested in Expo Go
+2. **Build Testing**: EAS build process validated
+3. **Crash Simulation**: Error conditions tested manually
+
+### Production Validation
+1. **TestFlight Submission**: Build 1.0.0 (3) ready for submission
+2. **Crash Monitoring**: Enhanced logging for post-release analysis
+3. **User Experience**: Graceful error handling and recovery
+
+## Next Steps
+
+1. **Build Submission**: Run `eas build --platform ios --profile production`
+2. **TestFlight Upload**: Submit Build 1.0.0 (3) for testing
+3. **User Testing**: Monitor crash reports from TestFlight users
+4. **Iterative Improvement**: Apply additional fixes if needed
+
+## Key Success Metrics
+
+### Crash Reduction
+- **Target**: 90%+ reduction in startup crashes
+- **Measurement**: TestFlight crash reports analysis
+- **Timeline**: 7-14 days post-release monitoring
+
+### User Experience
+- **Graceful Degradation**: Users see helpful error messages instead of crashes
+- **Recovery Options**: Multiple retry mechanisms available
+- **Feedback Loop**: Enhanced logging for debugging future issues
+
+---
+
+## Technical Notes
+
+### Dependencies Added
+```json
+{
+  "expo-file-system": "^17.0.1", // For cache management
+  "@react-native-async-storage/async-storage": "^1.19.3" // For first launch tracking
+}
+```
+
+### Key Configuration Changes
+- `fallbackToCacheTimeout: 0` - Prevents stale cache issues
+- `resetCache: true` - Ensures fresh Metro bundles
+- `enabled: false` - Disables Expo updates in production
+- Build number incremented to 3 for new TestFlight submission
+
+This comprehensive fix addresses both immediate crash issues and implements long-term stability improvements for the Numa Health App on iOS devices. 

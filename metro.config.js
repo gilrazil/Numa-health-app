@@ -18,9 +18,9 @@ config.transformer = {
       keep_fnames: true,
     },
   },
-  // Disable experimental features that might cause crashes
+  // Enable require.context to prevent runtime crashes
   experimentalImportSupport: false,
-  unstable_allowRequireContext: false,
+  unstable_allowRequireContext: true,
 };
 
 // Resolver configuration for stability

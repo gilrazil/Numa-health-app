@@ -148,7 +148,7 @@ export const MealCameraScreen = ({ navigation }) => {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: [ImagePicker.MediaType.IMAGES],
         allowsEditing: false,
         quality: 0.8,
         exif: false,
@@ -182,7 +182,7 @@ export const MealCameraScreen = ({ navigation }) => {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: [ImagePicker.MediaType.IMAGES],
         allowsEditing: false,
         quality: 0.8,
         exif: false,

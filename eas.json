@@ -9,7 +9,11 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "developmentClient": true,
+      "ios": {
+        "buildConfiguration": "Debug"
+      }
     },
     "simulator": {
       "ios": {

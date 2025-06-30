@@ -7,6 +7,9 @@ import { FormErrorMessage } from './FormErrorMessage';
 import { LoadingIndicator } from './LoadingIndicator';
 import { BiometricSetupModal } from './BiometricSetupModal';
 import { AlphaBadge } from './AlphaBadge';
+import { ErrorBoundary } from './ErrorBoundary';
+import { NavigationErrorFallback } from './NavigationErrorFallback';
+import { ProductionSafeFallback } from './ProductionSafeFallback';
 
 export {
   View,
@@ -17,5 +20,8 @@ export {
   FormErrorMessage,
   LoadingIndicator,
   BiometricSetupModal,
-  AlphaBadge
+  AlphaBadge,
+  ErrorBoundary,
+  NavigationErrorFallback,
+  ProductionSafeFallback
 };

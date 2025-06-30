@@ -1,4 +1,5 @@
 // Firebase compatibility fixes for Expo SDK 53
+console.log("🧠 Using metro.config.js - Config is being loaded!");
 const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
@@ -22,6 +23,12 @@ config.transformer = {
   experimentalImportSupport: false,
   unstable_allowRequireContext: true,
 };
+
+console.log("🔧 Metro Config Applied:");
+console.log("  - unstable_allowRequireContext:", config.transformer.unstable_allowRequireContext);
+console.log("  - experimentalImportSupport:", config.transformer.experimentalImportSupport);
+console.log("  - resetCache:", config.resetCache);
+console.log("  - unstable_enablePackageExports:", config.resolver.unstable_enablePackageExports);
 
 // Resolver configuration for stability
 config.resolver = {

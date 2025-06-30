@@ -9,14 +9,28 @@ export default function LogMealScreen() {
   const [uploading, setUploading] = useState(false);
 
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: [ImagePicker.MediaType.IMAGES],
-      allowsEditing: true,
-      quality: 0.7,
-    });
+    try {
+      // Check if ImagePicker is available
+      if (!ImagePicker || !ImagePicker.launchImageLibraryAsync) {
+        console.error("❌ ImagePicker is not available.");
+        Alert.alert("Gallery Error", "Image picker is not available.");
+        return;
+      }
 
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      console.log("[📸 LogMeal] Launching gallery...");
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: [ImagePicker.MediaTypeOptions.Images],
+        allowsEditing: true,
+        quality: 0.7,
+      });
+
+      console.log("[📸 LogMeal] Result:", result);
+      if (!result.canceled) {
+        setImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert("Gallery Error", "Failed to pick image. Please try again.");
     }
   };
 

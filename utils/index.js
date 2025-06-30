@@ -19,3 +19,33 @@ export const passwordResetSchema = Yup.object().shape({
     .label('Email')
     .email('Enter a valid email')
 });
+
+// Export error tracking utilities
+export { 
+  setupGlobalErrorTracking, 
+  logComponentError, 
+  logNetworkError, 
+  logNavigationError 
+} from './setupErrorTracking';
+
+// Export debug utilities
+export { 
+  logInitializationStep, 
+  logComponentLifecycle, 
+  logNavigationState, 
+  logFirebaseConnection, 
+  logPerformanceMetric, 
+  logMemoryUsage 
+} from './debugInitialization';
+
+// Export test utilities (for development/testing)
+export { 
+  TestErrorComponent, 
+  ErrorBoundaryTester 
+} from './testErrorBoundary';
+
+// Export production check utilities
+export { 
+  runProductionChecks, 
+  checkHermesIssues 
+} from './productionChecks';

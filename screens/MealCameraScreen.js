@@ -21,6 +21,9 @@ import { Button, LoadingIndicator, AlphaBadge } from '../components';
 import { collection, addDoc, doc, getDoc, query, where, orderBy, limit, getDocs, deleteDoc } from 'firebase/firestore';
 
 export const MealCameraScreen = ({ navigation }) => {
+  console.log("[CAMERA] 🚀 MealCameraScreen component called");
+  console.log("[CAMERA] 🔧 __DEV__ flag:", __DEV__);
+  console.log("[CAMERA] 🔧 NODE_ENV:", process.env.NODE_ENV);
 
   const [uploading, setUploading] = useState(false);
   const [meals, setMeals] = useState([]);
@@ -30,13 +33,31 @@ export const MealCameraScreen = ({ navigation }) => {
   const [error, setError] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [mealsLoading, setMealsLoading] = useState(true);
+  const [developmentMode, setDevelopmentMode] = useState(__DEV__ || process.env.NODE_ENV === 'development');
 
   useEffect(() => {
-    requestPermissions();
-    fetchMeals();
-    checkUserProfile();
-    // Clean up old meals periodically
-    cleanupOldMeals();
+    console.log("[CAMERA] ⚡ MealCameraScreen useEffect triggered");
+    console.log("[CAMERA] 🔧 Development mode:", developmentMode);
+    
+    // Wrap everything in try-catch to prevent crashes
+    try {
+      if (developmentMode) {
+        console.log("[CAMERA] 🛠️ Running in development mode - using safe initialization");
+        // Safe initialization for development
+        safeInitialization();
+      } else {
+        // Production initialization
+        requestPermissions();
+        fetchMeals();
+        checkUserProfile();
+        cleanupOldMeals();
+      }
+    } catch (error) {
+      console.error("[CAMERA] 🔥 Error in useEffect:", error);
+      console.error("[CAMERA] 🔥 Error stack:", error.stack);
+      setError(`Initialization error: ${error.message}`);
+      setLoading(false);
+    }
 
     // Add focus listener to clear error and refresh meals when returning to this screen
     const unsubscribe = navigation.addListener('focus', () => {
@@ -48,8 +69,50 @@ export const MealCameraScreen = ({ navigation }) => {
     return unsubscribe;
   }, [navigation]);
 
-  const requestPermissions = async () => {
+  // Safe initialization for development mode
+  const safeInitialization = async () => {
+    console.log("[CAMERA] 🛠️ safeInitialization called");
     try {
+      setLoading(true);
+      
+      // Skip camera permissions in development mode
+      console.log("[CAMERA] ⚠️ Skipping camera permissions in development mode");
+      setPermissionStatus({
+        camera: 'dev-mode',
+        mediaLibrary: 'dev-mode'
+      });
+      
+      // Still try to fetch meals and user profile
+      console.log("[CAMERA] 📊 Fetching data in development mode");
+      await fetchMeals();
+      await checkUserProfile();
+      
+      console.log("[CAMERA] ✅ Safe initialization completed");
+    } catch (error) {
+      console.error("[CAMERA] 🔥 Error in safe initialization:", error);
+      setError(`Safe initialization failed: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const requestPermissions = async () => {
+    console.log("[CAMERA] 🔐 requestPermissions called");
+    console.log("[CAMERA] 🔧 Development mode status:", developmentMode);
+    
+    // Skip permission requests in development mode
+    if (developmentMode) {
+      console.log("[CAMERA] 🛠️ Skipping permission requests in development mode");
+      setPermissionStatus({
+        camera: 'dev-mode',
+        mediaLibrary: 'dev-mode'
+      });
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      console.log("[CAMERA] 🔐 Starting camera permission requests");
       setLoading(true);
       // Request camera permissions
       const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
@@ -141,20 +204,46 @@ export const MealCameraScreen = ({ navigation }) => {
 
   const takePhoto = async () => {
     try {
+      console.log("[CAMERA] 📸 takePhoto called");
       setError(null);
+      
+      // Development mode - show mock behavior
+      if (developmentMode) {
+        console.log("[CAMERA] 🛠️ Development mode - showing mock camera behavior");
+        Alert.alert(
+          "Development Mode",
+          "Camera is disabled in development mode to prevent crashes. In production, this would open the camera.",
+          [
+            { text: "OK", style: "default" },
+            { text: "Enable Camera", onPress: () => setDevelopmentMode(false) }
+          ]
+        );
+        return;
+      }
+      
+      // Check if ImagePicker is available
+      if (!ImagePicker || !ImagePicker.launchCameraAsync) {
+        console.error("[CAMERA] ❌ ImagePicker is not available.");
+        Alert.alert("Camera Error", "Image picker is not available.");
+        return;
+      }
+      
       if (permissionStatus?.camera !== 'granted') {
+        console.log("[CAMERA] ⚠️ Camera permission not granted, requesting permissions");
         await requestPermissions();
         return;
       }
 
+      console.log("[📸 Camera] Launching camera...");
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: [ImagePicker.MediaType.IMAGES],
+        mediaTypes: [ImagePicker.MediaTypeOptions.Images],
         allowsEditing: false,
         quality: 0.8,
         exif: false,
         presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
       });
 
+      console.log("[📸 Camera] Result:", result);
       if (!result.canceled && result.assets[0]) {
         // Directly navigate to meal analysis after taking photo
         await navigateToMealAnalysis(result.assets[0]);
@@ -175,19 +264,45 @@ export const MealCameraScreen = ({ navigation }) => {
 
   const pickFromGallery = async () => {
     try {
+      console.log("[CAMERA] 🖼️ pickFromGallery called");
       setError(null);
+      
+      // Development mode - show mock behavior
+      if (developmentMode) {
+        console.log("[CAMERA] 🛠️ Development mode - showing mock gallery behavior");
+        Alert.alert(
+          "Development Mode",
+          "Gallery access is disabled in development mode to prevent crashes. In production, this would open the photo gallery.",
+          [
+            { text: "OK", style: "default" },
+            { text: "Enable Gallery", onPress: () => setDevelopmentMode(false) }
+          ]
+        );
+        return;
+      }
+      
+      // Check if ImagePicker is available
+      if (!ImagePicker || !ImagePicker.launchImageLibraryAsync) {
+        console.error("[CAMERA] ❌ ImagePicker is not available.");
+        Alert.alert("Gallery Error", "Image picker is not available.");
+        return;
+      }
+      
       if (permissionStatus?.mediaLibrary !== 'granted') {
+        console.log("[CAMERA] ⚠️ Media library permission not granted, requesting permissions");
         await requestPermissions();
         return;
       }
 
+      console.log("[📸 Gallery] Launching gallery...");
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: [ImagePicker.MediaType.IMAGES],
+        mediaTypes: [ImagePicker.MediaTypeOptions.Images],
         allowsEditing: false,
         quality: 0.8,
         exif: false,
       });
 
+      console.log("[📸 Gallery] Result:", result);
       if (!result.canceled && result.assets[0]) {
         // Directly navigate to meal analysis after picking from gallery
         await navigateToMealAnalysis(result.assets[0]);
@@ -563,11 +678,32 @@ export const MealCameraScreen = ({ navigation }) => {
           </View>
         )}
 
+        {/* Development Mode Warning */}
+        {developmentMode && (
+          <View style={styles.devModeWarning}>
+            <MaterialCommunityIcons name="dev-to" size={24} color="#FF6B35" />
+            <Text style={styles.devModeTitle}>Development Mode</Text>
+            <Text style={styles.devModeText}>
+              Camera is disabled in Expo Go to prevent crashes. Use dev client or TestFlight for full camera functionality.
+            </Text>
+            <TouchableOpacity
+              style={styles.enableCameraButton}
+              onPress={() => setDevelopmentMode(false)}
+            >
+              <Text style={styles.enableCameraText}>Force Enable Camera (may crash)</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.cameraContainer}>
           <View style={styles.cameraPlaceholder}>
             <MaterialCommunityIcons name="camera" size={80} color={Colors.lightGrey} />
             <Text style={styles.cameraText}>Take a photo of your meal</Text>
-            {permissionStatus?.camera !== 'granted' && (
+            {developmentMode ? (
+              <Text style={styles.devModeStatusText}>
+                🛠️ Camera disabled in development mode
+              </Text>
+            ) : permissionStatus?.camera !== 'granted' && (
               <Text style={styles.permissionText}>
                 Camera permission is required
               </Text>
@@ -576,9 +712,9 @@ export const MealCameraScreen = ({ navigation }) => {
           
           <View style={styles.cameraActions}>
             <TouchableOpacity 
-              style={[styles.cameraButton, (permissionStatus?.camera !== 'granted' || uploading) && styles.disabledButton]} 
+              style={[styles.cameraButton, (developmentMode || permissionStatus?.camera !== 'granted' || uploading) && styles.disabledButton]} 
               onPress={takePhoto}
-              disabled={permissionStatus?.camera !== 'granted' || uploading}
+              disabled={developmentMode || permissionStatus?.camera !== 'granted' || uploading}
             >
               {uploading ? (
                 <ActivityIndicator color="#fff" size="small" />
@@ -591,9 +727,9 @@ export const MealCameraScreen = ({ navigation }) => {
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[styles.galleryButton, (permissionStatus?.mediaLibrary !== 'granted' || uploading) && styles.disabledButton]} 
+              style={[styles.galleryButton, (developmentMode || permissionStatus?.mediaLibrary !== 'granted' || uploading) && styles.disabledButton]} 
               onPress={pickFromGallery}
-              disabled={permissionStatus?.mediaLibrary !== 'granted' || uploading}
+              disabled={developmentMode || permissionStatus?.mediaLibrary !== 'granted' || uploading}
             >
               <MaterialCommunityIcons name="image" size={30} color="#6B4EFF" />
               <Text style={styles.galleryButtonText}>Choose from Gallery</Text>
@@ -676,6 +812,70 @@ const styles = StyleSheet.create({
     color: Colors.darkgrey,
     marginTop: 10,
     textAlign: 'center',
+  },
+  devModeStatusText: {
+    fontSize: 14,
+    color: '#FF6B35',
+    marginTop: 8,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  permissionText: {
+    fontSize: 14,
+    color: Colors.error || '#FF4444',
+    marginTop: 8,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  devModeWarning: {
+    backgroundColor: '#FFF4F0',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FF6B35',
+    alignItems: 'center',
+  },
+  devModeTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FF6B35',
+    marginTop: 8,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  devModeText: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  enableCameraButton: {
+    backgroundColor: '#FF6B35',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  enableCameraText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  errorContainer: {
+    backgroundColor: '#FFEBEE',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#D32F2F',
+    flex: 1,
+    lineHeight: 20,
   },
   cameraActions: {
     gap: 15,

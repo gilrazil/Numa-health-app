@@ -31,7 +31,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.numahealth.app",
-      buildNumber: "3",
+      buildNumber: "8",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "This app uses the camera to let you take photos of your meals for tracking.",
@@ -58,7 +58,7 @@ export default {
         projectId: "f8a7c205-a5a5-4ac0-b6e9-a084d95662fa"
       }
     },
-    jsEngine: "hermes",
+    jsEngine: "jsc", // Disabled Hermes temporarily to test for white screen issue
     packagerOpts: {
       config: "metro.config.js"
     }

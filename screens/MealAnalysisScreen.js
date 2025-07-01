@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-import { log, logError, logWarn } from '../utils/logger';
   StyleSheet,
   Text,
   View,
@@ -23,6 +22,7 @@ import TextEditingService from '../services/TextEditingService';
 import { Ionicons } from '@expo/vector-icons';
 import * as MediaLibrary from 'expo-media-library';
 import { AlphaBadge } from '../components';
+import { log, logError, logWarn } from '../utils/logger';
 
 const { width } = Dimensions.get('window');
 

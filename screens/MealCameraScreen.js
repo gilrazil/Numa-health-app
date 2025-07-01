@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-import { log, logError, logWarn } from '../utils/logger';
   StyleSheet,
   Text,
   View,
@@ -20,6 +19,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, auth, db, storage } from '../config';
 import { Button, LoadingIndicator, AlphaBadge } from '../components';
 import { collection, addDoc, doc, getDoc, query, where, orderBy, limit, getDocs, deleteDoc } from 'firebase/firestore';
+import { log, logError, logWarn } from '../utils/logger';
 
 export const MealCameraScreen = ({ navigation }) => {
   log("[CAMERA] 🚀 MealCameraScreen component called");

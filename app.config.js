@@ -31,7 +31,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.numahealth.app",
-      buildNumber: "10",
+      buildNumber: "11",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "This app uses the camera to let you take photos of your meals for tracking.",
@@ -43,7 +43,7 @@ export default {
     },
     android: {
       package: "com.numahealth.app",
-      versionCode: 10,
+      versionCode: 11,
       adaptiveIcon: {
         foregroundImage: "./assets/numa-logo.png",
         backgroundColor: "#6B4EFF"

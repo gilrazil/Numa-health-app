@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+import { log, logError, logWarn } from '../utils/logger';
   StyleSheet,
   Text,
   View,
@@ -71,14 +72,14 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
       // Prevent default behavior of leaving the screen
       e.preventDefault();
 
-      console.log('🚨 Preventing navigation to save meal first...');
+      log('🚨 Preventing navigation to save meal first...');
 
       // Save meal and then navigate
       ensureMealSaved('beforeRemove').then(() => {
-        console.log('✅ Meal saved, now navigating...');
+        log('✅ Meal saved, now navigating...');
         navigation.dispatch(e.data.action);
       }).catch((error) => {
-        console.error('❌ Failed to save meal:', error);
+        logError('❌ Failed to save meal:', error);
         // Even if save fails, allow navigation
         navigation.dispatch(e.data.action);
       });
@@ -100,9 +101,9 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
     return () => {
       // This will run when component is unmounted
       if (analysis && !mealSaved && !isHistorical) {
-        console.log('🔄 Component unmounting, attempting to save meal...');
+        log('🔄 Component unmounting, attempting to save meal...');
         saveMealToHistory(analysis).catch(error => {
-          console.error('Failed to save meal during cleanup:', error);
+          logError('Failed to save meal during cleanup:', error);
         });
       }
     };
@@ -150,7 +151,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
     try {
       setLoading(true);
       setError(null);
-      console.log('🚀 Starting meal analysis - calling simulateProgress');
+      log('🚀 Starting meal analysis - calling simulateProgress');
       simulateProgress();
       
       // Get user's daily intake (you can implement this later)
@@ -174,12 +175,12 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
       
       // Always auto-save analysis to Firestore (unless it's historical)
       if (!isHistorical) {
-        console.log('📊 Analysis complete, auto-saving meal...');
+        log('📊 Analysis complete, auto-saving meal...');
         await saveMealToHistory(result);
       }
       
     } catch (error) {
-      console.error('שגיאה בניתוח ארוחה:', error);
+      logError('שגיאה בניתוח ארוחה:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -209,10 +210,10 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
           'state_changed',
           (snapshot) => {
             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log('Upload progress:', progress);
+            log('Upload progress:', progress);
           },
           (error) => {
-            console.error('Upload error:', error);
+            logError('Upload error:', error);
             reject(error);
           },
           async () => {
@@ -226,7 +227,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
         );
       });
     } catch (error) {
-      console.error('Error uploading to Firebase:', error);
+      logError('Error uploading to Firebase:', error);
       throw error;
     }
   };
@@ -234,7 +235,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
   const saveMealToHistory = async (analysisData) => {
     // Prevent duplicate saves
     if (mealSaved || saving) {
-      console.log('🚫 Skipping save - already saved or saving in progress', { mealSaved, saving });
+      log('🚫 Skipping save - already saved or saving in progress', { mealSaved, saving });
       return;
     }
 
@@ -249,7 +250,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
         createdAt: new Date()
       };
 
-      console.log('💾 Saving meal to history:', {
+      log('💾 Saving meal to history:', {
         userId: mealData.userId,
         hasImageUrl: !!mealData.imageUrl,
         imageUrl: mealData.imageUrl?.substring(0, 50) + '...',
@@ -258,12 +259,12 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
       });
 
       const docRef = await addDoc(collection(db, 'meals'), mealData);
-      console.log('✅ Meal automatically saved to history with ID:', docRef.id);
+      log('✅ Meal automatically saved to history with ID:', docRef.id);
       setMealSaved(true);
       
     } catch (error) {
-      console.error('❌ Error auto-saving meal:', error);
-      console.error('Error details:', error.message);
+      logError('❌ Error auto-saving meal:', error);
+      logError('Error details:', error.message);
       // Don't show alert for auto-save failures, just log
     } finally {
       setSaving(false);
@@ -295,7 +296,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
         ]
       );
     } catch (error) {
-      console.error('Error saving meal:', error);
+      logError('Error saving meal:', error);
       Alert.alert('Error', 'Failed to save meal. Please try again.');
     } finally {
       setSaving(false);
@@ -348,7 +349,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
       setShowEditModal(true);
       setEditText('');
     } catch (error) {
-      console.error('שגיאה בהתחלת עריכה טקסטית:', error);
+      logError('שגיאה בהתחלת עריכה טקסטית:', error);
       Alert.alert('שגיאה', 'לא הצלחתי להתחיל העריכה.');
     }
   };
@@ -380,7 +381,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
         Alert.alert('שגיאה', 'לא הצלחתי להבין את הפקודה. נסה שוב.');
       }
     } catch (error) {
-      console.error('שגיאה בסיום עריכה טקסטית:', error);
+      logError('שגיאה בסיום עריכה טקסטית:', error);
       Alert.alert('שגיאה', 'לא הצלחתי לעבד את העריכה.');
     } finally {
       setEditLoading(false);
@@ -396,7 +397,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
   // Ensure meal is saved before navigation
   const ensureMealSaved = async (caller = 'unknown') => {
     if (analysis && !mealSaved && !isHistorical) {
-      console.log(`📝 [${caller}] Ensuring meal is saved before navigation...`, {
+      log(`📝 [${caller}] Ensuring meal is saved before navigation...`, {
         hasAnalysis: !!analysis,
         mealSaved,
         isHistorical,
@@ -404,7 +405,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
       });
       await saveMealToHistory(analysis);
     } else {
-      console.log(`📝 [${caller}] Skipping save - meal already saved or historical`, {
+      log(`📝 [${caller}] Skipping save - meal already saved or historical`, {
         hasAnalysis: !!analysis,
         mealSaved,
         isHistorical
@@ -414,13 +415,13 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
 
   // Handle back navigation - let beforeRemove listener handle saving
   const handleGoBack = () => {
-    console.log('🔙 Back button pressed - letting beforeRemove handle saving');
+    log('🔙 Back button pressed - letting beforeRemove handle saving');
     navigation.goBack();
   };
 
   // Handle camera navigation - let beforeRemove listener handle saving  
   const handleGoToCamera = () => {
-    console.log('📷 Camera button pressed - letting beforeRemove handle saving');
+    log('📷 Camera button pressed - letting beforeRemove handle saving');
     navigation.navigate('MealCamera');
   };
 
@@ -461,7 +462,7 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
           break;
 
         default:
-          console.warn('פעולה לא מוכרת:', command.action);
+          logWarn('פעולה לא מוכרת:', command.action);
           return;
       }
 
@@ -479,13 +480,13 @@ export const MealAnalysisScreen = ({ navigation, route }) => {
       saveMealToHistory(updatedAnalysis);
       
     } catch (error) {
-      console.error('שגיאה ביישום פקודה טקסטית:', error);
+      logError('שגיאה ביישום פקודה טקסטית:', error);
       Alert.alert('שגיאה', 'לא הצלחתי ליישם את העריכה.');
     }
   };
 
   if (loading) {
-    console.log('🔄 LOADING SCREEN - New version with progress bar', { imageUri });
+    log('🔄 LOADING SCREEN - New version with progress bar', { imageUri });
     return (
       <SafeAreaView style={styles.container}>
         <AlphaBadge style={styles.alphaBadge} />

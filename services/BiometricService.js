@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 
 const BIOMETRIC_ENABLED_KEY = 'biometric_enabled';
 const USER_CREDENTIALS_KEY = 'user_credentials';
+import { log, logError, logWarn } from '../utils/logger';
 
 export class BiometricService {
   // Check if biometric authentication is available on the device
@@ -19,7 +20,7 @@ export class BiometricService {
         supportedTypes
       };
     } catch (error) {
-      console.error('Error checking biometric availability:', error);
+      logError('Error checking biometric availability:', error);
       return { isAvailable: false, hasHardware: false, isEnrolled: false, supportedTypes: [] };
     }
   }
@@ -39,7 +40,7 @@ export class BiometricService {
       
       return 'Biometric';
     } catch (error) {
-      console.error('Error getting biometric type:', error);
+      logError('Error getting biometric type:', error);
       return 'Biometric';
     }
   }
@@ -56,7 +57,7 @@ export class BiometricService {
 
       return result;
     } catch (error) {
-      console.error('Biometric authentication error:', error);
+      logError('Biometric authentication error:', error);
       return { success: false, error: error.message };
     }
   }
@@ -67,7 +68,7 @@ export class BiometricService {
       const enabled = await SecureStore.getItemAsync(BIOMETRIC_ENABLED_KEY);
       return enabled === 'true';
     } catch (error) {
-      console.error('Error checking biometric enabled status:', error);
+      logError('Error checking biometric enabled status:', error);
       return false;
     }
   }
@@ -84,7 +85,7 @@ export class BiometricService {
       
       return true;
     } catch (error) {
-      console.error('Error enabling biometric login:', error);
+      logError('Error enabling biometric login:', error);
       return false;
     }
   }
@@ -96,7 +97,7 @@ export class BiometricService {
       await SecureStore.deleteItemAsync(BIOMETRIC_ENABLED_KEY);
       return true;
     } catch (error) {
-      console.error('Error disabling biometric login:', error);
+      logError('Error disabling biometric login:', error);
       return false;
     }
   }
@@ -110,7 +111,7 @@ export class BiometricService {
       }
       return null;
     } catch (error) {
-      console.error('Error getting stored credentials:', error);
+      logError('Error getting stored credentials:', error);
       return null;
     }
   }
@@ -130,7 +131,7 @@ export class BiometricService {
         return { success: false, error: authResult.error };
       }
     } catch (error) {
-      console.error('Biometric login error:', error);
+      logError('Biometric login error:', error);
       return { success: false, error: error.message };
     }
   }

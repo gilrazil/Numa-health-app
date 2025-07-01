@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TextInput, KeyboardAvoidingView, Platform, Scro
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../config';
 import { Button, AlphaBadge } from '../components';
+import { log, logError, logWarn } from '../utils/logger';
 
 export const AgeHeightWeightScreen = ({ navigation, route }) => {
   const { gender } = route.params || {};
@@ -28,10 +29,10 @@ export const AgeHeightWeightScreen = ({ navigation, route }) => {
         preferredUnit: isMetric ? 'metric' : 'us'
       };
       
-      console.log('=== AGE/HEIGHT/WEIGHT SCREEN DEBUG ===');
-      console.log('Gender received:', gender);
-      console.log('Form values - Age:', age, 'Height:', height, 'Weight:', weight);
-      console.log('Data to pass to Goal screen:', JSON.stringify(dataToPass, null, 2));
+      log('=== AGE/HEIGHT/WEIGHT SCREEN DEBUG ===');
+      log('Gender received:', gender);
+      log('Form values - Age:', age, 'Height:', height, 'Weight:', weight);
+      log('Data to pass to Goal screen:', JSON.stringify(dataToPass, null, 2));
       
       navigation.navigate('Goal', dataToPass);
     }

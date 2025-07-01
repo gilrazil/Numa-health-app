@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const FIRST_LAUNCH_KEY = 'has_launched_before';
 const ONBOARDING_COMPLETED_KEY = 'onboarding_completed';
+import { log, logError, logWarn } from '../utils/logger';
 
 export class FirstLaunchService {
   // Check if this is the user's first time opening the app
@@ -10,7 +11,7 @@ export class FirstLaunchService {
       const hasLaunchedBefore = await AsyncStorage.getItem(FIRST_LAUNCH_KEY);
       return hasLaunchedBefore === null; // null means first launch
     } catch (error) {
-      console.error('Error checking first launch:', error);
+      logError('Error checking first launch:', error);
       return true; // Assume first launch on error
     }
   }
@@ -19,9 +20,9 @@ export class FirstLaunchService {
   static async markAsLaunched() {
     try {
       await AsyncStorage.setItem(FIRST_LAUNCH_KEY, 'true');
-      console.log('📱 App marked as launched before');
+      log('📱 App marked as launched before');
     } catch (error) {
-      console.error('Error marking app as launched:', error);
+      logError('Error marking app as launched:', error);
     }
   }
 
@@ -31,7 +32,7 @@ export class FirstLaunchService {
       const completed = await AsyncStorage.getItem(ONBOARDING_COMPLETED_KEY);
       return completed === 'true';
     } catch (error) {
-      console.error('Error checking onboarding completion:', error);
+      logError('Error checking onboarding completion:', error);
       return false;
     }
   }
@@ -40,9 +41,9 @@ export class FirstLaunchService {
   static async markOnboardingCompleted() {
     try {
       await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
-      console.log('✅ Onboarding marked as completed');
+      log('✅ Onboarding marked as completed');
     } catch (error) {
-      console.error('Error marking onboarding as completed:', error);
+      logError('Error marking onboarding as completed:', error);
     }
   }
 
@@ -62,7 +63,7 @@ export class FirstLaunchService {
         return 'incomplete'; // User started but didn't finish onboarding
       }
     } catch (error) {
-      console.error('Error determining user experience type:', error);
+      logError('Error determining user experience type:', error);
       return 'first_time'; // Safe default
     }
   }
@@ -71,9 +72,9 @@ export class FirstLaunchService {
   static async clearAll() {
     try {
       await AsyncStorage.multiRemove([FIRST_LAUNCH_KEY, ONBOARDING_COMPLETED_KEY]);
-      console.log('🧹 Cleared all first launch data');
+      log('🧹 Cleared all first launch data');
     } catch (error) {
-      console.error('Error clearing first launch data:', error);
+      logError('Error clearing first launch data:', error);
     }
   }
 } 

@@ -3,6 +3,7 @@ import { OPENAI_CONFIG } from '../config/openai';
 
 // Initialize OpenAI client with proper configuration for project-based keys
 const openai = new OpenAI({
+import { log, logError, logWarn } from '../utils/logger';
   apiKey: OPENAI_CONFIG.apiKey,
   organization: 'org-FBKodskYRfF1sfDEocfEMPT4',
   project: 'proj_Arnb03Z4mKByZ3jTb5asqLVw',
@@ -16,9 +17,9 @@ export class MealAnalysisService {
   
   // בדיקה אם מפתח API מוגדר
   static checkApiKey() {
-    console.log('🔑 Checking API key...');
-    console.log('🔑 API key length:', OPENAI_CONFIG.apiKey?.length);
-    console.log('🔑 API key starts with:', OPENAI_CONFIG.apiKey?.substring(0, 10));
+    log('🔑 Checking API key...');
+    log('🔑 API key length:', OPENAI_CONFIG.apiKey?.length);
+    log('🔑 API key starts with:', OPENAI_CONFIG.apiKey?.substring(0, 10));
     
     if (!OPENAI_CONFIG.apiKey || 
         OPENAI_CONFIG.apiKey === 'YOUR_OPENAI_API_KEY_HERE' ||
@@ -104,15 +105,15 @@ export class MealAnalysisService {
   static async identifyIngredientsAndQuantities(imageUri) {
     try {
       this.checkApiKey();
-      console.log('🔍 מזהה מרכיבים בתמונה...');
-      console.log('📷 Image URI:', imageUri);
+      log('🔍 מזהה מרכיבים בתמונה...');
+      log('📷 Image URI:', imageUri);
       
       // Convert image to base64 for OpenAI Vision API
-      console.log('🔄 Converting image to base64...');
+      log('🔄 Converting image to base64...');
       const base64Image = await this.convertImageToBase64(imageUri);
-      console.log('✅ Base64 conversion complete, length:', base64Image.length);
+      log('✅ Base64 conversion complete, length:', base64Image.length);
       
-      console.log('🌐 Making OpenAI API call...');
+      log('🌐 Making OpenAI API call...');
       const response = await openai.chat.completions.create({
         model: "gpt-4o",  // Use the latest model that supports vision
         messages: [
@@ -152,8 +153,8 @@ export class MealAnalysisService {
         temperature: 0.1  // Lower temperature for more consistent JSON output
       });
 
-      console.log('✅ OpenAI API response received');
-      console.log('📝 Raw response content:', response.choices[0].message.content);
+      log('✅ OpenAI API response received');
+      log('📝 Raw response content:', response.choices[0].message.content);
       
       // Clean the response content to ensure it's valid JSON
       let responseContent = response.choices[0].message.content.trim();
@@ -165,26 +166,26 @@ export class MealAnalysisService {
         responseContent = responseContent.replace(/```\n?/, '').replace(/\n?```$/, '');
       }
       
-      console.log('🧹 Cleaned response content:', responseContent);
+      log('🧹 Cleaned response content:', responseContent);
       
       let analysisResult;
       try {
         analysisResult = JSON.parse(responseContent);
       } catch (jsonError) {
-        console.error('❌ JSON Parse Error:', jsonError);
-        console.error('❌ Failed to parse content:', responseContent);
+        logError('❌ JSON Parse Error:', jsonError);
+        logError('❌ Failed to parse content:', responseContent);
         
         // If JSON parsing fails, return mock data
-        console.log('🔄 Using mock data due to JSON parse error');
+        log('🔄 Using mock data due to JSON parse error');
         return this.getMockAnalysis().ingredients;
       }
       
-      console.log('✅ זיהוי מרכיבים הושלם:', analysisResult);
+      log('✅ זיהוי מרכיבים הושלם:', analysisResult);
       
       return analysisResult;
     } catch (error) {
-      console.error('❌ שגיאה בזיהוי מרכיבים:', error);
-      console.error('❌ Error details:', {
+      logError('❌ שגיאה בזיהוי מרכיבים:', error);
+      logError('❌ Error details:', {
         message: error.message,
         status: error.status,
         code: error.code,
@@ -194,7 +195,7 @@ export class MealAnalysisService {
       
       // אם זה שגיאת quota, החזר נתונים מדומים
       if (error.message.includes('429') || error.message.includes('quota') || error.status === 429) {
-        console.log('🔄 משתמש בנתונים מדומים בגלל מכסת API');
+        log('🔄 משתמש בנתונים מדומים בגלל מכסת API');
         return this.getMockAnalysis().ingredients;
       }
       
@@ -209,7 +210,7 @@ export class MealAnalysisService {
   static async calculateNutritionalValues(ingredients) {
     try {
       this.checkApiKey();
-      console.log('🧮 מחשב ערכים תזונתיים...');
+      log('🧮 מחשב ערכים תזונתיים...');
       
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -248,8 +249,8 @@ export class MealAnalysisService {
         temperature: 0.1
       });
 
-      console.log('✅ Nutrition API response received');
-      console.log('📝 Raw nutrition response:', response.choices[0].message.content);
+      log('✅ Nutrition API response received');
+      log('📝 Raw nutrition response:', response.choices[0].message.content);
       
       // Clean the response content
       let responseContent = response.choices[0].message.content.trim();
@@ -263,20 +264,20 @@ export class MealAnalysisService {
       try {
         nutritionData = JSON.parse(responseContent);
       } catch (jsonError) {
-        console.error('❌ Nutrition JSON Parse Error:', jsonError);
-        console.log('🔄 Using mock nutrition data due to JSON parse error');
+        logError('❌ Nutrition JSON Parse Error:', jsonError);
+        log('🔄 Using mock nutrition data due to JSON parse error');
         return this.getMockAnalysis().nutrition;
       }
       
-      console.log('✅ חישוב תזונתי הושלם:', nutritionData);
+      log('✅ חישוב תזונתי הושלם:', nutritionData);
       
       return nutritionData;
     } catch (error) {
-      console.error('❌ שגיאה בחישוב תזונתי:', error);
+      logError('❌ שגיאה בחישוב תזונתי:', error);
       
       // אם זה שגיאת quota, החזר נתונים מדומים
       if (error.message.includes('429') || error.message.includes('quota')) {
-        console.log('🔄 משתמש בנתונים מדומים בגלל מכסת API');
+        log('🔄 משתמש בנתונים מדומים בגלל מכסת API');
         return this.getMockAnalysis().nutrition;
       }
       
@@ -288,7 +289,7 @@ export class MealAnalysisService {
   static async calculateGoalAlignment(nutritionData, userProfile, dailyIntake = []) {
     try {
       this.checkApiKey();
-      console.log('🎯 מחשב התאמה למטרה...');
+      log('🎯 מחשב התאמה למטרה...');
       
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -330,8 +331,8 @@ export class MealAnalysisService {
         temperature: 0.1
       });
 
-      console.log('✅ Alignment API response received');
-      console.log('📝 Raw alignment response:', response.choices[0].message.content);
+      log('✅ Alignment API response received');
+      log('📝 Raw alignment response:', response.choices[0].message.content);
       
       // Clean the response content
       let responseContent = response.choices[0].message.content.trim();
@@ -345,20 +346,20 @@ export class MealAnalysisService {
       try {
         alignmentData = JSON.parse(responseContent);
       } catch (jsonError) {
-        console.error('❌ Alignment JSON Parse Error:', jsonError);
-        console.log('🔄 Using mock alignment data due to JSON parse error');
+        logError('❌ Alignment JSON Parse Error:', jsonError);
+        log('🔄 Using mock alignment data due to JSON parse error');
         return this.getMockAnalysis().alignment;
       }
       
-      console.log('✅ חישוב התאמה הושלם:', alignmentData);
+      log('✅ חישוב התאמה הושלם:', alignmentData);
       
       return alignmentData;
     } catch (error) {
-      console.error('❌ שגיאה בחישוב התאמה:', error);
+      logError('❌ שגיאה בחישוב התאמה:', error);
       
       // אם זה שגיאת quota, החזר נתונים מדומים
       if (error.message.includes('429') || error.message.includes('quota')) {
-        console.log('🔄 משתמש בנתונים מדומים בגלל מכסת API');
+        log('🔄 משתמש בנתונים מדומים בגלל מכסת API');
         return this.getMockAnalysis().alignment;
       }
       
@@ -370,7 +371,7 @@ export class MealAnalysisService {
   static async generatePersonalizedTip(nutritionData, alignmentData, userProfile) {
     try {
       this.checkApiKey();
-      console.log('💡 יוצר טיפ מותאם...');
+      log('💡 יוצר טיפ מותאם...');
       
       const tipPrompt = `
         בהתבסס על הניתוח הבא, תן טיפ קצר ומעשי למשתמש:
@@ -405,15 +406,15 @@ export class MealAnalysisService {
       });
 
       const tip = response.choices[0].message.content.trim();
-      console.log('✅ טיפ נוצר:', tip);
+      log('✅ טיפ נוצר:', tip);
       
       return tip;
     } catch (error) {
-      console.error('❌ שגיאה ביצירת טיפ:', error);
+      logError('❌ שגיאה ביצירת טיפ:', error);
       
       // אם זה שגיאת quota, החזר נתונים מדומים
       if (error.message.includes('429') || error.message.includes('quota')) {
-        console.log('🔄 משתמש בטיפ מדומה בגלל מכסת API');
+        log('🔄 משתמש בטיפ מדומה בגלל מכסת API');
         return this.getMockAnalysis().tip;
       }
       
@@ -424,7 +425,7 @@ export class MealAnalysisService {
   // פונקציה מרכזת שמפעילה את כל השלבים
   static async analyzeMealComplete(imageUri, userProfile, dailyIntake = []) {
     try {
-      console.log('🚀 מתחיל ניתוח מלא של הארוחה...');
+      log('🚀 מתחיל ניתוח מלא של הארוחה...');
       
       // שלב 1: זיהוי מרכיבים
       const ingredients = await this.identifyIngredientsAndQuantities(imageUri);
@@ -446,16 +447,16 @@ export class MealAnalysisService {
         timestamp: new Date().toISOString()
       };
       
-      console.log('🎉 ניתוח מלא הושלם בהצלחה!');
+      log('🎉 ניתוח מלא הושלם בהצלחה!');
       return completeAnalysis;
       
     } catch (error) {
-      console.error('❌ שגיאה בניתוח מלא:', error);
+      logError('❌ שגיאה בניתוח מלא:', error);
       
       // אם זה שגיאת quota, החזר ניתוח מדומה מלא
       if (error.message.includes('429') || error.message.includes('quota') || 
           error.message.includes('לא ניתן לנתח את התמונה כרגע')) {
-        console.log('🔄 משתמש בניתוח מדומה מלא בגלל מכסת API');
+        log('🔄 משתמש בניתוח מדומה מלא בגלל מכסת API');
         return this.getMockAnalysis();
       }
       
@@ -466,39 +467,39 @@ export class MealAnalysisService {
   // פונקציית עזר להמרת תמונה ל-base64
   static async convertImageToBase64(imageUri) {
     try {
-      console.log('🔄 Starting image conversion for URI:', imageUri);
+      log('🔄 Starting image conversion for URI:', imageUri);
       
       const response = await fetch(imageUri);
-      console.log('📥 Fetch response status:', response.status);
+      log('📥 Fetch response status:', response.status);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
       }
       
       const blob = await response.blob();
-      console.log('📦 Blob created, size:', blob.size, 'type:', blob.type);
+      log('📦 Blob created, size:', blob.size, 'type:', blob.type);
       
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
           try {
             const base64 = reader.result.split(',')[1];
-            console.log('✅ Base64 conversion successful, length:', base64.length);
+            log('✅ Base64 conversion successful, length:', base64.length);
             resolve(base64);
           } catch (err) {
-            console.error('❌ Error splitting base64:', err);
+            logError('❌ Error splitting base64:', err);
             reject(err);
           }
         };
         reader.onerror = (err) => {
-          console.error('❌ FileReader error:', err);
+          logError('❌ FileReader error:', err);
           reject(err);
         };
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.error('❌ שגיאה בהמרת תמונה:', error);
-      console.error('❌ Image conversion error details:', {
+      logError('❌ שגיאה בהמרת תמונה:', error);
+      logError('❌ Image conversion error details:', {
         message: error.message,
         stack: error.stack,
         imageUri: imageUri

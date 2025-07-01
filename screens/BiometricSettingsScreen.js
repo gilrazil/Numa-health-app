@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../config';
 import { Button } from '../components';
 import { BiometricService } from '../services/BiometricService';
+import { log, logError, logWarn } from '../utils/logger';
 
 export const BiometricSettingsScreen = ({ navigation }) => {
   const [biometricEnabled, setBiometricEnabled] = useState(false);
@@ -29,7 +30,7 @@ export const BiometricSettingsScreen = ({ navigation }) => {
       setBiometricAvailable(available.isAvailable);
       setBiometricType(typeName);
     } catch (error) {
-      console.error('Error checking biometric status:', error);
+      logError('Error checking biometric status:', error);
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +87,7 @@ export const BiometricSettingsScreen = ({ navigation }) => {
                     Alert.alert('Error', authResult.error || 'Biometric authentication failed.');
                   }
                 } catch (error) {
-                  console.error('Error enabling biometric:', error);
+                  logError('Error enabling biometric:', error);
                   Alert.alert('Error', 'Failed to enable biometric authentication.');
                 }
               }

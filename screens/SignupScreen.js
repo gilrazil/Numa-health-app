@@ -11,12 +11,13 @@ import { signupValidationSchema } from "../utils";
 import { FirstLaunchService } from "../services/FirstLaunchService";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { log, logError, logWarn } from '../utils/logger';
 
 export const SignupScreen = ({ navigation, route }) => {
   // Get user data from previous screens
   const userData = route.params || {};
   
-  console.log('🔍 SignupScreen - Received userData:', JSON.stringify(userData, null, 2));
+  log('🔍 SignupScreen - Received userData:', JSON.stringify(userData, null, 2));
   
   const [errorState, setErrorState] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -39,7 +40,7 @@ export const SignupScreen = ({ navigation, route }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const { user } = userCredential;
       
-      console.log('User created successfully:', user.uid);
+      log('User created successfully:', user.uid);
       
       // Save complete user profile data from onboarding flow
       const userDataToSave = {
@@ -56,14 +57,14 @@ export const SignupScreen = ({ navigation, route }) => {
         profileCompleted: !!(userData.gender && userData.age && userData.height && userData.weight && userData.goal)
       };
       
-      console.log('💾 SignupScreen - Data to save:', JSON.stringify(userDataToSave, null, 2));
-      console.log('✅ Profile completed will be set to:', userDataToSave.profileCompleted);
+      log('💾 SignupScreen - Data to save:', JSON.stringify(userDataToSave, null, 2));
+      log('✅ Profile completed will be set to:', userDataToSave.profileCompleted);
       
       try {
         await setDoc(doc(db, 'users', user.uid), userDataToSave);
-        console.log('Complete user profile saved to Firestore:', userDataToSave);
+        log('Complete user profile saved to Firestore:', userDataToSave);
       } catch (firestoreError) {
-        console.log('Firestore error (user still created):', firestoreError);
+        log('Firestore error (user still created):', firestoreError);
         // Still save basic data
         await setDoc(doc(db, 'users', user.uid), userDataToSave, { merge: true });
       }
@@ -72,11 +73,11 @@ export const SignupScreen = ({ navigation, route }) => {
       await FirstLaunchService.markOnboardingCompleted();
       await FirstLaunchService.markAsLaunched();
       
-      console.log('Signup and profile setup completed successfully');
+      log('Signup and profile setup completed successfully');
       
       // User will be automatically navigated to HomeScreen by the auth state change
     } catch (error) {
-      console.log('Signup error:', error.message);
+      log('Signup error:', error.message);
       actions.setFieldError('general', error.message);
     }
   };

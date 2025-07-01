@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { OPENAI_CONFIG } from '../config/openai';
+import { log, logError, logWarn } from '../utils/logger';
 
 class TextEditingService {
   constructor() {
@@ -56,7 +57,7 @@ class TextEditingService {
       return result;
 
     } catch (error) {
-      console.error('שגיאה בניתוח פקודת עריכה:', error);
+      logError('שגיאה בניתוח פקודת עריכה:', error);
       throw new Error('לא הצלחתי להבין את הפקודה');
     }
   }

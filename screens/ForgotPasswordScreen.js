@@ -6,6 +6,7 @@ import { passwordResetSchema } from "../utils";
 import { Colors, auth } from "../config";
 import { View, TextInput, Button, FormErrorMessage, AlphaBadge } from "../components";
 import { sendPasswordResetEmail } from "firebase/auth";
+import { log, logError, logWarn } from '../utils/logger';
 
 export const ForgotPasswordScreen = ({ navigation }) => {
   const [errorState, setErrorState] = useState("");
@@ -21,7 +22,7 @@ export const ForgotPasswordScreen = ({ navigation }) => {
         [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
       );
     } catch (error) {
-      console.log('Password reset error:', error.message);
+      log('Password reset error:', error.message);
       actions.setFieldError('general', error.message);
     }
   };

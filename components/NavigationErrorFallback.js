@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Updates from 'expo-updates';
 import { Colors } from '../config';
 import { logNavigationError } from '../utils/setupErrorTracking';
+import { log, logError, logWarn } from '../utils/logger';
 
 export const NavigationErrorFallback = ({ error, retry }) => {
   useEffect(() => {
@@ -14,7 +15,7 @@ export const NavigationErrorFallback = ({ error, retry }) => {
   }, [error]);
 
   const handleRetry = async () => {
-    console.log('🔄 NavigationErrorFallback: Retry requested');
+    log('🔄 NavigationErrorFallback: Retry requested');
     
     try {
       // First try the provided retry function
@@ -24,11 +25,11 @@ export const NavigationErrorFallback = ({ error, retry }) => {
       
       // If we're in a production build, also try to reload the app
       if (!__DEV__ && Updates.isEnabled) {
-        console.log('🔄 NavigationErrorFallback: Attempting app reload...');
+        log('🔄 NavigationErrorFallback: Attempting app reload...');
         await Updates.reloadAsync();
       }
     } catch (reloadError) {
-      console.error('🔥 NavigationErrorFallback: Reload failed:', reloadError);
+      logError('🔥 NavigationErrorFallback: Reload failed:', reloadError);
       // If reload fails and we have a retry function, call it
       if (retry && typeof retry === 'function') {
         retry();

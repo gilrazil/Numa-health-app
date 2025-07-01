@@ -1,20 +1,21 @@
 import { Platform } from 'react-native';
+import { log } from './logger';
 
 // Initialization debug logger
 export const logInitializationStep = (step, details = {}) => {
   const timestamp = new Date().toISOString();
   const platform = Platform.OS;
   
-  console.log(`🚀 [${timestamp}] INIT: ${step}`);
-  console.log(`📱 Platform: ${platform}`);
-  console.log(`🔧 Dev mode: ${__DEV__}`);
+  log(`🚀 [${timestamp}] INIT: ${step}`);
+  log(`📱 Platform: ${platform}`);
+  log(`🔧 Dev mode: ${__DEV__}`);
   
   if (Object.keys(details).length > 0) {
-    console.log(`📊 Details:`, details);
+    log(`📊 Details:`, details);
   }
   
   // Also log to a structured format for easier parsing
-  console.log(JSON.stringify({
+  log(JSON.stringify({
     timestamp,
     platform,
     step,
@@ -27,10 +28,10 @@ export const logInitializationStep = (step, details = {}) => {
 export const logComponentLifecycle = (componentName, action, details = {}) => {
   const timestamp = new Date().toISOString();
   
-  console.log(`🧩 [${timestamp}] ${componentName}: ${action}`);
+  log(`🧩 [${timestamp}] ${componentName}: ${action}`);
   
   if (Object.keys(details).length > 0) {
-    console.log(`📊 Details:`, details);
+    log(`📊 Details:`, details);
   }
 };
 
@@ -38,11 +39,11 @@ export const logComponentLifecycle = (componentName, action, details = {}) => {
 export const logNavigationState = (state, previousState = null) => {
   const timestamp = new Date().toISOString();
   
-  console.log(`🧭 [${timestamp}] Navigation State Change:`);
-  console.log(`📍 Current:`, state);
+  log(`🧭 [${timestamp}] Navigation State Change:`);
+  log(`📍 Current:`, state);
   
   if (previousState) {
-    console.log(`📍 Previous:`, previousState);
+    log(`📍 Previous:`, previousState);
   }
 };
 
@@ -50,10 +51,10 @@ export const logNavigationState = (state, previousState = null) => {
 export const logFirebaseConnection = (service, status, error = null) => {
   const timestamp = new Date().toISOString();
   
-  console.log(`🔥 [${timestamp}] Firebase ${service}: ${status}`);
+  log(`🔥 [${timestamp}] Firebase ${service}: ${status}`);
   
   if (error) {
-    console.log(`❌ Error:`, error);
+    log(`❌ Error:`, error);
   }
 };
 
@@ -61,7 +62,7 @@ export const logFirebaseConnection = (service, status, error = null) => {
 export const logPerformanceMetric = (metric, value, unit = 'ms') => {
   const timestamp = new Date().toISOString();
   
-  console.log(`⚡ [${timestamp}] Performance: ${metric} = ${value}${unit}`);
+  log(`⚡ [${timestamp}] Performance: ${metric} = ${value}${unit}`);
 };
 
 // Memory usage logger (if available)
@@ -70,9 +71,9 @@ export const logMemoryUsage = () => {
   
   if (performance && performance.memory) {
     const memory = performance.memory;
-    console.log(`💾 [${timestamp}] Memory Usage:`);
-    console.log(`💾 Used: ${Math.round(memory.usedJSHeapSize / 1024 / 1024)}MB`);
-    console.log(`💾 Total: ${Math.round(memory.totalJSHeapSize / 1024 / 1024)}MB`);
-    console.log(`💾 Limit: ${Math.round(memory.jsHeapSizeLimit / 1024 / 1024)}MB`);
+    log(`💾 [${timestamp}] Memory Usage:`);
+    log(`💾 Used: ${Math.round(memory.usedJSHeapSize / 1024 / 1024)}MB`);
+    log(`💾 Total: ${Math.round(memory.totalJSHeapSize / 1024 / 1024)}MB`);
+    log(`💾 Limit: ${Math.round(memory.jsHeapSizeLimit / 1024 / 1024)}MB`);
   }
 }; 

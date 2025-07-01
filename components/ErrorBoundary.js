@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Updates from 'expo-updates';
 import { Colors } from '../config';
 import { logComponentError } from '../utils/setupErrorTracking';
+import { log, logError, logWarn } from '../utils/logger';
 
 export class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -18,7 +19,7 @@ export class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     // Enhanced error logging with context
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    logError('ErrorBoundary caught an error:', error, errorInfo);
     logComponentError('ErrorBoundary', error, errorInfo);
     
     this.setState({
@@ -28,7 +29,7 @@ export class ErrorBoundary extends React.Component {
   }
 
   handleRetry = async () => {
-    console.log('🔄 ErrorBoundary: Retry requested');
+    log('🔄 ErrorBoundary: Retry requested');
     
     try {
       // First try to reset the error boundary
@@ -36,11 +37,11 @@ export class ErrorBoundary extends React.Component {
       
       // If we're in a production build, try to reload the app
       if (!__DEV__ && Updates.isEnabled) {
-        console.log('🔄 ErrorBoundary: Attempting app reload...');
+        log('🔄 ErrorBoundary: Attempting app reload...');
         await Updates.reloadAsync();
       }
     } catch (reloadError) {
-      console.error('🔥 ErrorBoundary: Reload failed:', reloadError);
+      logError('🔥 ErrorBoundary: Reload failed:', reloadError);
       // If reload fails, just reset the error boundary
       this.setState({ hasError: false, error: null, errorInfo: null });
     }

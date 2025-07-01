@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+import { log, logError, logWarn } from '../utils/logger';
   StyleSheet,
   Text,
   View,
@@ -21,9 +22,9 @@ import { Button, LoadingIndicator, AlphaBadge } from '../components';
 import { collection, addDoc, doc, getDoc, query, where, orderBy, limit, getDocs, deleteDoc } from 'firebase/firestore';
 
 export const MealCameraScreen = ({ navigation }) => {
-  console.log("[CAMERA] 🚀 MealCameraScreen component called");
-  console.log("[CAMERA] 🔧 __DEV__ flag:", __DEV__);
-  console.log("[CAMERA] 🔧 NODE_ENV:", process.env.NODE_ENV);
+  log("[CAMERA] 🚀 MealCameraScreen component called");
+  log("[CAMERA] 🔧 __DEV__ flag:", __DEV__);
+  log("[CAMERA] 🔧 NODE_ENV:", process.env.NODE_ENV);
 
   const [uploading, setUploading] = useState(false);
   const [meals, setMeals] = useState([]);
@@ -36,13 +37,13 @@ export const MealCameraScreen = ({ navigation }) => {
   const [developmentMode, setDevelopmentMode] = useState(__DEV__ || process.env.NODE_ENV === 'development');
 
   useEffect(() => {
-    console.log("[CAMERA] ⚡ MealCameraScreen useEffect triggered");
-    console.log("[CAMERA] 🔧 Development mode:", developmentMode);
+    log("[CAMERA] ⚡ MealCameraScreen useEffect triggered");
+    log("[CAMERA] 🔧 Development mode:", developmentMode);
     
     // Wrap everything in try-catch to prevent crashes
     try {
       if (developmentMode) {
-        console.log("[CAMERA] 🛠️ Running in development mode - using safe initialization");
+        log("[CAMERA] 🛠️ Running in development mode - using safe initialization");
         // Safe initialization for development
         safeInitialization();
       } else {
@@ -53,8 +54,8 @@ export const MealCameraScreen = ({ navigation }) => {
         cleanupOldMeals();
       }
     } catch (error) {
-      console.error("[CAMERA] 🔥 Error in useEffect:", error);
-      console.error("[CAMERA] 🔥 Error stack:", error.stack);
+      logError("[CAMERA] 🔥 Error in useEffect:", error);
+      logError("[CAMERA] 🔥 Error stack:", error.stack);
       setError(`Initialization error: ${error.message}`);
       setLoading(false);
     }
@@ -71,25 +72,25 @@ export const MealCameraScreen = ({ navigation }) => {
 
   // Safe initialization for development mode
   const safeInitialization = async () => {
-    console.log("[CAMERA] 🛠️ safeInitialization called");
+    log("[CAMERA] 🛠️ safeInitialization called");
     try {
       setLoading(true);
       
       // Skip camera permissions in development mode
-      console.log("[CAMERA] ⚠️ Skipping camera permissions in development mode");
+      log("[CAMERA] ⚠️ Skipping camera permissions in development mode");
       setPermissionStatus({
         camera: 'dev-mode',
         mediaLibrary: 'dev-mode'
       });
       
       // Still try to fetch meals and user profile
-      console.log("[CAMERA] 📊 Fetching data in development mode");
+      log("[CAMERA] 📊 Fetching data in development mode");
       await fetchMeals();
       await checkUserProfile();
       
-      console.log("[CAMERA] ✅ Safe initialization completed");
+      log("[CAMERA] ✅ Safe initialization completed");
     } catch (error) {
-      console.error("[CAMERA] 🔥 Error in safe initialization:", error);
+      logError("[CAMERA] 🔥 Error in safe initialization:", error);
       setError(`Safe initialization failed: ${error.message}`);
     } finally {
       setLoading(false);
@@ -97,12 +98,12 @@ export const MealCameraScreen = ({ navigation }) => {
   };
 
   const requestPermissions = async () => {
-    console.log("[CAMERA] 🔐 requestPermissions called");
-    console.log("[CAMERA] 🔧 Development mode status:", developmentMode);
+    log("[CAMERA] 🔐 requestPermissions called");
+    log("[CAMERA] 🔧 Development mode status:", developmentMode);
     
     // Skip permission requests in development mode
     if (developmentMode) {
-      console.log("[CAMERA] 🛠️ Skipping permission requests in development mode");
+      log("[CAMERA] 🛠️ Skipping permission requests in development mode");
       setPermissionStatus({
         camera: 'dev-mode',
         mediaLibrary: 'dev-mode'
@@ -112,7 +113,7 @@ export const MealCameraScreen = ({ navigation }) => {
     }
     
     try {
-      console.log("[CAMERA] 🔐 Starting camera permission requests");
+      log("[CAMERA] 🔐 Starting camera permission requests");
       setLoading(true);
       // Request camera permissions
       const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
@@ -143,7 +144,7 @@ export const MealCameraScreen = ({ navigation }) => {
         );
       }
     } catch (error) {
-      console.error('Error requesting permissions:', error);
+      logError('Error requesting permissions:', error);
       setError('Failed to request permissions. Please try again.');
     } finally {
       setLoading(false);
@@ -156,7 +157,7 @@ export const MealCameraScreen = ({ navigation }) => {
       const currentUser = auth.currentUser;
       
       if (currentUser) {
-        console.log('🔍 Fetching meals for user:', currentUser.uid);
+        log('🔍 Fetching meals for user:', currentUser.uid);
         
         const mealsQuery = query(
           collection(db, 'meals'),
@@ -171,15 +172,15 @@ export const MealCameraScreen = ({ navigation }) => {
           ...doc.data()
         }));
         
-        console.log('📋 Fetched meals:', mealsData.length, 'meals found');
-        console.log('📋 First meal data:', mealsData[0] || 'No meals');
+        log('📋 Fetched meals:', mealsData.length, 'meals found');
+        log('📋 First meal data:', mealsData[0] || 'No meals');
         
         setMeals(mealsData);
       } else {
-        console.log('❌ No current user found');
+        log('❌ No current user found');
       }
     } catch (error) {
-      console.error('Error fetching meals:', error);
+      logError('Error fetching meals:', error);
       setError('Failed to load meal history');
     } finally {
       setMealsLoading(false);
@@ -198,18 +199,18 @@ export const MealCameraScreen = ({ navigation }) => {
         }
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      logError('Error fetching user profile:', error);
     }
   };
 
   const takePhoto = async () => {
     try {
-      console.log("[CAMERA] 📸 takePhoto called");
+      log("[CAMERA] 📸 takePhoto called");
       setError(null);
       
       // Development mode - show mock behavior
       if (developmentMode) {
-        console.log("[CAMERA] 🛠️ Development mode - showing mock camera behavior");
+        log("[CAMERA] 🛠️ Development mode - showing mock camera behavior");
         Alert.alert(
           "Development Mode",
           "Camera is disabled in development mode to prevent crashes. In production, this would open the camera.",
@@ -223,18 +224,18 @@ export const MealCameraScreen = ({ navigation }) => {
       
       // Check if ImagePicker is available
       if (!ImagePicker || !ImagePicker.launchCameraAsync) {
-        console.error("[CAMERA] ❌ ImagePicker is not available.");
+        logError("[CAMERA] ❌ ImagePicker is not available.");
         Alert.alert("Camera Error", "Image picker is not available.");
         return;
       }
       
       if (permissionStatus?.camera !== 'granted') {
-        console.log("[CAMERA] ⚠️ Camera permission not granted, requesting permissions");
+        log("[CAMERA] ⚠️ Camera permission not granted, requesting permissions");
         await requestPermissions();
         return;
       }
 
-      console.log("[📸 Camera] Launching camera...");
+      log("[📸 Camera] Launching camera...");
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: [ImagePicker.MediaTypeOptions.Images],
         allowsEditing: false,
@@ -243,13 +244,13 @@ export const MealCameraScreen = ({ navigation }) => {
         presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
       });
 
-      console.log("[📸 Camera] Result:", result);
+      log("[📸 Camera] Result:", result);
       if (!result.canceled && result.assets[0]) {
         // Directly navigate to meal analysis after taking photo
         await navigateToMealAnalysis(result.assets[0]);
       }
     } catch (error) {
-      console.error('Error taking photo:', error);
+      logError('Error taking photo:', error);
       setError('Failed to take photo. Please try again.');
       Alert.alert(
         'Camera Error',
@@ -264,12 +265,12 @@ export const MealCameraScreen = ({ navigation }) => {
 
   const pickFromGallery = async () => {
     try {
-      console.log("[CAMERA] 🖼️ pickFromGallery called");
+      log("[CAMERA] 🖼️ pickFromGallery called");
       setError(null);
       
       // Development mode - show mock behavior
       if (developmentMode) {
-        console.log("[CAMERA] 🛠️ Development mode - showing mock gallery behavior");
+        log("[CAMERA] 🛠️ Development mode - showing mock gallery behavior");
         Alert.alert(
           "Development Mode",
           "Gallery access is disabled in development mode to prevent crashes. In production, this would open the photo gallery.",
@@ -283,18 +284,18 @@ export const MealCameraScreen = ({ navigation }) => {
       
       // Check if ImagePicker is available
       if (!ImagePicker || !ImagePicker.launchImageLibraryAsync) {
-        console.error("[CAMERA] ❌ ImagePicker is not available.");
+        logError("[CAMERA] ❌ ImagePicker is not available.");
         Alert.alert("Gallery Error", "Image picker is not available.");
         return;
       }
       
       if (permissionStatus?.mediaLibrary !== 'granted') {
-        console.log("[CAMERA] ⚠️ Media library permission not granted, requesting permissions");
+        log("[CAMERA] ⚠️ Media library permission not granted, requesting permissions");
         await requestPermissions();
         return;
       }
 
-      console.log("[📸 Gallery] Launching gallery...");
+      log("[📸 Gallery] Launching gallery...");
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: [ImagePicker.MediaTypeOptions.Images],
         allowsEditing: false,
@@ -302,13 +303,13 @@ export const MealCameraScreen = ({ navigation }) => {
         exif: false,
       });
 
-      console.log("[📸 Gallery] Result:", result);
+      log("[📸 Gallery] Result:", result);
       if (!result.canceled && result.assets[0]) {
         // Directly navigate to meal analysis after picking from gallery
         await navigateToMealAnalysis(result.assets[0]);
       }
     } catch (error) {
-      console.error('Error picking from gallery:', error);
+      logError('Error picking from gallery:', error);
       setError('Failed to pick image. Please try again.');
       Alert.alert(
         'Gallery Error',
@@ -344,10 +345,10 @@ export const MealCameraScreen = ({ navigation }) => {
           'state_changed',
           (snapshot) => {
             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log('Upload progress:', progress);
+            log('Upload progress:', progress);
           },
           (error) => {
-            console.error('Upload error:', error);
+            logError('Upload error:', error);
             reject(error);
           },
           async () => {
@@ -361,7 +362,7 @@ export const MealCameraScreen = ({ navigation }) => {
         );
       });
     } catch (error) {
-      console.error('Error uploading to Firebase:', error);
+      logError('Error uploading to Firebase:', error);
       throw error;
     }
   };
@@ -382,7 +383,7 @@ export const MealCameraScreen = ({ navigation }) => {
       });
       
     } catch (error) {
-      console.error('Error starting meal analysis:', error);
+      logError('Error starting meal analysis:', error);
       Alert.alert('Error', 'Failed to start analysis. Please try again.');
     } finally {
       setLoading(false);
@@ -405,7 +406,7 @@ export const MealCameraScreen = ({ navigation }) => {
       });
       
     } catch (error) {
-      console.error('Error navigating to meal analysis:', error);
+      logError('Error navigating to meal analysis:', error);
       setError('Failed to start analysis. Please try again.');
       Alert.alert(
         'Analysis Error',
@@ -440,7 +441,7 @@ export const MealCameraScreen = ({ navigation }) => {
         gender: 'other'
       };
     } catch (error) {
-      console.error('Error getting user profile:', error);
+      logError('Error getting user profile:', error);
       return {
         goal: 'maintain',
         age: 30,
@@ -454,7 +455,7 @@ export const MealCameraScreen = ({ navigation }) => {
   const renderMealItem = (meal) => {
     const imageUri = meal.imageUrl || meal.imageUri || meal.localUri;
     
-    console.log('🖼️ Rendering meal item:', {
+    log('🖼️ Rendering meal item:', {
       id: meal.id,
       hasImageUrl: !!meal.imageUrl,
       hasImageUri: !!meal.imageUri,
@@ -475,11 +476,11 @@ export const MealCameraScreen = ({ navigation }) => {
             source={{ uri: imageUri }} 
             style={styles.mealImage}
             onError={(error) => {
-              console.log('❌ Image load error for meal:', meal.id, error);
-              console.log('❌ Problematic image URI:', imageUri);
+              log('❌ Image load error for meal:', meal.id, error);
+              log('❌ Problematic image URI:', imageUri);
             }}
             onLoad={() => {
-              console.log('✅ Image loaded successfully for meal:', meal.id);
+              log('✅ Image loaded successfully for meal:', meal.id);
             }}
           />
         ) : (
@@ -505,7 +506,7 @@ export const MealCameraScreen = ({ navigation }) => {
                 minute: '2-digit'
               });
             } catch (error) {
-              console.log('Date parsing error:', error);
+              log('Date parsing error:', error);
               return 'Date error';
             }
           })()}
@@ -549,7 +550,7 @@ export const MealCameraScreen = ({ navigation }) => {
         );
       }
     } catch (error) {
-      console.error('Error handling meal press:', error);
+      logError('Error handling meal press:', error);
       Alert.alert('Error', 'Unable to view meal analysis. Please try again.');
     }
   };
@@ -582,7 +583,7 @@ export const MealCameraScreen = ({ navigation }) => {
       });
 
       if (mealsToDelete.length > 0) {
-        console.log(`Cleaning up ${mealsToDelete.length} meals older than 2 weeks`);
+        log(`Cleaning up ${mealsToDelete.length} meals older than 2 weeks`);
 
         for (const meal of mealsToDelete) {
           // Delete from Firestore
@@ -594,17 +595,17 @@ export const MealCameraScreen = ({ navigation }) => {
               const imageRef = storage.refFromURL(meal.imageUrl);
               await imageRef.delete();
             } catch (error) {
-              console.log('Could not delete image:', error);
+              log('Could not delete image:', error);
             }
           }
         }
         
-        console.log(`Successfully cleaned up ${mealsToDelete.length} old meals`);
+        log(`Successfully cleaned up ${mealsToDelete.length} old meals`);
       } else {
-        console.log('No old meals to clean up');
+        log('No old meals to clean up');
       }
     } catch (error) {
-      console.error('Error cleaning up old meals:', error);
+      logError('Error cleaning up old meals:', error);
     }
   };
 
@@ -617,7 +618,7 @@ export const MealCameraScreen = ({ navigation }) => {
       
       Alert.alert('Success', 'Meal deleted successfully');
     } catch (error) {
-      console.error('Error deleting meal:', error);
+      logError('Error deleting meal:', error);
       Alert.alert('Error', 'Failed to delete meal');
     }
   };
@@ -636,7 +637,7 @@ export const MealCameraScreen = ({ navigation }) => {
         await addDoc(collection(db, 'meals'), mealData);
         Alert.alert('Success', 'Meal saved to history');
       } catch (error) {
-        console.error('Error saving meal:', error);
+        logError('Error saving meal:', error);
         Alert.alert('Error', 'Failed to save meal to history');
       }
     }

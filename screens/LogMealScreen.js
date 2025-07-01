@@ -3,6 +3,7 @@ import { View, Button, Image, ActivityIndicator, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../config/firebase'; // make sure this points to your correct file
+import { log, logError, logWarn } from '../utils/logger';
 
 export default function LogMealScreen() {
   const [image, setImage] = useState(null);
@@ -12,24 +13,24 @@ export default function LogMealScreen() {
     try {
       // Check if ImagePicker is available
       if (!ImagePicker || !ImagePicker.launchImageLibraryAsync) {
-        console.error("❌ ImagePicker is not available.");
+        logError("❌ ImagePicker is not available.");
         Alert.alert("Gallery Error", "Image picker is not available.");
         return;
       }
 
-      console.log("[📸 LogMeal] Launching gallery...");
+      log("[📸 LogMeal] Launching gallery...");
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: [ImagePicker.MediaTypeOptions.Images],
         allowsEditing: true,
         quality: 0.7,
       });
 
-      console.log("[📸 LogMeal] Result:", result);
+      log("[📸 LogMeal] Result:", result);
       if (!result.canceled) {
         setImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Error picking image:', error);
+      logError('Error picking image:', error);
       Alert.alert("Gallery Error", "Failed to pick image. Please try again.");
     }
   };
@@ -49,10 +50,10 @@ export default function LogMealScreen() {
       const downloadURL = await getDownloadURL(imageRef);
 
       Alert.alert("Upload Success", `Image URL:\n${downloadURL}`);
-      console.log('Uploaded image URL:', downloadURL);
+      log('Uploaded image URL:', downloadURL);
       setImage(null);
     } catch (err) {
-      console.error("Upload error:", err);
+      logError("Upload error:", err);
       Alert.alert("Upload Failed", err.message);
     } finally {
       setUploading(false);

@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../config';
 import { Button, AlphaBadge } from '../components';
+import { log, logError, logWarn } from '../utils/logger';
 
 export const GoalScreen = ({ navigation, route }) => {
   const userInfo = route.params || {};
@@ -16,10 +17,10 @@ export const GoalScreen = ({ navigation, route }) => {
         goal: selectedGoal
       };
       
-      console.log('=== GOAL SCREEN DEBUG ===');
-      console.log('User info received:', JSON.stringify(userInfo, null, 2));
-      console.log('Selected goal:', selectedGoal);
-      console.log('Final user data to pass:', JSON.stringify(userData, null, 2));
+      log('=== GOAL SCREEN DEBUG ===');
+      log('User info received:', JSON.stringify(userInfo, null, 2));
+      log('Selected goal:', selectedGoal);
+      log('Final user data to pass:', JSON.stringify(userData, null, 2));
       
       // Navigate to sign up with all the collected user data
       navigation.navigate('Signup', userData);

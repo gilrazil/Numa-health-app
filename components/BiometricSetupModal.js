@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+import { log, logError, logWarn } from '../utils/logger';
   Modal,
   View,
   Text,
@@ -65,7 +66,7 @@ export const BiometricSetupModal = ({
         Alert.alert('Error', authResult.error || 'Biometric authentication failed.');
       }
     } catch (error) {
-      console.error('Biometric setup error:', error);
+      logError('Biometric setup error:', error);
       Alert.alert('Error', 'Failed to set up biometric authentication.');
     } finally {
       setIsLoading(false);

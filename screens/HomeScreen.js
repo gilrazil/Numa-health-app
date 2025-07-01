@@ -6,12 +6,13 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Colors, auth, db } from '../config';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, AlphaBadge } from '../components';
+import { log, logError, logWarn } from '../utils/logger';
 
-console.log("[HOME] 🏗️ HomeScreen module loaded");
+log("[HOME] 🏗️ HomeScreen module loaded");
 
 export const HomeScreen = ({ navigation }) => {
-  console.log("[HOME] 🚀 HomeScreen component called");
-  console.log("[HOME] 🧭 Navigation prop received:", !!navigation);
+  log("[HOME] 🚀 HomeScreen component called");
+  log("[HOME] 🧭 Navigation prop received:", !!navigation);
   
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
@@ -19,43 +20,43 @@ export const HomeScreen = ({ navigation }) => {
   const [isOffline, setIsOffline] = useState(false);
   const [authError, setAuthError] = useState(null);
 
-  console.log("[HOME] 🎯 HomeScreen state initialized");
+  log("[HOME] 🎯 HomeScreen state initialized");
 
   useEffect(() => {
-    console.log("[HOME] ⚡ HomeScreen useEffect triggered");
+    log("[HOME] ⚡ HomeScreen useEffect triggered");
     
     let isMounted = true;
     
-    console.log("[HOME] 🔐 Setting up auth state listener");
+    log("[HOME] 🔐 Setting up auth state listener");
     
     // Listen for auth state changes
     const unsubscribe = onAuthStateChanged(
       auth, 
       (user) => {
-        console.log("[HOME] 🔔 HomeScreen auth state change:", user ? `User ${user.email || user.uid}` : 'No user');
+        log("[HOME] 🔔 HomeScreen auth state change:", user ? `User ${user.email || user.uid}` : 'No user');
         
         if (!isMounted) {
-          console.log("[HOME] ⚠️ HomeScreen component unmounted, skipping update");
+          log("[HOME] ⚠️ HomeScreen component unmounted, skipping update");
           return;
         }
         
-        console.log("[HOME] ✅ Updating user state in HomeScreen");
+        log("[HOME] ✅ Updating user state in HomeScreen");
         setUser(user);
         setAuthError(null);
         
         if (user) {
-          console.log("[HOME] 👤 User found, loading user data");
+          log("[HOME] 👤 User found, loading user data");
           loadUserData(user);
         } else {
-          console.log("[HOME] 🚫 No user, setting loading to false");
+          log("[HOME] 🚫 No user, setting loading to false");
           setLoading(false);
         }
       },
       (error) => {
-        console.error('[HOME] 🔥 Auth state change error in HomeScreen:', error);
-        console.error('[HOME] 🔥 Auth error stack:', error.stack);
+        logError('[HOME] 🔥 Auth state change error in HomeScreen:', error);
+        logError('[HOME] 🔥 Auth error stack:', error.stack);
         if (isMounted) {
-          console.log("[HOME] ❌ Setting auth error in HomeScreen");
+          log("[HOME] ❌ Setting auth error in HomeScreen");
           setAuthError('Authentication error occurred');
           setLoading(false);
         }
@@ -64,83 +65,83 @@ export const HomeScreen = ({ navigation }) => {
 
     // Cleanup subscription
     return () => {
-      console.log("[HOME] 🧹 HomeScreen cleanup");
+      log("[HOME] 🧹 HomeScreen cleanup");
       isMounted = false;
       unsubscribe();
     };
   }, []);
 
   const loadUserData = async (currentUser) => {
-    console.log("[HOME] 📊 loadUserData called for user:", currentUser?.uid);
+    log("[HOME] 📊 loadUserData called for user:", currentUser?.uid);
     
     if (!currentUser?.uid) {
-      console.log("[HOME] ⚠️ No valid user provided to loadUserData");
+      log("[HOME] ⚠️ No valid user provided to loadUserData");
       setLoading(false);
       return;
     }
     
     try {
-      console.log("[HOME] 🔄 Starting user data load");
+      log("[HOME] 🔄 Starting user data load");
       setLoading(true);
       setIsOffline(false);
       
-      console.log("[HOME] 🔥 Creating Firestore document reference");
+      log("[HOME] 🔥 Creating Firestore document reference");
       const userDocRef = doc(db, 'users', currentUser.uid);
-      console.log("[HOME] 📄 Getting user document from Firestore");
+      log("[HOME] 📄 Getting user document from Firestore");
       const userDoc = await getDoc(userDocRef);
       
       if (userDoc.exists()) {
-        console.log("[HOME] ✅ User document exists");
+        log("[HOME] ✅ User document exists");
         const data = userDoc.data();
         // Validate data before setting state
         if (data && typeof data === 'object') {
-          console.log("[HOME] ✅ Valid user data received, updating state");
+          log("[HOME] ✅ Valid user data received, updating state");
           setUserData(data);
-          console.log('[HOME] ✅ User data loaded for HomeScreen:', { 
+          log('[HOME] ✅ User data loaded for HomeScreen:', { 
             email: data.email,
             profileCompleted: data.profileCompleted,
             hasEssentialFields: !!(data.gender && data.age && data.height && data.weight && data.goal)
           });
         } else {
-          console.log("[HOME] ⚠️ Invalid user data received");
+          log("[HOME] ⚠️ Invalid user data received");
           setUserData(null);
         }
       } else {
-        console.log("[HOME] ⚠️ No user document found - this should not happen if RootNavigator is working correctly");
+        log("[HOME] ⚠️ No user document found - this should not happen if RootNavigator is working correctly");
         setUserData(null);
       }
     } catch (error) {
-      console.error('[HOME] 🔥 Error loading user data:', error);
-      console.error('[HOME] 🔥 Error stack:', error.stack);
-      console.log("[HOME] 📶 Setting offline state");
+      logError('[HOME] 🔥 Error loading user data:', error);
+      logError('[HOME] 🔥 Error stack:', error.stack);
+      log("[HOME] 📶 Setting offline state");
       setIsOffline(true);
       Alert.alert('Error', 'Failed to load user data');
     } finally {
-      console.log("[HOME] ✅ Setting loading to false");
+      log("[HOME] ✅ Setting loading to false");
       setLoading(false);
     }
   };
 
   const handleSignOut = async () => {
-    console.log("[HOME] 🚪 handleSignOut called");
+    log("[HOME] 🚪 handleSignOut called");
     try {
       await signOut(auth);
-      console.log('[HOME] ✅ Signed out successfully');
+      log('[HOME] ✅ Signed out successfully');
     } catch (error) {
-      console.error('[HOME] 🔥 Sign out error:', error);
+      logError('[HOME] 🔥 Sign out error:', error);
       Alert.alert('Error', 'Failed to sign out');
     }
   };
 
   const handleRetry = () => {
-    console.log("[HOME] 🔄 handleRetry called");
+    log("[HOME] 🔄 handleRetry called");
     if (user) {
       loadUserData(user);
     }
   };
 
   const handleStartTracking = () => {
-    console.log("[HOME] 📸 handleStartTracking called - navigating to MealCamera");
+    log("[HOME] 📸 handleStartTracking called - navigating to MealCamera");
     navigation.navigate('MealCamera');
   };
 
@@ -154,8 +155,8 @@ export const HomeScreen = ({ navigation }) => {
            userData?.goal === 'Not set';
   };
 
-  console.log("[HOME] 🎨 HomeScreen render cycle");
-  console.log("[HOME] 📊 Render state:", { 
+  log("[HOME] 🎨 HomeScreen render cycle");
+  log("[HOME] 📊 Render state:", { 
     hasUser: !!user, 
     hasUserData: !!userData, 
     loading, 
@@ -165,7 +166,7 @@ export const HomeScreen = ({ navigation }) => {
 
   // Show error state for auth errors
   if (authError) {
-    console.log("[HOME] ❌ Rendering auth error screen");
+    log("[HOME] ❌ Rendering auth error screen");
     return (
       <View style={[styles.container, styles.centerContent]}>
         <MaterialCommunityIcons name="alert-circle" size={48} color={Colors.red} />
@@ -179,7 +180,7 @@ export const HomeScreen = ({ navigation }) => {
   }
 
   if (loading) {
-    console.log("[HOME] ⏳ Rendering loading screen");
+    log("[HOME] ⏳ Rendering loading screen");
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color={Colors.primary} />
@@ -190,7 +191,7 @@ export const HomeScreen = ({ navigation }) => {
 
   // Safety check for user
   if (!user?.email) {
-    console.log("[HOME] 🚫 No user session - rendering no user screen");
+    log("[HOME] 🚫 No user session - rendering no user screen");
     return (
       <View style={[styles.container, styles.centerContent]}>
         <Text style={styles.errorText}>No user session found</Text>
@@ -201,7 +202,7 @@ export const HomeScreen = ({ navigation }) => {
     );
   }
 
-  console.log("[HOME] 🎉 Rendering main HomeScreen content");
+  log("[HOME] 🎉 Rendering main HomeScreen content");
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

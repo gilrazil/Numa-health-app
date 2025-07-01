@@ -1,12 +1,13 @@
 import { analytics } from '../config/firebase';
 import { logEvent, setUserId, setUserProperties } from 'firebase/analytics';
+import { log, logError, logWarn } from '../utils/logger';
 
 export class AnalyticsService {
   // Track custom events
   static trackEvent(eventName, parameters = {}) {
     if (analytics) {
       logEvent(analytics, eventName, parameters);
-      console.log(`📊 Analytics Event: ${eventName}`, parameters);
+      log(`📊 Analytics Event: ${eventName}`, parameters);
     }
   }
 

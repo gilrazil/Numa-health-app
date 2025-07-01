@@ -7,6 +7,7 @@ import { BiometricService } from '../services/BiometricService';
 import { FirstLaunchService } from '../services/FirstLaunchService';
 import { Logo } from '../components';
 import { Images } from '../config';
+import { log, logError, logWarn } from '../utils/logger';
 
 export const AutoBiometricScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -29,7 +30,7 @@ export const AutoBiometricScreen = ({ navigation }) => {
         attemptBiometricLogin();
       }, 500);
     } catch (error) {
-      console.error('Error initializing biometric login:', error);
+      logError('Error initializing biometric login:', error);
       setShowManualLogin(true);
       setIsLoading(false);
     }
@@ -40,12 +41,12 @@ export const AutoBiometricScreen = ({ navigation }) => {
       setError('');
       setIsLoading(true);
 
-      console.log('🔐 Attempting automatic biometric login...');
+      log('🔐 Attempting automatic biometric login...');
       
       const result = await BiometricService.loginWithBiometrics();
       
       if (result.success && result.credentials) {
-        console.log('✅ Biometric authentication successful');
+        log('✅ Biometric authentication successful');
         
         // Sign in with Firebase
         await signInWithEmailAndPassword(
@@ -57,11 +58,11 @@ export const AutoBiometricScreen = ({ navigation }) => {
         // Mark as launched
         await FirstLaunchService.markAsLaunched();
         
-        console.log('🎉 Auto-login successful!');
+        log('🎉 Auto-login successful!');
         // Navigation will be handled by RootNavigator auth state change
       } else {
         // Biometric failed or cancelled
-        console.log('❌ Biometric authentication failed:', result.error);
+        log('❌ Biometric authentication failed:', result.error);
         
         if (result.error === 'UserCancel') {
           setShowManualLogin(true);
@@ -71,7 +72,7 @@ export const AutoBiometricScreen = ({ navigation }) => {
         }
       }
     } catch (error) {
-      console.error('Auto biometric login error:', error);
+      logError('Auto biometric login error:', error);
       setError(error.message);
       setShowManualLogin(true);
     } finally {

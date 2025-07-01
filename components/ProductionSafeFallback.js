@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import * as Updates from 'expo-updates';
+import { log, logError, logWarn } from '../utils/logger';
 
 // Production-safe fallback component that will NEVER be invisible
 export const ProductionSafeFallback = ({ error, retry, title = "Something went wrong" }) => {
   const handleReload = async () => {
-    console.log('🔄 ProductionSafeFallback: Reload requested');
+    log('🔄 ProductionSafeFallback: Reload requested');
     
     try {
       // Try the retry function first if provided
@@ -18,7 +19,7 @@ export const ProductionSafeFallback = ({ error, retry, title = "Something went w
         await Updates.reloadAsync();
       }
     } catch (reloadError) {
-      console.error('🔥 ProductionSafeFallback: Reload failed:', reloadError);
+      logError('🔥 ProductionSafeFallback: Reload failed:', reloadError);
       // Last resort: just call retry if available
       if (retry && typeof retry === 'function') {
         retry();

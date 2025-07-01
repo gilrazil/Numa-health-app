@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
+import { log, logError, logWarn } from '../utils/logger';
   View, 
   Text, 
   StyleSheet, 
@@ -80,7 +81,7 @@ const UserProfileScreen = ({ navigation }) => {
         }));
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
+      logError('Error loading profile:', error);
       Alert.alert('Error', 'Failed to load profile');
     } finally {
       setLoading(false);
@@ -114,7 +115,7 @@ const UserProfileScreen = ({ navigation }) => {
       
       Alert.alert('Success', 'Profile updated successfully');
     } catch (error) {
-      console.error('Error saving profile:', error);
+      logError('Error saving profile:', error);
       Alert.alert('Error', 'Failed to save profile');
     } finally {
       setSaving(false);

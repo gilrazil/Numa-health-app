@@ -10,6 +10,7 @@ import { Images, Colors, auth } from "../config";
 import { useTogglePasswordVisibility } from "../hooks";
 import { loginValidationSchema } from "../utils";
 import { FirstLaunchService } from "../services/FirstLaunchService";
+import { log, logError, logWarn } from '../utils/logger';
 
 export const LoginScreen = ({ navigation }) => {
   const [errorState, setErrorState] = useState("");
@@ -40,15 +41,15 @@ export const LoginScreen = ({ navigation }) => {
     }
 
     try {
-      console.log('Attempting login with email:', email);
+      log('Attempting login with email:', email);
       await signInWithEmailAndPassword(auth, email, password);
       
       // Mark app as launched since user successfully logged in
       await FirstLaunchService.markAsLaunched();
       
-      console.log('Login successful!');
+      log('Login successful!');
     } catch (error) {
-      console.error('Login error:', error.code, error.message);
+      logError('Login error:', error.code, error.message);
       
       // Provide more user-friendly error messages
       switch (error.code) {

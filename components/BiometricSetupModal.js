@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-import { log, logError, logWarn } from '../utils/logger';
   Modal,
   View,
   Text,
@@ -13,6 +12,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../config';
 import { Button } from './Button';
 import { BiometricService } from '../services/BiometricService';
+import { log, logError, logWarn } from '../utils/logger';
 
 export const BiometricSetupModal = ({ 
   visible, 

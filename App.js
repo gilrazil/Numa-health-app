@@ -1,294 +1,398 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { View, Text, StyleSheet, Platform, LogBox, ScrollView } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { AuthenticatedUserProvider, AuthenticatedUserContext } from "./providers";
-import { AuthStack } from "./navigation/AuthStack";
-import { AppStack } from "./navigation/AppStack";
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native";
+import * as Updates from 'expo-updates';
+import * as FileSystem from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 🔧 SIMPLE ON-SCREEN LOGGING SYSTEM
-const DEBUG_LOGS = []; // Simple array to store logs
+// Import Firebase configuration to ensure it's initialized
+import "./config/firebase";
+import { RootNavigator } from "./navigation/RootNavigator";
+import { AuthenticatedUserProvider } from "./providers";
+import { ErrorBoundary } from "./components";
+import { Colors } from "./config";
+import { setupGlobalErrorTracking } from "./utils/setupErrorTracking";
+import { logInitializationStep, logPerformanceMetric } from "./utils/debugInitialization";
+import { runProductionChecks, checkHermesIssues } from "./utils/productionChecks";
 
-// Override console.log to capture messages for on-screen display
-const originalConsoleLog = console.log;
-const originalConsoleError = console.error;
-const originalConsoleWarn = console.warn;
-
-// Simple log storage
-const addLog = (level, ...args) => {
-  const timestamp = new Date().toLocaleTimeString();
-  const message = args.map(arg => 
-    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-  ).join(' ');
-  
-  const logEntry = `[${timestamp}] ${level}: ${message}`;
-  DEBUG_LOGS.push(logEntry);
-  
-  // Keep only last 50 logs
-  if (DEBUG_LOGS.length > 50) {
-    DEBUG_LOGS.shift();
-  }
-  
-  // Still call original console methods
-  if (level === 'LOG') originalConsoleLog(...args);
-  else if (level === 'ERROR') originalConsoleError(...args);
-  else if (level === 'WARN') originalConsoleWarn(...args);
-};
-
-// Override console methods
-console.log = (...args) => addLog('LOG', ...args);
-console.error = (...args) => addLog('ERROR', ...args);
-console.warn = (...args) => addLog('WARN', ...args);
-
-// Add comprehensive logging for startup diagnostics
-console.log("[INIT] 🚀 App.tsx mounted - Starting diagnostic logging");
-console.log("[INIT] 📱 Platform:", Platform.OS);
-console.log("[INIT] 🔧 Environment:", __DEV__ ? 'Development' : 'Production');
-console.log("[INIT] ⏰ Timestamp:", new Date().toISOString());
-console.log("[INIT] 🎯 Simple Debug Mode: ENABLED");
-
-// Global error handler to catch JS errors that happen before rendering (Expo Go compatible)
-console.log("[INIT] 🛡️ Setting up global error handler");
-if (global.ErrorUtils?.setGlobalHandler) {
-  global.ErrorUtils.setGlobalHandler((error, isFatal) => {
-    console.error("[GLOBAL ERROR] 🔥 Unhandled JavaScript error caught:");
-    console.error("[GLOBAL ERROR] 📝 Message:", error.message);
-    console.error("[GLOBAL ERROR] 📚 Stack:", error.stack);
-    console.error("[GLOBAL ERROR] ⚠️ Is Fatal:", isFatal);
-    console.error("[GLOBAL ERROR] 🎯 Error Name:", error.name);
-    console.error("[GLOBAL ERROR] ⏰ Timestamp:", new Date().toISOString());
-    
-    // Log additional error details if available
-    if (error.componentStack) {
-      console.error("[GLOBAL ERROR] 🔧 Component Stack:", error.componentStack);
-    }
-    
-    // For development, we still want to see the error
-    if (__DEV__) {
-      console.log("[GLOBAL ERROR] 🚨 Development mode - error will still be thrown");
-    }
-  });
-  console.log("[INIT] ✅ Global error handler configured successfully");
-} else {
-  console.log("[INIT] ⚠️ ErrorUtils not available in this environment (Expo Go)");
-}
-
-// Temporarily ignore all logs to reduce noise during debugging
-LogBox.ignoreAllLogs();
-
-console.log("[INIT] 📦 Navigation imports loaded successfully");
-console.log("[INIT] 🔥 About to test Firebase initialization");
-
-// Firebase configuration (copied from config/firebase.js)
-const firebaseConfig = {
-  apiKey: "AIzaSyBwdZ-r61PbfPEE1UVQfTvAQMrBQhQGvC8",
-  authDomain: "numa-app-34ede.firebaseapp.com",
-  projectId: "numa-app-34ede",
-  storageBucket: "numa-app-34ede.firebasestorage.app",
-  messagingSenderId: "859592733394",
-  appId: "1:859592733394:web:3cfc8ebd8e7a99b82fb30b"
-};
-
-console.log("[FIREBASE] 🔑 Firebase config loaded");
-console.log("[FIREBASE] 🔑 API Key exists:", !!firebaseConfig.apiKey);
-console.log("[FIREBASE] 🔑 Project ID:", firebaseConfig.projectId);
-
-// Test Firebase basic initialization
-console.log("[FIREBASE] 🚀 Starting Firebase initialization");
-let firebaseApp = null;
-let auth = null;
-try {
-  firebaseApp = initializeApp(firebaseConfig);
-  console.log("[FIREBASE] ✅ Firebase initialized successfully");
-  console.log("[FIREBASE] 📱 App name:", firebaseApp.name);
-  console.log("[FIREBASE] ⚙️ App options exist:", !!firebaseApp.options);
-  
-  // Initialize Firebase Auth
-  console.log("[FIREBASE] 🔐 Initializing Firebase Auth...");
-  auth = getAuth(firebaseApp);
-  console.log("[FIREBASE] ✅ Firebase Auth initialized successfully");
-  console.log("[FIREBASE] 🔗 Auth app reference:", !!auth.app);
-} catch (err) {
-  console.error("[FIREBASE] ❌ Firebase init failed:", err.message);
-  console.error("[FIREBASE] 🔥 Firebase error details:", err);
-}
-
-console.log("[INIT] 🧭 About to create navigation components");
-
-// Create stack navigator
-const Stack = createNativeStackNavigator();
-console.log("[INIT] ✅ Stack navigator created");
-
-console.log("[INIT] 🏠 Test HomeScreen removed - using real app screens");
-console.log("[INIT] 📦 RealAppNavigator will render AuthStack or AppStack based on user auth state");
-
-// Simple component to display logs directly on screen
-const SimpleLogDisplay = () => {
-  const [, forceUpdate] = useState(0);
-  
-  // Force re-render every second to show new logs
-  useEffect(() => {
-    const interval = setInterval(() => {
-      forceUpdate(prev => prev + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <View style={styles.logContainer}>
-      <Text style={styles.logTitle}>🔧 DEBUG LOGS</Text>
-      <ScrollView style={styles.logScrollView}>
-        {DEBUG_LOGS.map((log, index) => (
-          <Text key={index} style={[
-            styles.logText,
-            log.includes('ERROR') ? styles.logError : 
-            log.includes('WARN') ? styles.logWarn : styles.logInfo
-          ]}>
-            {log}
-          </Text>
-        ))}
-      </ScrollView>
-    </View>
-  );
-};
-
-// Real App Navigator - determines which stack to show based on auth state
-const RealAppNavigator = () => {
-  console.log("[NAV] 🚀 RealAppNavigator component called");
-  
-  // Get user state from our AuthenticatedUserProvider
-  const { user, isLoading } = React.useContext(AuthenticatedUserContext);
-  console.log("[NAV] 👤 User from context:", user ? `${user.email || user.uid}` : 'null');
-  console.log("[NAV] ⏳ Loading state:", isLoading);
-  console.log("[NAV] 🔍 User logged in:", user !== null);
-  
-  // Show loading screen while determining auth state
-  if (isLoading) {
-    console.log("[NAV] ⏳ Auth still loading, showing loading screen");
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
-        <Text style={styles.statusDetails}>Checking authentication...</Text>
-      </View>
-    );
-  }
-  
-  // Show appropriate stack based on authentication
-  if (user) {
-    console.log("[NAV] ✅ User authenticated, rendering AppStack");
-    console.log("[NAV] 🏠 About to render main app screens");
-    
-    try {
-      return <AppStack />;
-    } catch (error) {
-      console.error("[NAV] 🔥 Error rendering AppStack:", error);
-      console.error("[NAV] 🔥 AppStack error stack:", error.stack);
-      return (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>AppStack Error</Text>
-          <Text style={styles.errorMessage}>{error.message}</Text>
-        </View>
-      );
-    }
-  } else {
-    console.log("[NAV] 🔐 User not authenticated, rendering AuthStack");
-    console.log("[NAV] 👋 About to render auth/onboarding screens");
-    
-    try {
-      return <AuthStack />;
-    } catch (error) {
-      console.error("[NAV] 🔥 Error rendering AuthStack:", error);
-      console.error("[NAV] 🔥 AuthStack error stack:", error.stack);
-      return (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>AuthStack Error</Text>
-          <Text style={styles.errorMessage}>{error.message}</Text>
-        </View>
-      );
-    }
-  }
-};
-
-console.log("[INIT] 🚀 RealAppNavigator component defined");
+// Global retry counter to prevent infinite reload loops
+let reloadAttempts = 0;
+const MAX_RELOAD_ATTEMPTS = 2;
 
 const App = () => {
-  console.log("[INIT] 🔄 App component function called");
-  console.log("[INIT] ✅ Navigation debug mode active");
-  console.log("[INIT] 📱 Platform:", Platform.OS);
-  console.log("[INIT] 🧭 About to test navigation components");
-  
-  // Add test logs
-  console.warn("[TEST] ⚠️ Navigation test warning");
-  console.error("[TEST] ❌ Navigation test error");
-  
-  console.log("[INIT] 🚀 About to render NavigationContainer with AuthenticatedUserProvider");
-  console.log("[INIT] 🔐 Auth instance status for provider:", auth ? 'Available' : 'Not available');
-  
-  // Split screen: Navigation on top, logs on bottom
-  return (
-    <SafeAreaProvider style={styles.container}>
-      <View style={styles.appContainer}>
-        {/* Navigation Section */}
-        <View style={styles.navigationContainer}>
-          <AuthenticatedUserProvider auth={auth}>
-            <NavigationContainer>
-              <RealAppNavigator />
-            </NavigationContainer>
-          </AuthenticatedUserProvider>
-        </View>
+  const [appError, setAppError] = useState(null);
+  const [isReady, setIsReady] = useState(false);
+  const [initializationProgress, setInitializationProgress] = useState('Starting...');
+
+  useEffect(() => {
+    // PRODUCTION-SAFE LOGGING - Always log these critical steps
+    console.log("🟢 App starting...");
+    console.log("🟢 Environment:", __DEV__ ? 'Development' : 'Production');
+    console.log("🟢 Platform:", Platform.OS);
+    
+    // Setup global error tracking first
+    console.log("🟢 Setting up global error tracking...");
+    logInitializationStep('Setting up global error tracking');
+    setupGlobalErrorTracking();
+    console.log("🟢 Global error tracking initialized.");
+    
+    // Hardened startup initialization
+    const initializeApp = async () => {
+      const startTime = Date.now();
+      
+      try {
+        console.log("🟢 App initialization started.");
+        logInitializationStep('App initialization started');
+        setInitializationProgress('Initializing app...');
         
-        {/* Debug Logs Section */}
-        <View style={styles.debugSection}>
-          <SimpleLogDisplay />
+        console.log('🚀 App initializing with hardened startup protection...');
+
+        // Step 1: Clear cache on first launch (one-time operation)
+        console.log("🟢 Starting cache clearing...");
+        logInitializationStep('Clearing cache on first launch');
+        await clearCacheOnFirstLaunch();
+        console.log("🟢 Cache cleared.");
+        
+        // Step 2: Initialize core services safely
+        console.log("🟢 Initializing core services...");
+        logInitializationStep('Initializing core services');
+        await initializeCoreServices();
+        console.log("🟢 Core services initialized.");
+        
+        // Step 3: Check Firebase initialization
+        console.log("🟢 Checking Firebase initialization...");
+        await checkFirebaseInitialization();
+        console.log("🟢 Firebase verified.");
+        
+        // Step 4: Run production environment checks
+        console.log("🟢 Running production environment checks...");
+        await runProductionChecks();
+        checkHermesIssues();
+        console.log("🟢 Production checks completed.");
+        
+        // Step 5: Add delay to ensure native modules are ready
+        console.log("🟢 Loading native modules...");
+        logInitializationStep('Loading native modules');
+        setInitializationProgress('Loading native modules...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        console.log("🟢 Native modules loaded.");
+        
+        console.log("🟢 App initialization completed successfully.");
+        logInitializationStep('App initialization completed');
+        setInitializationProgress('Ready!');
+        setIsReady(true);
+        
+        const endTime = Date.now();
+        logPerformanceMetric('App initialization time', endTime - startTime);
+        
+        console.log('✅ App initialization completed successfully');
+      } catch (error) {
+        console.error('🔥 PRODUCTION ERROR - App initialization failed:', error);
+        console.error('🔥 Error message:', error.message);
+        console.error('🔥 Error stack:', error.stack);
+        console.error('🔥 Error name:', error.name);
+        logInitializationStep('App initialization failed', { error: error.message, stack: error.stack });
+        setAppError(error);
+        setInitializationProgress('Initialization failed');
+      }
+    };
+
+    // Enhanced global error handler with retry protection
+    const originalHandler = ErrorUtils.getGlobalHandler();
+    ErrorUtils.setGlobalHandler((error, isFatal) => {
+      console.error('🔥 Global error caught:', error);
+      console.error('🔥 Is fatal:', isFatal);
+      console.error('🔥 Stack trace:', error.stack);
+      
+      if (isFatal) {
+        // Don't attempt reload if we've already tried too many times
+        if (reloadAttempts >= MAX_RELOAD_ATTEMPTS) {
+          console.error('🚫 Max reload attempts reached, showing error screen');
+          setAppError(error);
+        } else {
+          console.log(`🔄 Fatal error detected, will attempt reload (attempt ${reloadAttempts + 1}/${MAX_RELOAD_ATTEMPTS})`);
+          setAppError(error);
+        }
+      } else {
+        // Let React Native handle non-fatal errors
+        originalHandler(error, isFatal);
+      }
+    });
+
+    initializeApp();
+
+    // Cleanup
+    return () => {
+      ErrorUtils.setGlobalHandler(originalHandler);
+    };
+  }, []);
+
+  // Safe cache clearing on first launch
+  const clearCacheOnFirstLaunch = async () => {
+    try {
+      console.log('🟢 Cache clearing: Checking cache status...');
+      setInitializationProgress('Checking cache status...');
+      
+      const hasClearedCache = await AsyncStorage.getItem('hasClearedCache');
+      if (hasClearedCache) {
+        console.log('🟢 Cache clearing: Already cleared, skipping');
+        return;
+      }
+
+      if (!FileSystem.cacheDirectory) {
+        console.log('🟢 Cache clearing: No cache directory available, skipping');
+        return;
+      }
+
+      console.log('🟢 Cache clearing: First launch detected, safely clearing Expo cache...');
+      setInitializationProgress('Clearing cache safely...');
+      
+      // Target specific cache subdirectories safely
+      const safeCachePaths = [
+        `${FileSystem.cacheDirectory}ImageManipulator`,
+        `${FileSystem.cacheDirectory}CachedImages`,
+        `${FileSystem.cacheDirectory}Camera`,
+        `${FileSystem.cacheDirectory}ExpoImagePicker`,
+        `${FileSystem.cacheDirectory}ExpoFileSystem`,
+        `${FileSystem.cacheDirectory}RNImagePicker`,
+      ];
+
+      let clearedCount = 0;
+      let skippedCount = 0;
+
+      for (const path of safeCachePaths) {
+        try {
+          // Check if directory exists before attempting deletion
+          const dirInfo = await FileSystem.getInfoAsync(path);
+          if (dirInfo.exists) {
+            await FileSystem.deleteAsync(path, { idempotent: true });
+            clearedCount++;
+            if (__DEV__) {
+              console.log(`🗑️ Cleared cache path: ${path}`);
+            }
+          } else {
+            skippedCount++;
+          }
+        } catch (pathError) {
+          skippedCount++;
+          if (__DEV__) {
+            console.warn(`⚠️ Could not clear cache path ${path}:`, pathError.message);
+          }
+        }
+      }
+      
+      // Mark as cleared to prevent future clears
+      await AsyncStorage.setItem('hasClearedCache', 'true');
+      
+      console.log(`🟢 Cache clearing: Successfully completed - ${clearedCount} cleared, ${skippedCount} skipped`);
+    } catch (error) {
+      console.error('🔥 Cache clearing failed (non-fatal):', error.message);
+      
+      // Still mark as attempted to prevent repeated failures
+      try {
+        await AsyncStorage.setItem('hasClearedCache', 'true');
+      } catch (storageError) {
+        console.error('🔥 Could not save cache clearing status:', storageError.message);
+      }
+    }
+  };
+
+  // Initialize core services with error protection
+  const initializeCoreServices = async () => {
+    try {
+      console.log('🟢 Core services: Starting initialization...');
+      setInitializationProgress('Initializing Firebase...');
+      
+      // Import Firebase validation function
+      console.log('🟢 Core services: Importing Firebase validation...');
+      const { validateFirebaseServices } = require('./config/firebase');
+      
+      // Validate Firebase services using production-safe method
+      console.log('🟢 Core services: Validating Firebase services...');
+      const validation = validateFirebaseServices();
+      console.log('🟢 Core services: Firebase validation passed');
+      
+      // Add any other critical service initialization here
+      console.log('🟢 Core services: All services initialized');
+    } catch (error) {
+      console.error('🔥 Core services initialization failed:', error);
+      
+      // Try backup Firebase initialization
+      try {
+        console.log('🟢 Core services: Attempting backup Firebase initialization...');
+        const { initializeFirebaseBackup } = require('./config/firebaseBackup');
+        const backupServices = initializeFirebaseBackup();
+        console.log('🟢 Core services: Backup Firebase initialized successfully');
+      } catch (backupError) {
+        console.error('🔥 Backup Firebase initialization also failed:', backupError);
+        
+        // Last resort: Create minimal mock services to prevent crash
+        try {
+          console.log('🟢 Core services: Creating minimal Firebase services...');
+          const { createMinimalFirebaseServices } = require('./config/firebaseBackup');
+          const minimalServices = createMinimalFirebaseServices();
+          console.log('🟢 Core services: Minimal Firebase services created');
+        } catch (minimalError) {
+          console.error('🔥 Even minimal Firebase services failed:', minimalError);
+          throw new Error(`All Firebase initialization methods failed: ${error.message}`);
+        }
+      }
+    }
+  };
+
+  // Check Firebase initialization in production
+  const checkFirebaseInitialization = async () => {
+    try {
+      console.log('🟢 Firebase check: Verifying Firebase initialization...');
+      
+      // Import Firebase services and validation function
+      const { auth: authService, db: dbService, validateFirebaseServices } = require('./config/firebase');
+      
+      // Run comprehensive validation
+      const validation = validateFirebaseServices();
+      
+      // Additional checks
+      if (authService && authService.app && authService.app.name) {
+        console.log('🟢 Firebase check: Auth app name:', authService.app.name);
+      }
+      
+      if (dbService && dbService.app && dbService.app.name) {
+        console.log('🟢 Firebase check: Firestore app name:', dbService.app.name);
+      }
+      
+      console.log('🟢 Firebase check: All Firebase services verified successfully');
+    } catch (error) {
+      console.error('🔥 Firebase initialization check failed:', error);
+      throw error;
+    }
+  };
+
+  // Enhanced retry handler with attempt limits
+  const handleRetry = async () => {
+    console.log(`🔄 Retry requested (attempt ${reloadAttempts + 1}/${MAX_RELOAD_ATTEMPTS})`);
+    
+    setAppError(null);
+    setIsReady(false);
+    setInitializationProgress('Retrying...');
+    
+    try {
+      // Check if we can attempt a reload
+      if (Platform.OS === 'ios' && !__DEV__ && reloadAttempts < MAX_RELOAD_ATTEMPTS) {
+        reloadAttempts++;
+        console.log(`🔄 Attempting app reload (${reloadAttempts}/${MAX_RELOAD_ATTEMPTS})`);
+        await Updates.reloadAsync();
+      } else if (reloadAttempts < MAX_RELOAD_ATTEMPTS) {
+        // Development mode or Android - reinitialize
+        reloadAttempts++;
+        console.log(`🔄 Attempting reinitialization (${reloadAttempts}/${MAX_RELOAD_ATTEMPTS})`);
+        setTimeout(() => {
+          setInitializationProgress('Reinitializing...');
+          setIsReady(true);
+        }, 1000);
+      } else {
+        // Max attempts reached
+        console.error('🚫 Maximum retry attempts reached');
+        setAppError(new Error('Maximum retry attempts reached. Please restart the app manually.'));
+      }
+    } catch (error) {
+      console.error('🔥 Retry failed:', error);
+      reloadAttempts++;
+      setAppError(error);
+    }
+  };
+
+  // Reset retry counter (for manual restart)
+  const handleManualRestart = async () => {
+    console.log('🔄 Manual restart requested, resetting retry counter');
+    reloadAttempts = 0;
+    
+    // Clear the first launch flag to allow cache clearing again
+    try {
+      await AsyncStorage.removeItem('hasClearedCache');
+      console.log('🧹 First launch flag reset for cache clearing');
+    } catch (error) {
+      console.error('⚠️ Failed to reset first launch flag:', error);
+    }
+    
+    await handleRetry();
+  };
+
+  // Show error screen if app failed to initialize
+  if (appError) {
+    console.log("🔥 PRODUCTION: Showing error screen due to app error:", appError.message);
+    const canRetry = reloadAttempts < MAX_RELOAD_ATTEMPTS;
+    
+    return (
+      <SafeAreaProvider>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>App Startup Error</Text>
+          <Text style={styles.errorMessage}>
+            {canRetry 
+              ? 'Something went wrong during startup. Please try again.'
+              : 'Maximum retry attempts reached. Please restart the app manually.'
+            }
+          </Text>
+          <Text style={styles.retryInfo}>
+            Retry attempts: {reloadAttempts}/{MAX_RELOAD_ATTEMPTS}
+          </Text>
+          
+          {__DEV__ && (
+            <Text style={styles.errorDetails}>
+              {appError.toString()}
+              {appError.stack && `\n\n${appError.stack}`}
+            </Text>
+          )}
+          
+          {canRetry ? (
+            <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+              <Text style={styles.retryButtonText}>Retry ({MAX_RELOAD_ATTEMPTS - reloadAttempts} attempts left)</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.restartButton} onPress={handleManualRestart}>
+              <Text style={styles.retryButtonText}>Reset & Restart</Text>
+            </TouchableOpacity>
+          )}
         </View>
-      </View>
-    </SafeAreaProvider>
+      </SafeAreaProvider>
+    );
+  }
+
+  // Show loading screen until app is ready
+  if (!isReady) {
+    console.log("🟢 PRODUCTION: Showing loading screen, progress:", initializationProgress);
+    return (
+      <SafeAreaProvider>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+          <Text style={styles.progressText}>{initializationProgress}</Text>
+        </View>
+      </SafeAreaProvider>
+    );
+  }
+
+  // Render main app with error boundary protection
+  console.log("🟢 Rendering main app components...");
+  
+  return (
+    <ErrorBoundary>
+      <AuthenticatedUserProvider>
+        <SafeAreaProvider>
+          <ErrorBoundary>
+            <RootNavigator />
+          </ErrorBoundary>
+        </SafeAreaProvider>
+      </AuthenticatedUserProvider>
+    </ErrorBoundary>
   );
 };
 
-
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  appContainer: {
-    flex: 1,
-  },
-  navigationContainer: {
-    flex: 2, // Takes up 2/3 of the screen
-    backgroundColor: '#ffffff',
-  },
-  debugSection: {
-    flex: 1, // Takes up 1/3 of the screen
-    backgroundColor: '#000000',
-    borderTopWidth: 2,
-    borderTopColor: '#00ff00',
-  },
-  // Loading/Error styles for RealAppNavigator
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: 20,
-  },
-  loadingText: {
-    fontSize: 24,
-    fontWeight: 'bold',  
-    color: '#2196F3',
-    marginBottom: 8,
-  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: 20,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
   },
   errorTitle: {
     fontSize: 24,
@@ -304,37 +408,59 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     lineHeight: 24,
   },
-  // Real app screens will have their own styles
-  // Debug log styles
-  logContainer: {
-    flex: 1,
-    padding: 10,
-  },
-  logTitle: {
+  retryInfo: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#00ff00',
-    marginBottom: 5,
+    color: '#888888',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  errorDetails: {
+    fontSize: 12,
+    color: '#888888',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    backgroundColor: '#F5F5F5',
+    padding: 10,
+    borderRadius: 8,
+    maxHeight: 200,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  restartButton: {
+    backgroundColor: '#FF4444',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
   },
-  logScrollView: {
+  loadingContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
   },
-  logText: {
-    fontSize: 10,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    marginBottom: 1,
-    lineHeight: 12,
+  loadingText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 8,
   },
-  logInfo: {
-    color: '#00ff00',
-  },
-  logWarn: {
-    color: '#ffaa00',
-  },
-  logError: {
-    color: '#ff4444',
+  progressText: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
   },
 });
 
-export default App;
+export default App; 

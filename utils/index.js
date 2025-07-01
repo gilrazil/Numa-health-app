@@ -49,3 +49,6 @@ export {
   runProductionChecks, 
   checkHermesIssues 
 } from './productionChecks';
+
+export * from './useTogglePasswordVisibility';
+export * from './logger';

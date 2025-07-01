@@ -1,9 +1,10 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, logError } from './logger';
 
 // Comprehensive production environment checker
 export const runProductionChecks = async () => {
-  console.log('🔍 PRODUCTION CHECKS: Starting comprehensive environment verification...');
+  log('🔍 PRODUCTION CHECKS: Starting comprehensive environment verification...');
   
   const checks = {
     platform: Platform.OS,
@@ -14,14 +15,14 @@ export const runProductionChecks = async () => {
 
   try {
     // 1. Environment Variables Check
-    console.log('🔍 Checking environment variables...');
+    log('🔍 Checking environment variables...');
     checks.checks.envVars = {
       hasOpenAI: !!process.env.EXPO_PUBLIC_OPENAI_API_KEY,
       nodeEnv: process.env.NODE_ENV || 'unknown'
     };
 
     // 2. Firebase Config Check
-    console.log('🔍 Checking Firebase configuration...');
+    log('🔍 Checking Firebase configuration...');
     try {
       const { auth, db, validateFirebaseServices } = require('../config/firebase');
       
@@ -42,7 +43,7 @@ export const runProductionChecks = async () => {
     }
 
     // 3. AsyncStorage Check
-    console.log('🔍 Checking AsyncStorage availability...');
+    log('🔍 Checking AsyncStorage availability...');
     try {
       await AsyncStorage.setItem('productionCheck', 'test');
       await AsyncStorage.getItem('productionCheck');
@@ -56,7 +57,7 @@ export const runProductionChecks = async () => {
     }
 
     // 4. Metro Config Verification
-    console.log('🔍 Checking require.context availability...');
+    log('🔍 Checking require.context availability...');
     try {
       // Test if require.context is available (should be with unstable_allowRequireContext)
       if (typeof require.context === 'function') {
@@ -75,7 +76,7 @@ export const runProductionChecks = async () => {
     }
 
     // 5. Assets and Fonts Check
-    console.log('🔍 Checking critical assets...');
+    log('🔍 Checking critical assets...');
     try {
       const Images = require('../config/images');
       checks.checks.assets = {
@@ -90,7 +91,7 @@ export const runProductionChecks = async () => {
     }
 
     // 6. Navigation Config Check
-    console.log('🔍 Checking navigation configuration...');
+    log('🔍 Checking navigation configuration...');
     try {
       const RootNavigator = require('../navigation/RootNavigator');
       checks.checks.navigation = {
@@ -104,7 +105,7 @@ export const runProductionChecks = async () => {
     }
 
     // 7. Theme and Colors Check
-    console.log('🔍 Checking theme configuration...');
+    log('🔍 Checking theme configuration...');
     try {
       const Colors = require('../config/theme');
       checks.checks.theme = {
@@ -119,7 +120,7 @@ export const runProductionChecks = async () => {
     }
 
     // 8. Component Imports Check
-    console.log('🔍 Checking critical component imports...');
+    log('🔍 Checking critical component imports...');
     try {
       const Components = require('../components');
       checks.checks.components = {
@@ -134,13 +135,13 @@ export const runProductionChecks = async () => {
       };
     }
 
-    console.log('🔍 PRODUCTION CHECKS COMPLETED:');
-    console.log(JSON.stringify(checks, null, 2));
+    log('🔍 PRODUCTION CHECKS COMPLETED:');
+    log(JSON.stringify(checks, null, 2));
     
     return checks;
 
   } catch (error) {
-    console.error('🔥 PRODUCTION CHECKS FAILED:', error);
+    logError('🔥 PRODUCTION CHECKS FAILED:', error);
     checks.checks.overallError = error.message;
     return checks;
   }
@@ -148,7 +149,7 @@ export const runProductionChecks = async () => {
 
 // Check for Hermes-specific issues
 export const checkHermesIssues = () => {
-  console.log('🔍 HERMES CHECK: Verifying JavaScript engine...');
+  log('🔍 HERMES CHECK: Verifying JavaScript engine...');
   
   const hermesInfo = {
     isHermes: typeof HermesInternal !== 'undefined',
@@ -157,7 +158,7 @@ export const checkHermesIssues = () => {
   };
 
   if (hermesInfo.isHermes) {
-    console.log('🔍 HERMES: Engine is Hermes');
+    log('🔍 HERMES: Engine is Hermes');
     
     // Check for common Hermes issues
     try {
@@ -180,9 +181,9 @@ export const checkHermesIssues = () => {
       hermesInfo.promiseError = promiseError.message;
     }
   } else {
-    console.log('🔍 ENGINE: Using JavaScriptCore (JSC)');
+    log('🔍 ENGINE: Using JavaScriptCore (JSC)');
   }
 
-  console.log('🔍 ENGINE INFO:', JSON.stringify(hermesInfo, null, 2));
+  log('🔍 ENGINE INFO:', JSON.stringify(hermesInfo, null, 2));
   return hermesInfo;
 }; 

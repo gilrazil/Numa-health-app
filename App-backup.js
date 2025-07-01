@@ -4,11 +4,9 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native
 import * as Updates from 'expo-updates';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { log, logError, logCritical } from "./utils/logger";
 
-// Import Firebase configuration and auth instance
+// Import Firebase configuration to ensure it's initialized
 import "./config/firebase";
-import { auth } from "./config/firebase";
 import { RootNavigator } from "./navigation/RootNavigator";
 import { AuthenticatedUserProvider } from "./providers";
 import { ErrorBoundary } from "./components";
@@ -28,58 +26,58 @@ const App = () => {
 
   useEffect(() => {
     // PRODUCTION-SAFE LOGGING - Always log these critical steps
-    log("🟢 App starting...");
-    log("🟢 Environment:", __DEV__ ? 'Development' : 'Production');
-    log("🟢 Platform:", Platform.OS);
+    console.log("🟢 App starting...");
+    console.log("🟢 Environment:", __DEV__ ? 'Development' : 'Production');
+    console.log("🟢 Platform:", Platform.OS);
     
     // Setup global error tracking first
-    log("🟢 Setting up global error tracking...");
+    console.log("🟢 Setting up global error tracking...");
     logInitializationStep('Setting up global error tracking');
     setupGlobalErrorTracking();
-    log("🟢 Global error tracking initialized.");
+    console.log("🟢 Global error tracking initialized.");
     
     // Hardened startup initialization
     const initializeApp = async () => {
       const startTime = Date.now();
       
       try {
-        log("🟢 App initialization started.");
+        console.log("🟢 App initialization started.");
         logInitializationStep('App initialization started');
         setInitializationProgress('Initializing app...');
         
-        log('🚀 App initializing with hardened startup protection...');
+        console.log('🚀 App initializing with hardened startup protection...');
 
         // Step 1: Clear cache on first launch (one-time operation)
-        log("🟢 Starting cache clearing...");
+        console.log("🟢 Starting cache clearing...");
         logInitializationStep('Clearing cache on first launch');
         await clearCacheOnFirstLaunch();
-        log("🟢 Cache cleared.");
+        console.log("🟢 Cache cleared.");
         
         // Step 2: Initialize core services safely
-        log("🟢 Initializing core services...");
+        console.log("🟢 Initializing core services...");
         logInitializationStep('Initializing core services');
         await initializeCoreServices();
-        log("🟢 Core services initialized.");
+        console.log("🟢 Core services initialized.");
         
         // Step 3: Check Firebase initialization
-        log("🟢 Checking Firebase initialization...");
+        console.log("🟢 Checking Firebase initialization...");
         await checkFirebaseInitialization();
-        log("🟢 Firebase verified.");
+        console.log("🟢 Firebase verified.");
         
         // Step 4: Run production environment checks
-        log("🟢 Running production environment checks...");
+        console.log("🟢 Running production environment checks...");
         await runProductionChecks();
         checkHermesIssues();
-        log("🟢 Production checks completed.");
+        console.log("🟢 Production checks completed.");
         
         // Step 5: Add delay to ensure native modules are ready
-        log("🟢 Loading native modules...");
+        console.log("🟢 Loading native modules...");
         logInitializationStep('Loading native modules');
         setInitializationProgress('Loading native modules...');
         await new Promise(resolve => setTimeout(resolve, 200));
-        log("🟢 Native modules loaded.");
+        console.log("🟢 Native modules loaded.");
         
-        log("🟢 App initialization completed successfully.");
+        console.log("🟢 App initialization completed successfully.");
         logInitializationStep('App initialization completed');
         setInitializationProgress('Ready!');
         setIsReady(true);
@@ -87,12 +85,12 @@ const App = () => {
         const endTime = Date.now();
         logPerformanceMetric('App initialization time', endTime - startTime);
         
-        log('✅ App initialization completed successfully');
+        console.log('✅ App initialization completed successfully');
       } catch (error) {
-        logCritical('🔥 PRODUCTION ERROR - App initialization failed:', error);
-        logError('🔥 Error message:', error.message);
-        logError('🔥 Error stack:', error.stack);
-        logError('🔥 Error name:', error.name);
+        console.error('🔥 PRODUCTION ERROR - App initialization failed:', error);
+        console.error('🔥 Error message:', error.message);
+        console.error('🔥 Error stack:', error.stack);
+        console.error('🔥 Error name:', error.name);
         logInitializationStep('App initialization failed', { error: error.message, stack: error.stack });
         setAppError(error);
         setInitializationProgress('Initialization failed');
@@ -102,17 +100,17 @@ const App = () => {
     // Enhanced global error handler with retry protection
     const originalHandler = ErrorUtils.getGlobalHandler();
     ErrorUtils.setGlobalHandler((error, isFatal) => {
-      logCritical('🔥 Global error caught:', error);
-      logError('🔥 Is fatal:', isFatal);
-      logError('🔥 Stack trace:', error.stack);
+      console.error('🔥 Global error caught:', error);
+      console.error('🔥 Is fatal:', isFatal);
+      console.error('🔥 Stack trace:', error.stack);
       
       if (isFatal) {
         // Don't attempt reload if we've already tried too many times
         if (reloadAttempts >= MAX_RELOAD_ATTEMPTS) {
-          logError('🚫 Max reload attempts reached, showing error screen');
+          console.error('🚫 Max reload attempts reached, showing error screen');
           setAppError(error);
         } else {
-          log(`🔄 Fatal error detected, will attempt reload (attempt ${reloadAttempts + 1}/${MAX_RELOAD_ATTEMPTS})`);
+          console.log(`🔄 Fatal error detected, will attempt reload (attempt ${reloadAttempts + 1}/${MAX_RELOAD_ATTEMPTS})`);
           setAppError(error);
         }
       } else {
@@ -132,21 +130,21 @@ const App = () => {
   // Safe cache clearing on first launch
   const clearCacheOnFirstLaunch = async () => {
     try {
-      log('🟢 Cache clearing: Checking cache status...');
+      console.log('🟢 Cache clearing: Checking cache status...');
       setInitializationProgress('Checking cache status...');
       
       const hasClearedCache = await AsyncStorage.getItem('hasClearedCache');
       if (hasClearedCache) {
-        log('🟢 Cache clearing: Already cleared, skipping');
+        console.log('🟢 Cache clearing: Already cleared, skipping');
         return;
       }
 
       if (!FileSystem.cacheDirectory) {
-        log('🟢 Cache clearing: No cache directory available, skipping');
+        console.log('🟢 Cache clearing: No cache directory available, skipping');
         return;
       }
 
-      log('🟢 Cache clearing: First launch detected, safely clearing Expo cache...');
+      console.log('🟢 Cache clearing: First launch detected, safely clearing Expo cache...');
       setInitializationProgress('Clearing cache safely...');
       
       // Target specific cache subdirectories safely
@@ -170,7 +168,7 @@ const App = () => {
             await FileSystem.deleteAsync(path, { idempotent: true });
             clearedCount++;
             if (__DEV__) {
-              log(`🗑️ Cleared cache path: ${path}`);
+              console.log(`🗑️ Cleared cache path: ${path}`);
             }
           } else {
             skippedCount++;
@@ -178,7 +176,7 @@ const App = () => {
         } catch (pathError) {
           skippedCount++;
           if (__DEV__) {
-            logError(`⚠️ Could not clear cache path ${path}:`, pathError.message);
+            console.warn(`⚠️ Could not clear cache path ${path}:`, pathError.message);
           }
         }
       }
@@ -186,15 +184,15 @@ const App = () => {
       // Mark as cleared to prevent future clears
       await AsyncStorage.setItem('hasClearedCache', 'true');
       
-      log(`🟢 Cache clearing: Successfully completed - ${clearedCount} cleared, ${skippedCount} skipped`);
+      console.log(`🟢 Cache clearing: Successfully completed - ${clearedCount} cleared, ${skippedCount} skipped`);
     } catch (error) {
-      logError('🔥 Cache clearing failed (non-fatal):', error.message);
+      console.error('🔥 Cache clearing failed (non-fatal):', error.message);
       
       // Still mark as attempted to prevent repeated failures
       try {
         await AsyncStorage.setItem('hasClearedCache', 'true');
       } catch (storageError) {
-        logError('🔥 Could not save cache clearing status:', storageError.message);
+        console.error('🔥 Could not save cache clearing status:', storageError.message);
       }
     }
   };
@@ -202,40 +200,40 @@ const App = () => {
   // Initialize core services with error protection
   const initializeCoreServices = async () => {
     try {
-      log('🟢 Core services: Starting initialization...');
+      console.log('🟢 Core services: Starting initialization...');
       setInitializationProgress('Initializing Firebase...');
       
       // Import Firebase validation function
-      log('🟢 Core services: Importing Firebase validation...');
+      console.log('🟢 Core services: Importing Firebase validation...');
       const { validateFirebaseServices } = require('./config/firebase');
       
       // Validate Firebase services using production-safe method
-      log('🟢 Core services: Validating Firebase services...');
+      console.log('🟢 Core services: Validating Firebase services...');
       const validation = validateFirebaseServices();
-      log('🟢 Core services: Firebase validation passed');
+      console.log('🟢 Core services: Firebase validation passed');
       
       // Add any other critical service initialization here
-      log('🟢 Core services: All services initialized');
+      console.log('🟢 Core services: All services initialized');
     } catch (error) {
-      logError('🔥 Core services initialization failed:', error);
+      console.error('🔥 Core services initialization failed:', error);
       
       // Try backup Firebase initialization
       try {
-        log('🟢 Core services: Attempting backup Firebase initialization...');
+        console.log('🟢 Core services: Attempting backup Firebase initialization...');
         const { initializeFirebaseBackup } = require('./config/firebaseBackup');
         const backupServices = initializeFirebaseBackup();
-        log('🟢 Core services: Backup Firebase initialized successfully');
+        console.log('🟢 Core services: Backup Firebase initialized successfully');
       } catch (backupError) {
-        logError('🔥 Backup Firebase initialization also failed:', backupError);
+        console.error('🔥 Backup Firebase initialization also failed:', backupError);
         
         // Last resort: Create minimal mock services to prevent crash
         try {
-          log('🟢 Core services: Creating minimal Firebase services...');
+          console.log('🟢 Core services: Creating minimal Firebase services...');
           const { createMinimalFirebaseServices } = require('./config/firebaseBackup');
           const minimalServices = createMinimalFirebaseServices();
-          log('🟢 Core services: Minimal Firebase services created');
+          console.log('🟢 Core services: Minimal Firebase services created');
         } catch (minimalError) {
-          logError('🔥 Even minimal Firebase services failed:', minimalError);
+          console.error('🔥 Even minimal Firebase services failed:', minimalError);
           throw new Error(`All Firebase initialization methods failed: ${error.message}`);
         }
       }
@@ -245,7 +243,7 @@ const App = () => {
   // Check Firebase initialization in production
   const checkFirebaseInitialization = async () => {
     try {
-      log('🟢 Firebase check: Verifying Firebase initialization...');
+      console.log('🟢 Firebase check: Verifying Firebase initialization...');
       
       // Import Firebase services and validation function
       const { auth: authService, db: dbService, validateFirebaseServices } = require('./config/firebase');
@@ -255,23 +253,23 @@ const App = () => {
       
       // Additional checks
       if (authService && authService.app && authService.app.name) {
-        log('🟢 Firebase check: Auth app name:', authService.app.name);
+        console.log('🟢 Firebase check: Auth app name:', authService.app.name);
       }
       
       if (dbService && dbService.app && dbService.app.name) {
-        log('🟢 Firebase check: Firestore app name:', dbService.app.name);
+        console.log('🟢 Firebase check: Firestore app name:', dbService.app.name);
       }
       
-      log('🟢 Firebase check: All Firebase services verified successfully');
+      console.log('🟢 Firebase check: All Firebase services verified successfully');
     } catch (error) {
-      logError('🔥 Firebase initialization check failed:', error);
+      console.error('🔥 Firebase initialization check failed:', error);
       throw error;
     }
   };
 
   // Enhanced retry handler with attempt limits
   const handleRetry = async () => {
-    log(`🔄 Retry requested (attempt ${reloadAttempts + 1}/${MAX_RELOAD_ATTEMPTS})`);
+    console.log(`🔄 Retry requested (attempt ${reloadAttempts + 1}/${MAX_RELOAD_ATTEMPTS})`);
     
     setAppError(null);
     setIsReady(false);
@@ -281,23 +279,23 @@ const App = () => {
       // Check if we can attempt a reload
       if (Platform.OS === 'ios' && !__DEV__ && reloadAttempts < MAX_RELOAD_ATTEMPTS) {
         reloadAttempts++;
-        log(`🔄 Attempting app reload (${reloadAttempts}/${MAX_RELOAD_ATTEMPTS})`);
+        console.log(`🔄 Attempting app reload (${reloadAttempts}/${MAX_RELOAD_ATTEMPTS})`);
         await Updates.reloadAsync();
       } else if (reloadAttempts < MAX_RELOAD_ATTEMPTS) {
         // Development mode or Android - reinitialize
         reloadAttempts++;
-        log(`🔄 Attempting reinitialization (${reloadAttempts}/${MAX_RELOAD_ATTEMPTS})`);
+        console.log(`🔄 Attempting reinitialization (${reloadAttempts}/${MAX_RELOAD_ATTEMPTS})`);
         setTimeout(() => {
           setInitializationProgress('Reinitializing...');
           setIsReady(true);
         }, 1000);
       } else {
         // Max attempts reached
-        logError('🚫 Maximum retry attempts reached');
+        console.error('🚫 Maximum retry attempts reached');
         setAppError(new Error('Maximum retry attempts reached. Please restart the app manually.'));
       }
     } catch (error) {
-      logError('🔄 Retry failed:', error);
+      console.error('🔥 Retry failed:', error);
       reloadAttempts++;
       setAppError(error);
     }
@@ -305,15 +303,15 @@ const App = () => {
 
   // Reset retry counter (for manual restart)
   const handleManualRestart = async () => {
-    log('🔄 Manual restart requested, resetting retry counter');
+    console.log('🔄 Manual restart requested, resetting retry counter');
     reloadAttempts = 0;
     
     // Clear the first launch flag to allow cache clearing again
     try {
       await AsyncStorage.removeItem('hasClearedCache');
-      log('🧹 First launch flag reset for cache clearing');
+      console.log('🧹 First launch flag reset for cache clearing');
     } catch (error) {
-      logError('⚠️ Failed to reset first launch flag:', error);
+      console.error('⚠️ Failed to reset first launch flag:', error);
     }
     
     await handleRetry();
@@ -321,7 +319,7 @@ const App = () => {
 
   // Show error screen if app failed to initialize
   if (appError) {
-    log("🔥 PRODUCTION: Showing error screen due to app error:", appError.message);
+    console.log("🔥 PRODUCTION: Showing error screen due to app error:", appError.message);
     const canRetry = reloadAttempts < MAX_RELOAD_ATTEMPTS;
     
     return (
@@ -361,7 +359,7 @@ const App = () => {
 
   // Show loading screen until app is ready
   if (!isReady) {
-    log("🟢 PRODUCTION: Showing loading screen, progress:", initializationProgress);
+    console.log("🟢 PRODUCTION: Showing loading screen, progress:", initializationProgress);
     return (
       <SafeAreaProvider>
         <View style={styles.loadingContainer}>
@@ -373,11 +371,11 @@ const App = () => {
   }
 
   // Render main app with error boundary protection
-  log("🟢 Rendering main app components...");
+  console.log("🟢 Rendering main app components...");
   
   return (
     <ErrorBoundary>
-      <AuthenticatedUserProvider auth={auth}>
+      <AuthenticatedUserProvider>
         <SafeAreaProvider>
           <ErrorBoundary>
             <RootNavigator />

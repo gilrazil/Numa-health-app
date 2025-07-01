@@ -1,9 +1,9 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
+import { log, logError, logWarn } from '../utils/logger';
 
 const BIOMETRIC_ENABLED_KEY = 'biometric_enabled';
 const USER_CREDENTIALS_KEY = 'user_credentials';
-import { log, logError, logWarn } from '../utils/logger';
 
 export class BiometricService {
   // Check if biometric authentication is available on the device

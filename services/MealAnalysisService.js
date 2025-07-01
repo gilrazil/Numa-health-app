@@ -1,9 +1,9 @@
 import OpenAI from 'openai';
 import { OPENAI_CONFIG } from '../config/openai';
+import { log, logError, logWarn } from '../utils/logger';
 
 // Initialize OpenAI client with proper configuration for project-based keys
 const openai = new OpenAI({
-import { log, logError, logWarn } from '../utils/logger';
   apiKey: OPENAI_CONFIG.apiKey,
   organization: 'org-FBKodskYRfF1sfDEocfEMPT4',
   project: 'proj_Arnb03Z4mKByZ3jTb5asqLVw',

@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, logError, logWarn } from '../utils/logger';
 
 const FIRST_LAUNCH_KEY = 'has_launched_before';
 const ONBOARDING_COMPLETED_KEY = 'onboarding_completed';
-import { log, logError, logWarn } from '../utils/logger';
 
 export class FirstLaunchService {
   // Check if this is the user's first time opening the app

@@ -29,7 +29,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.numahealth.app",
-      buildNumber: "14",
+      buildNumber: "15",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "This app uses the camera to let you take photos of your meals for tracking.",

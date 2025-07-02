@@ -1,139 +1,124 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { View, Text, StyleSheet } from "react-native";
 
-export default function App() {
-  const [status, setStatus] = useState('Starting Firebase test...');
-  const [details, setDetails] = useState([]);
+// Simple Firebase initialization - proven to work in Build 17
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
-  useEffect(() => {
-    console.log('[BUILD 17] 🧪 Starting simple Firebase test');
-    
-    const testFirebase = async () => {
-      const logs = [];
-      
-      try {
-        // Step 1: Test if we can import Firebase
-        logs.push('✅ Step 1: Importing Firebase...');
-        setStatus('Importing Firebase...');
-        
-        const { initializeApp, getApps } = await import('firebase/app');
-        logs.push('✅ Step 1: Firebase import successful');
-        
-        // Step 2: Try to initialize with minimal config
-        logs.push('✅ Step 2: Initializing Firebase app...');
-        setStatus('Initializing Firebase...');
-        
-        const firebaseConfig = {
-          apiKey: "AIzaSyCF8WSck4p793ZjWETvvfiQ7EXng8FTmMM", // Using iOS native API key
-          projectId: "numa-app-34ede",
-          appId: "1:859592733394:ios:4368fec253680f1f2fb30b"
-        };
-        
-        const existingApps = getApps();
-        if (existingApps.length === 0) {
-          const app = initializeApp(firebaseConfig);
-          logs.push(`✅ Step 2: Firebase initialized successfully - ${app.name}`);
-        } else {
-          logs.push('✅ Step 2: Firebase already initialized');
-        }
-        
-        // Step 3: Success
-        logs.push('🎉 All Firebase tests passed!');
-        setStatus('✅ Firebase working!');
-        
-      } catch (error) {
-        logs.push(`❌ Firebase test failed: ${error.message}`);
-        logs.push(`❌ Error stack: ${error.stack}`);
-        setStatus('❌ Firebase failed');
-        
-        console.error('[BUILD 17] Firebase test error:', error);
-      }
-      
-      setDetails(logs);
-    };
-    
-    // Add delay to see loading state
-    setTimeout(testFirebase, 1000);
-  }, []);
+// Your app components
+import { RootNavigator } from "./navigation/RootNavigator";
+import { AuthenticatedUserProvider } from "./providers";
+import { ErrorBoundary } from "./components";
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>BUILD 17 - Firebase Test</Text>
-      <Text style={styles.subtitle}>Minimal Firebase initialization test</Text>
-      
-      <View style={styles.statusContainer}>
-        <Text style={styles.status}>{status}</Text>
-      </View>
-      
-      <View style={styles.detailsContainer}>
-        {details.map((detail, index) => (
-          <Text key={index} style={styles.detail}>{detail}</Text>
-        ))}
-      </View>
-      
-      <View style={styles.infoContainer}>
-        <Text style={styles.info}>Using iOS native API key</Text>
-        <Text style={styles.info}>GoogleService-Info.plist should be detected</Text>
-        <Text style={styles.info}>If you see this screen, JS is working</Text>
-      </View>
-    </View>
-  );
+// Simple Firebase setup (like Build 17, but for your real app)
+const firebaseConfig = {
+  apiKey: "AIzaSyCF8WSck4p793ZjWETvvfiQ7EXng8FTmMM", // iOS native API key
+  authDomain: "numa-app-34ede.firebaseapp.com",
+  projectId: "numa-app-34ede",
+  storageBucket: "numa-app-34ede.firebasestorage.app",
+  messagingSenderId: "859592733394",
+  appId: "1:859592733394:ios:4368fec253680f1f2fb30b"
+};
+
+// Initialize Firebase (simple, no complex error handling)
+let app, auth, db;
+const existingApps = getApps();
+if (existingApps.length === 0) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = existingApps[0];
 }
 
+auth = getAuth(app);
+db = getFirestore(app);
+
+console.log('[BUILD 18] Firebase initialized successfully');
+
+const App = () => {
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    console.log('[BUILD 18] App starting with simplified Firebase');
+    
+    // Simple initialization - no complex error handling that was causing crashes
+    const initializeApp = async () => {
+      try {
+        console.log('[BUILD 18] Firebase services ready');
+        
+        // Small delay to ensure everything is ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        setIsReady(true);
+        console.log('[BUILD 18] App ready to render');
+      } catch (error) {
+        console.error('[BUILD 18] Initialization error:', error);
+        // Simple error handling - just log and continue
+        setIsReady(true);
+      }
+    };
+
+    initializeApp();
+  }, []);
+
+  // Show loading screen briefly
+  if (!isReady) {
+    return (
+      <SafeAreaProvider style={styles.loadingContainer}>
+        <View style={styles.loadingContent}>
+          <Text style={styles.loadingTitle}>Numa Health</Text>
+          <Text style={styles.loadingMessage}>Build 18 - Simplified Firebase</Text>
+          <Text style={styles.loadingSubtitle}>Loading...</Text>
+        </View>
+      </SafeAreaProvider>
+    );
+  }
+
+  // Render your actual app
+  console.log('[BUILD 18] Rendering main app with simplified Firebase');
+  
+  return (
+    <ErrorBoundary>
+      <AuthenticatedUserProvider auth={auth}>
+        <SafeAreaProvider>
+          <ErrorBoundary>
+            <RootNavigator />
+          </ErrorBoundary>
+        </SafeAreaProvider>
+      </AuthenticatedUserProvider>
+    </ErrorBoundary>
+  );
+};
+
 const styles = StyleSheet.create({
-  container: {
+  loadingContainer: {
     flex: 1,
-    backgroundColor: '#E8F4FF',
-    padding: 20,
-    justifyContent: 'center',
+    backgroundColor: '#6B4EFF',
   },
-  title: {
-    fontSize: 24,
+  loadingContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingTitle: {
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#1976D2',
-    textAlign: 'center',
+    color: '#FFFFFF',
     marginBottom: 10,
   },
-  subtitle: {
+  loadingMessage: {
     fontSize: 16,
-    color: '#666',
+    color: '#E8F4FF',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 5,
   },
-  statusContainer: {
-    backgroundColor: '#FFF',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  status: {
+  loadingSubtitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    color: '#FFFFFF',
     textAlign: 'center',
   },
-  detailsContainer: {
-    backgroundColor: '#F5F5F5',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-    maxHeight: 200,
-  },
-  detail: {
-    fontSize: 12,
-    color: '#333',
-    marginBottom: 5,
-    fontFamily: 'monospace',
-  },
-  infoContainer: {
-    backgroundColor: '#FFF3E0',
-    padding: 15,
-    borderRadius: 10,
-  },
-  info: {
-    fontSize: 12,
-    color: '#E65100',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-}); 
+});
+
+export default App; 

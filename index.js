@@ -1,5 +1,5 @@
 // PRODUCTION DEBUG - Log immediately on load
-console.log('=== INDEX.JS LOADED ===');
+console.log('=== INDEX.JS LOADED - BUILD 16 WITH FIREBASE ===');
 
 import 'react-native-gesture-handler';
 import { registerRootComponent } from 'expo';
@@ -18,10 +18,10 @@ try {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
-      event: 'index.js loaded - NO FIREBASE TEST',
+      event: 'index.js loaded - Build 16 - Firebase with GoogleService-Info.plist',
       timestamp: new Date().toISOString(),
       platform: 'ios',
-      buildNumber: '15'
+      buildNumber: '16'
     })
   }).catch(() => {});
 } catch (e) {}

@@ -13,7 +13,8 @@ config.transformer.experimentalImportSupport = false;
 config.resetCache = true;
 
 // Improve module resolution for monorepos or complex setups
-config.resolver.unstable_enablePackageExports = true;
+// Disabled due to SDK 53 compatibility issues
+// config.resolver.unstable_enablePackageExports = true;
 
 // Optimize for iOS build issues
 config.transformer.minifierConfig = {
@@ -27,10 +28,9 @@ config.resolver = {
   // Disable symlinks to prevent path resolution issues
   resolverMainFields: ['react-native', 'browser', 'main'],
   platforms: ['ios', 'android', 'native', 'web'],
+  sourceExts: [...config.resolver.sourceExts, 'cjs'],
 };
 
-// Fix for "Component auth has not been registered yet" error
-config.resolver.sourceExts.push('cjs');
-config.resolver.unstable_enablePackageExports = false;
+// Note: unstable_enablePackageExports is already set above
 
 module.exports = config;

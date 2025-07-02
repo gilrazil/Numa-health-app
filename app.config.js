@@ -20,9 +20,7 @@ export default {
       checkAutomatically: "ON_ERROR_RECOVERY",
       enabled: false // Disable updates to prevent cache conflicts
     },
-    runtimeVersion: {
-      policy: "appVersion"
-    },
+    runtimeVersion: "1.0.0",
     web: {
       favicon: "./assets/numa-logo.png",
       bundler: "metro"
@@ -31,11 +29,12 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.numahealth.app",
-      buildNumber: "12",
+      buildNumber: "14",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "This app uses the camera to let you take photos of your meals for tracking.",
         NSPhotoLibraryUsageDescription: "This app accesses your photo library to let you select meal photos.",
+        NSPhotoLibraryAddUsageDescription: "This app saves analyzed meal photos to your photo library.",
         // Prevent cache-related crashes
         UIFileSharingEnabled: false,
         LSSupportsOpeningDocumentsInPlace: false
@@ -59,7 +58,7 @@ export default {
         projectId: "f8a7c205-a5a5-4ac0-b6e9-a084d95662fa"
       }
     },
-    jsEngine: "jsc", // Disabled Hermes temporarily to test for white screen issue
+    jsEngine: "hermes", // Hermes is required for SDK 52+
     packagerOpts: {
       config: "metro.config.js"
     }

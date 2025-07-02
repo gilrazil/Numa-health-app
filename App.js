@@ -5,17 +5,18 @@ import * as Updates from 'expo-updates';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { log, logError, logCritical } from "./utils/logger";
-
-// Import Firebase configuration and auth instance
-import "./config/firebase";
-import { auth } from "./config/firebase";
-import { RootNavigator } from "./navigation/RootNavigator";
-import { AuthenticatedUserProvider } from "./providers";
 import { ErrorBoundary } from "./components";
+import { AuthenticatedUserProvider } from "./providers";
+import { RootNavigator } from "./navigation/RootNavigator";
 import { Colors } from "./config";
 import { setupGlobalErrorTracking } from "./utils/setupErrorTracking";
 import { logInitializationStep, logPerformanceMetric } from "./utils/debugInitialization";
 import { runProductionChecks, checkHermesIssues } from "./utils/productionChecks";
+import { logRemote } from './services/RemoteLogService';
+
+// Import Firebase configuration and auth instance
+import "./config/firebase";
+import { auth } from "./config/firebase";
 
 // Global retry counter to prevent infinite reload loops
 let reloadAttempts = 0;
@@ -31,6 +32,12 @@ const App = () => {
     log("🟢 App starting...");
     log("🟢 Environment:", __DEV__ ? 'Development' : 'Production');
     log("🟢 Platform:", Platform.OS);
+    logRemote.lifecycle('App.js loaded', { 
+      environment: __DEV__ ? 'Development' : 'Production',
+      platform: Platform.OS,
+      version: '1.0.0',
+      buildNumber: '13'
+    });
     
     // Setup global error tracking first
     log("🟢 Setting up global error tracking...");
@@ -222,8 +229,8 @@ const App = () => {
       // Try backup Firebase initialization
       try {
         log('🟢 Core services: Attempting backup Firebase initialization...');
-        const { initializeFirebaseBackup } = require('./config/firebaseBackup');
-        const backupServices = initializeFirebaseBackup();
+        const firebaseBackup = require('./config/firebaseBackup');
+        const backupServices = firebaseBackup.initializeFirebaseBackup();
         log('🟢 Core services: Backup Firebase initialized successfully');
       } catch (backupError) {
         logError('🔥 Backup Firebase initialization also failed:', backupError);
@@ -231,8 +238,8 @@ const App = () => {
         // Last resort: Create minimal mock services to prevent crash
         try {
           log('🟢 Core services: Creating minimal Firebase services...');
-          const { createMinimalFirebaseServices } = require('./config/firebaseBackup');
-          const minimalServices = createMinimalFirebaseServices();
+          const firebaseBackup = require('./config/firebaseBackup');
+          const minimalServices = firebaseBackup.createMinimalFirebaseServices();
           log('🟢 Core services: Minimal Firebase services created');
         } catch (minimalError) {
           logError('🔥 Even minimal Firebase services failed:', minimalError);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -15,27 +15,54 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
+import * as FileSystem from 'expo-file-system';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, auth, db, storage } from '../config';
 import { Button, LoadingIndicator, AlphaBadge } from '../components';
 import { collection, addDoc, doc, getDoc, query, where, orderBy, limit, getDocs, deleteDoc } from 'firebase/firestore';
 import { log, logError, logWarn } from '../utils/logger';
+import { logRemote } from '../services/RemoteLogService';
 
 export const MealCameraScreen = ({ navigation }) => {
   log("[CAMERA] 🚀 MealCameraScreen component called");
   log("[CAMERA] 🔧 __DEV__ flag:", __DEV__);
   log("[CAMERA] 🔧 NODE_ENV:", process.env.NODE_ENV);
+  
+  // Critical module check
+  if (!ImagePicker) {
+    logRemote.critical('[CAMERA] CRITICAL: ImagePicker module is null at component load!');
+    Alert.alert(
+      "Critical Error",
+      "Camera module failed to load. Please close the app completely and restart.",
+      [{ text: "OK" }]
+    );
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContent}>
+          <Text style={styles.errorText}>Camera module not available</Text>
+          <Text style={styles.subText}>Please restart the app</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const [uploading, setUploading] = useState(false);
-  const [meals, setMeals] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [hasPermission, setHasPermission] = useState(null);
   const [permissionStatus, setPermissionStatus] = useState(null);
-  const [retryCount, setRetryCount] = useState(0);
+  const [user, setUser] = useState(null);
+  const [meals, setMeals] = useState([]);
   const [error, setError] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
-  const [mealsLoading, setMealsLoading] = useState(true);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [imageUri, setImageUri] = useState(null);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  
+  // Development mode detection - camera enabled in production
   const [developmentMode, setDevelopmentMode] = useState(__DEV__ || process.env.NODE_ENV === 'development');
 
+  const [retryCount, setRetryCount] = useState(0);
+  const [userProfile, setUserProfile] = useState(null);
+  const [mealsLoading, setMealsLoading] = useState(true);
+  
   useEffect(() => {
     log("[CAMERA] ⚡ MealCameraScreen useEffect triggered");
     log("[CAMERA] 🔧 Development mode:", developmentMode);
@@ -72,28 +99,35 @@ export const MealCameraScreen = ({ navigation }) => {
 
   // Safe initialization for development mode
   const safeInitialization = async () => {
-    log("[CAMERA] 🛠️ safeInitialization called");
     try {
-      setLoading(true);
+      log("[CAMERA] ⚡ Starting safe initialization");
+      logRemote.lifecycle('[CAMERA] Starting safe initialization', { __DEV__, Platform: Platform.OS });
       
-      // Skip camera permissions in development mode
-      log("[CAMERA] ⚠️ Skipping camera permissions in development mode");
-      setPermissionStatus({
-        camera: 'dev-mode',
-        mediaLibrary: 'dev-mode'
+      if (!ImagePicker) {
+        log("[CAMERA] 🚨 ImagePicker module is null/undefined!");
+        logRemote.critical('[CAMERA] ImagePicker module is null/undefined!');
+        Alert.alert("Module Error", "Camera module is not available. This may be a build issue.");
+        return;
+      }
+      
+      log("[CAMERA] ✅ ImagePicker module loaded:", Object.keys(ImagePicker || {}));
+      logRemote.info('[CAMERA] ImagePicker module loaded', { 
+        keys: Object.keys(ImagePicker || {}).join(', ')
       });
       
-      // Still try to fetch meals and user profile
-      log("[CAMERA] 📊 Fetching data in development mode");
-      await fetchMeals();
-      await checkUserProfile();
+      log("[CAMERA] 🔍 Checking camera permissions...");
+      logRemote.info('[CAMERA] Checking permissions');
       
-      log("[CAMERA] ✅ Safe initialization completed");
+      const result = await requestPermissions();
+      setPermissionStatus(result);
+      
+      log("[CAMERA] 📸 Permissions result:", result);
+      logRemote.info('[CAMERA] Permissions result', result);
+      
     } catch (error) {
-      logError("[CAMERA] 🔥 Error in safe initialization:", error);
-      setError(`Safe initialization failed: ${error.message}`);
-    } finally {
-      setLoading(false);
+      logError("[CAMERA] ❌ Safe initialization error:", error);
+      logRemote.critical('[CAMERA] Safe initialization error', error);
+      Alert.alert("Initialization Error", "Failed to initialize camera module. " + error.message);
     }
   };
 
@@ -206,6 +240,7 @@ export const MealCameraScreen = ({ navigation }) => {
   const takePhoto = async () => {
     try {
       log("[CAMERA] 📸 takePhoto called");
+      logRemote.info('[CAMERA] takePhoto called - start');
       setError(null);
       
       // Development mode - show mock behavior
@@ -222,10 +257,25 @@ export const MealCameraScreen = ({ navigation }) => {
         return;
       }
       
-      // Check if ImagePicker is available
-      if (!ImagePicker || !ImagePicker.launchCameraAsync) {
-        logError("[CAMERA] ❌ ImagePicker is not available.");
-        Alert.alert("Camera Error", "Image picker is not available.");
+      // Enhanced checks for ImagePicker
+      log("[CAMERA] Checking ImagePicker availability...");
+      logRemote.info('[CAMERA] Checking ImagePicker', {
+        hasImagePicker: !!ImagePicker,
+        hasLaunchCameraAsync: !!(ImagePicker && ImagePicker.launchCameraAsync),
+        typeofLaunchCamera: typeof(ImagePicker?.launchCameraAsync)
+      });
+      
+      if (!ImagePicker) {
+        logError("[CAMERA] ❌ ImagePicker module is not available.");
+        logRemote.critical('[CAMERA] ImagePicker module is null');
+        Alert.alert("Camera Error", "Camera module is not available.");
+        return;
+      }
+      
+      if (!ImagePicker.launchCameraAsync) {
+        logError("[CAMERA] ❌ ImagePicker.launchCameraAsync is not available.");
+        logRemote.critical('[CAMERA] launchCameraAsync is not a function');
+        Alert.alert("Camera Error", "Camera launch function is not available.");
         return;
       }
       
@@ -235,26 +285,40 @@ export const MealCameraScreen = ({ navigation }) => {
         return;
       }
 
-      log("[📸 Camera] Launching camera...");
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: [ImagePicker.MediaTypeOptions.Images],
-        allowsEditing: false,
-        quality: 0.8,
-        exif: false,
-        presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
-      });
+      log("[📸 Camera] About to launch camera...");
+      logRemote.info('[CAMERA] Launching camera NOW');
+      
+      // Wrap in try-catch specifically for launch
+      let result;
+      try {
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ['images'],
+          allowsEditing: false,
+          quality: 0.7, // Reduced from 0.8 to prevent memory issues
+          exif: false,
+        });
+        logRemote.info('[CAMERA] Camera returned successfully', { 
+          canceled: result?.canceled,
+          hasAssets: !!(result?.assets && result.assets.length > 0)
+        });
+      } catch (launchError) {
+        logError("[CAMERA] ❌ Error during launchCameraAsync:", launchError);
+        logRemote.critical('[CAMERA] launchCameraAsync crashed', launchError);
+        throw launchError;
+      }
 
       log("[📸 Camera] Result:", result);
-      if (!result.canceled && result.assets[0]) {
+      if (!result.canceled && result.assets && result.assets[0]) {
         // Directly navigate to meal analysis after taking photo
         await navigateToMealAnalysis(result.assets[0]);
       }
     } catch (error) {
       logError('Error taking photo:', error);
+      logRemote.critical('[CAMERA] takePhoto error', error);
       setError('Failed to take photo. Please try again.');
       Alert.alert(
         'Camera Error',
-        'There was a problem accessing the camera. Please make sure the camera is not being used by another app.',
+        'There was a problem accessing the camera. Error: ' + error.message,
         [
           { text: 'Retry', onPress: takePhoto },
           { text: 'Cancel', style: 'cancel' }
@@ -263,9 +327,10 @@ export const MealCameraScreen = ({ navigation }) => {
     }
   };
 
-  const pickFromGallery = async () => {
+  const pickImage = async () => {
     try {
-      log("[CAMERA] 🖼️ pickFromGallery called");
+      log("[CAMERA] 🖼️ pickImage called");
+      logRemote.info('[CAMERA] pickImage called');
       setError(null);
       
       // Development mode - show mock behavior
@@ -273,7 +338,7 @@ export const MealCameraScreen = ({ navigation }) => {
         log("[CAMERA] 🛠️ Development mode - showing mock gallery behavior");
         Alert.alert(
           "Development Mode",
-          "Gallery access is disabled in development mode to prevent crashes. In production, this would open the photo gallery.",
+          "Gallery is disabled in development mode to prevent crashes. In production, this would open the photo library.",
           [
             { text: "OK", style: "default" },
             { text: "Enable Gallery", onPress: () => setDevelopmentMode(false) }
@@ -282,40 +347,63 @@ export const MealCameraScreen = ({ navigation }) => {
         return;
       }
       
-      // Check if ImagePicker is available
-      if (!ImagePicker || !ImagePicker.launchImageLibraryAsync) {
-        logError("[CAMERA] ❌ ImagePicker is not available.");
-        Alert.alert("Gallery Error", "Image picker is not available.");
+      // Enhanced permission check
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      logRemote.info('[CAMERA] Gallery permission status', { status });
+      
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'We need access to your photo library to select photos.');
         return;
       }
       
-      if (permissionStatus?.mediaLibrary !== 'granted') {
-        log("[CAMERA] ⚠️ Media library permission not granted, requesting permissions");
-        await requestPermissions();
+      // Enhanced ImagePicker validation
+      if (!ImagePicker || typeof ImagePicker.launchImageLibraryAsync !== 'function') {
+        logError("[CAMERA] ❌ ImagePicker.launchImageLibraryAsync not available");
+        logRemote.critical('[CAMERA] launchImageLibraryAsync not available');
+        Alert.alert("Error", "Image picker is not available. Please restart the app.");
         return;
       }
 
-      log("[📸 Gallery] Launching gallery...");
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: [ImagePicker.MediaTypeOptions.Images],
-        allowsEditing: false,
-        quality: 0.8,
-        exif: false,
-      });
+      log("[Gallery] Launching image library...");
+      logRemote.info('[CAMERA] Launching gallery NOW');
+      
+      let result;
+      try {
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsEditing: false,
+          quality: 0.7,
+          exif: false,
+        });
+        logRemote.info('[CAMERA] Gallery returned', { 
+          canceled: result?.canceled,
+          hasAssets: !!(result?.assets && result.assets.length > 0)
+        });
+      } catch (galleryError) {
+        logError("[CAMERA] ❌ Error during launchImageLibraryAsync:", galleryError);
+        logRemote.critical('[CAMERA] launchImageLibraryAsync crashed', {
+          error: galleryError.message,
+          stack: galleryError.stack
+        });
+        throw galleryError;
+      }
 
-      log("[📸 Gallery] Result:", result);
-      if (!result.canceled && result.assets[0]) {
-        // Directly navigate to meal analysis after picking from gallery
+      log("[Gallery] Result:", result);
+      if (!result.canceled && result.assets && result.assets[0]) {
         await navigateToMealAnalysis(result.assets[0]);
       }
     } catch (error) {
-      logError('Error picking from gallery:', error);
+      logError('Error picking image:', error);
+      logRemote.critical('[CAMERA] pickImage error', {
+        error: error.message,
+        stack: error.stack
+      });
       setError('Failed to pick image. Please try again.');
       Alert.alert(
         'Gallery Error',
-        'There was a problem accessing your photo library. Please make sure you have granted permission.',
+        'There was a problem accessing your photo library. Error: ' + error.message,
         [
-          { text: 'Retry', onPress: pickFromGallery },
+          { text: 'Retry', onPress: pickImage },
           { text: 'Cancel', style: 'cancel' }
         ]
       );
@@ -366,8 +454,6 @@ export const MealCameraScreen = ({ navigation }) => {
       throw error;
     }
   };
-
-
 
   const handlePhotoTaken = async (photo) => {
     try {
@@ -729,7 +815,7 @@ export const MealCameraScreen = ({ navigation }) => {
             
             <TouchableOpacity 
               style={[styles.galleryButton, (developmentMode || permissionStatus?.mediaLibrary !== 'granted' || uploading) && styles.disabledButton]} 
-              onPress={pickFromGallery}
+              onPress={pickImage}
               disabled={developmentMode || permissionStatus?.mediaLibrary !== 'granted' || uploading}
             >
               <MaterialCommunityIcons name="image" size={30} color="#6B4EFF" />

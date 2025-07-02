@@ -2,6 +2,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 import { log, logError, logCritical } from '../utils/logger';
 
@@ -57,7 +58,7 @@ try {
 // Initialize services with error handling
 log("[FIREBASE] 🔧 Starting Firebase services initialization...");
 
-let auth, db;
+let auth, db, storage;
 
 // Initialize Auth service
 try {
@@ -93,6 +94,23 @@ try {
   throw new Error(`Firebase Firestore initialization failed: ${firestoreError.message}`);
 }
 
+// Initialize Storage service
+try {
+  log("[FIREBASE] 📦 Initializing Firebase Storage service...");
+  storage = getStorage(app);
+  log("[FIREBASE] ✅ Firebase Storage initialized successfully");
+  log("[FIREBASE] 📦 Storage service available:", !!storage);
+  log("[FIREBASE] 🔗 Storage app reference:", !!storage.app);
+} catch (storageError) {
+  logCritical("[FIREBASE] 🔥 Firebase Storage initialization failed:", storageError);
+  logError("[FIREBASE] 🔥 Storage error details:", {
+    message: storageError.message,
+    code: storageError.code,
+    stack: storageError.stack
+  });
+  throw new Error(`Firebase Storage initialization failed: ${storageError.message}`);
+}
+
 log("[FIREBASE] 🎉 All Firebase services initialized successfully");
 
 // Validation function for production safety
@@ -103,6 +121,7 @@ export const validateFirebaseServices = () => {
     appInitialized: !!app && !!app.name,
     authInitialized: !!auth && !!auth.app,
     dbInitialized: !!db && !!db.app,
+    storageInitialized: !!storage && !!storage.app,
     totalApps: getApps().length
   };
   
@@ -127,8 +146,8 @@ export const validateFirebaseServices = () => {
   return validation;
 };
 
-log("[FIREBASE] 📤 Exporting Firebase services: auth, db");
-export { auth, db };
+log("[FIREBASE] 📤 Exporting Firebase services: auth, db, storage");
+export { auth, db, storage };
 
 // Initialize Analytics (only on supported platforms)
 let analytics = null;

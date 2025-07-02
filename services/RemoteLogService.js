@@ -4,8 +4,8 @@ import { Platform } from 'react-native';
 class RemoteLogService {
   constructor() {
     this.logQueue = [];
-    this.isEnabled = false; // Set to true to enable remote logging
-    this.remoteEndpoint = 'https://your-server.com/log'; // Replace with your endpoint
+    this.isEnabled = true; // ENABLED for production debugging
+    this.remoteEndpoint = 'https://webhook.site/YOUR-UNIQUE-ID'; // Free webhook for testing
     this.maxQueueSize = 50;
     this.batchSize = 10;
     this.flushInterval = 30000; // 30 seconds

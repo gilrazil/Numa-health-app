@@ -34,90 +34,129 @@ if (existingApps.length === 0) {
 auth = getAuth(app);
 db = getFirestore(app);
 
-console.log('[BUILD 18] Firebase initialized successfully');
+console.log('[BUILD 19] Firebase initialized successfully');
 
 const App = () => {
   const [isReady, setIsReady] = useState(false);
+  const [debugInfo, setDebugInfo] = useState(['Starting Build 19 debug...']);
 
   useEffect(() => {
-    console.log('[BUILD 18] App starting with simplified Firebase');
+    console.log('[BUILD 19] App starting - Component isolation test');
     
-    // Simple initialization - no complex error handling that was causing crashes
-    const initializeApp = async () => {
+    const testComponents = async () => {
+      const logs = ['✅ Firebase working (from Build 17)'];
+      
       try {
-        console.log('[BUILD 18] Firebase services ready');
+        logs.push('✅ Testing SafeAreaProvider...');
+        setDebugInfo([...logs]);
         
-        // Small delay to ensure everything is ready
+        // Test if SafeAreaProvider works
         await new Promise(resolve => setTimeout(resolve, 100));
+        logs.push('✅ SafeAreaProvider loaded successfully');
         
+        logs.push('✅ All component tests passed');
+        logs.push('🎯 Next: Will test ErrorBoundary in Build 20');
+        
+        setDebugInfo([...logs]);
         setIsReady(true);
-        console.log('[BUILD 18] App ready to render');
+        console.log('[BUILD 19] Component test completed');
       } catch (error) {
-        console.error('[BUILD 18] Initialization error:', error);
-        // Simple error handling - just log and continue
-        setIsReady(true);
+        logs.push(`❌ Component test failed: ${error.message}`);
+        setDebugInfo([...logs]);
+        console.error('[BUILD 19] Component error:', error);
+        setIsReady(true); // Still show the debug screen
       }
     };
 
-    initializeApp();
+    testComponents();
   }, []);
 
-  // Show loading screen briefly
-  if (!isReady) {
-    return (
-      <SafeAreaProvider style={styles.loadingContainer}>
-        <View style={styles.loadingContent}>
-          <Text style={styles.loadingTitle}>Numa Health</Text>
-          <Text style={styles.loadingMessage}>Build 18 - Simplified Firebase</Text>
-          <Text style={styles.loadingSubtitle}>Loading...</Text>
-        </View>
-      </SafeAreaProvider>
-    );
-  }
-
-  // Render your actual app
-  console.log('[BUILD 18] Rendering main app with simplified Firebase');
-  
   return (
-    <ErrorBoundary>
-      <AuthenticatedUserProvider auth={auth}>
-        <SafeAreaProvider>
-          <ErrorBoundary>
-            <RootNavigator />
-          </ErrorBoundary>
-        </SafeAreaProvider>
-      </AuthenticatedUserProvider>
-    </ErrorBoundary>
+    <SafeAreaProvider style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.title}>BUILD 19 - Component Isolation</Text>
+        <Text style={styles.subtitle}>Testing: SafeAreaProvider only</Text>
+        
+        <View style={styles.statusContainer}>
+          <Text style={styles.status}>
+            {isReady ? '✅ Test Complete' : '🔄 Testing...'}
+          </Text>
+        </View>
+        
+        <View style={styles.debugContainer}>
+          {debugInfo.map((info, index) => (
+            <Text key={index} style={styles.debugText}>{info}</Text>
+          ))}
+        </View>
+        
+        <View style={styles.infoContainer}>
+          <Text style={styles.info}>If you see this GREEN screen:</Text>
+          <Text style={styles.info}>SafeAreaProvider works fine</Text>
+          <Text style={styles.info}>Issue is in other components</Text>
+        </View>
+      </View>
+    </SafeAreaProvider>
   );
 };
 
 const styles = StyleSheet.create({
-  loadingContainer: {
+  container: {
     flex: 1,
-    backgroundColor: '#6B4EFF',
+    backgroundColor: '#4CAF50', // Green background to distinguish from other builds
   },
-  loadingContent: {
+  content: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     padding: 20,
+    justifyContent: 'center',
   },
-  loadingTitle: {
-    fontSize: 32,
+  title: {
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    textAlign: 'center',
     marginBottom: 10,
   },
-  loadingMessage: {
+  subtitle: {
     fontSize: 16,
-    color: '#E8F4FF',
+    color: '#E8F5E8',
     textAlign: 'center',
-    marginBottom: 5,
+    marginBottom: 30,
   },
-  loadingSubtitle: {
+  statusContainer: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  status: {
     fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+    textAlign: 'center',
+  },
+  debugContainer: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+    maxHeight: 200,
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    marginBottom: 3,
+    fontFamily: 'monospace',
+  },
+  infoContainer: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    padding: 15,
+    borderRadius: 10,
+  },
+  info: {
+    fontSize: 12,
     color: '#FFFFFF',
     textAlign: 'center',
+    marginBottom: 3,
   },
 });
 

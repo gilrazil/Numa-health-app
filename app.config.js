@@ -66,8 +66,7 @@ export default {
       config: "metro.config.js"
     },
     plugins: [
-      'expo-font',
-      'expo-router'
+      'expo-font'
     ]
   },
 };

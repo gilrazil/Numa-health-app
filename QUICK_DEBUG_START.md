@@ -10,13 +10,14 @@
 
 ### 🔥 Start Debugging Right Now
 
-#### Option 2: Use Current Build 24 (Navigation + AuthenticatedUserProvider Test)
-1. **Launch Build 24** on iOS device via TestFlight
-2. **Look for green screen** with "AUTH TEST - BUILD 24"
-3. **Check console logs** for Firebase initialization
-4. **Verify navigation** works between screens
+#### Option 2: Use Current Build 25 (Authentication Testing)
+1. **Launch Build 25** on iOS device via TestFlight
+2. **Look for login screen** with "LOGIN TEST - BUILD 25"
+3. **Test Firebase authentication** with email/password
+4. **Check console logs** for auth operations and errors
+5. **Verify navigation** works between login and test screens
 
-**Build 24 Strategy**: Testing Navigation + AuthenticatedUserProvider component integration
+**Build 25 Strategy**: Testing Firebase authentication integration on proven Build 24 foundation
 
 #### Option 2: Build with Better Debugging
 ```bash

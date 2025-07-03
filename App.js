@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { View, Text, StyleSheet, Platform, LogBox, ScrollView, Button } from "react-native";
+import { View, Text, StyleSheet, Platform, LogBox, ScrollView, Button, TextInput, Alert, TouchableOpacity } from "react-native";
 import { initializeApp } from 'firebase/app';
-import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { getAuth, initializeAuth, getReactNativePersistence, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { AuthenticatedUserProvider, AuthenticatedUserContext } from "./providers";
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -44,23 +44,24 @@ console.error = (...args) => addLog('ERROR', ...args);
 console.warn = (...args) => addLog('WARN', ...args);
 
 /*
- * BUILD 24 STRATEGY: Option 2 - Basic Navigation + AuthenticatedUserProvider
+ * BUILD 25 STRATEGY: Authentication Testing
  * 
- * This build implements Option 2 from the systematic debugging approach:
- * ✅ Keep the working AuthenticatedUserProvider from Build 23 (proven working)
- * ➕ Add basic navigation structure (NavigationContainer + Stack.Navigator)
- * - Test compatibility of navigation + provider
- * - Two simple test screens: AuthTestScreen and DummyScreen
- * - No real routing logic yet
- * - Incremental testing: Add navigation layer on top of working auth
+ * This build implements Build 25 from the systematic debugging approach:
+ * ✅ Keep the working AuthenticatedUserProvider + Navigation from Build 24 (proven working)
+ * ➕ Add simple login screen with email/password authentication
+ * - Test Firebase auth.signInWithEmailAndPassword()
+ * - Display user email on successful login (no automatic HomeScreen transition)
+ * - Comprehensive logging for all auth operations
+ * - Avoid complex hooks/components to reduce crash risk
+ * - Incremental testing: Add authentication layer on top of working navigation
  */
 
 // Add comprehensive logging for startup diagnostics
-console.log("[INIT] 🚀 App.js mounted - Starting Build 24 diagnostic logging");
+console.log("[INIT] 🚀 App.js mounted - Starting Build 25 diagnostic logging");
 console.log("[INIT] 📱 Platform:", Platform.OS);
 console.log("[INIT] 🔧 Environment:", __DEV__ ? 'Development' : 'Production');
 console.log("[INIT] ⏰ Timestamp:", new Date().toISOString());
-console.log("[INIT] 🎯 Build 24 Debug Mode: ENABLED");
+console.log("[INIT] 🎯 Build 25 Debug Mode: ENABLED");
 
 // Global error handler to catch JS errors that happen before rendering (Expo Go compatible)
 console.log("[INIT] 🛡️ Setting up global error handler");
@@ -123,77 +124,183 @@ try {
   console.error("[FIREBASE] 🔥 Firebase error details:", err);
 }
 
-console.log("[INIT] 🧪 Build 24 - Option 2: Basic Navigation + AuthenticatedUserProvider Test Strategy");
-console.log("[INIT] 🎯 Testing ONLY navigation + AuthenticatedUserProvider compatibility");
-console.log("[INIT] 🔧 Removed all unnecessary imports and dependencies for clean navigation test");
+console.log("[INIT] 🧪 Build 25 - Authentication Testing Strategy");
+console.log("[INIT] 🎯 Testing Firebase authentication with simple login screen");
+console.log("[INIT] 🔐 Focus: signInWithEmailAndPassword() + user email display");
 
 const Stack = createStackNavigator();
 
-// Build 24 Test Screens
-const AuthTestScreen = ({ navigation }) => {
+// Build 25 Test Screens
+const LoginTestScreen = ({ navigation }) => {
   const { user, isLoading } = React.useContext(AuthenticatedUserContext);
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [isAuthenticating, setIsAuthenticating] = React.useState(false);
+  const [authError, setAuthError] = React.useState(null);
   
-  console.log("[AUTH TEST] 🧪 AuthTestScreen component rendered");
-  console.log("[AUTH TEST] 👤 User from context:", user ? "Found" : "NONE");
-  console.log("[AUTH TEST] ⏳ Loading state:", isLoading);
+  console.log("[LOGIN TEST] 🧪 LoginTestScreen component rendered");
+  console.log("[LOGIN TEST] 👤 User from context:", user ? `Email: ${user.email}` : "NONE");
+  console.log("[LOGIN TEST] ⏳ Loading state:", isLoading);
+  
+  const handleLogin = async () => {
+    console.log("[LOGIN TEST] 🔑 Login attempt started");
+    console.log("[LOGIN TEST] 📧 Email:", email);
+    console.log("[LOGIN TEST] 🔒 Password length:", password.length);
+    
+    if (!email || !password) {
+      console.log("[LOGIN TEST] ❌ Missing credentials");
+      setAuthError("Please enter both email and password");
+      return;
+    }
+    
+    setIsAuthenticating(true);
+    setAuthError(null);
+    
+    try {
+      console.log("[LOGIN TEST] 🔥 Calling Firebase signInWithEmailAndPassword");
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log("[LOGIN TEST] ✅ Firebase auth successful");
+      console.log("[LOGIN TEST] 👤 User UID:", userCredential.user.uid);
+      console.log("[LOGIN TEST] 📧 User email:", userCredential.user.email);
+      console.log("[LOGIN TEST] 🎉 Authentication completed successfully");
+      
+      // Clear form on success
+      setEmail('');
+      setPassword('');
+      
+    } catch (error) {
+      console.error("[LOGIN TEST] ❌ Firebase auth failed:", error.message);
+      console.error("[LOGIN TEST] 🔧 Error code:", error.code);
+      setAuthError(`Login failed: ${error.message}`);
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
   
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>AUTH TEST - BUILD 24</Text>
-      <Text style={styles.subtitle}>Loading: {isLoading ? "YES" : "NO"}</Text>
-      <Text style={styles.subtitle}>User: {user ? "Found" : "NONE"}</Text>
-      <Text style={styles.message}>
-        If you see this green screen with auth info, the provider + navigation works!
-      </Text>
+      <Text style={styles.title}>LOGIN TEST - BUILD 25</Text>
+      <Text style={styles.subtitle}>Testing Firebase Authentication</Text>
+      
+      {/* Auth Context Status */}
+      <View style={styles.statusContainer}>
+        <Text style={styles.statusText}>Auth Context Loading: {isLoading ? "YES" : "NO"}</Text>
+        <Text style={styles.statusText}>
+          Current User: {user ? `✅ ${user.email}` : "❌ NONE"}
+        </Text>
+      </View>
+      
+      {/* Login Form - Only show if no user */}
+      {!user && (
+        <View style={styles.formContainer}>
+          <Text style={styles.formTitle}>Firebase Login Test</Text>
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+          
+          {authError && (
+            <Text style={styles.errorText}>{authError}</Text>
+          )}
+          
+          <TouchableOpacity
+            style={[styles.loginButton, isAuthenticating && styles.loginButtonDisabled]}
+            onPress={handleLogin}
+            disabled={isAuthenticating}
+          >
+            <Text style={styles.loginButtonText}>
+              {isAuthenticating ? "Logging in..." : "Test Login"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      
+      {/* Success State - Show user info */}
+      {user && (
+        <View style={styles.successContainer}>
+          <Text style={styles.successTitle}>🎉 LOGIN SUCCESSFUL!</Text>
+          <Text style={styles.successText}>Email: {user.email}</Text>
+          <Text style={styles.successText}>UID: {user.uid}</Text>
+          <Text style={styles.successSubtext}>
+            Firebase authentication is working! ✅
+          </Text>
+        </View>
+      )}
+      
       <Text style={styles.strategy}>
-        Build 24: Option 2 - Basic Navigation + AuthenticatedUserProvider Test Strategy
+        Build 25: Authentication Testing Strategy
       </Text>
+      
       <Button
-        title="Go to Dummy Screen"
-        onPress={() => navigation.navigate("DummyScreen")}
+        title="Go to Navigation Test"
+        onPress={() => navigation.navigate("NavigationTestScreen")}
         color="#2E7D32"
       />
     </View>
   );
 };
 
-const DummyScreen = ({ navigation }) => {
+const NavigationTestScreen = ({ navigation }) => {
   const { user, isLoading } = React.useContext(AuthenticatedUserContext);
   
-  console.log("[DUMMY] ⚡ DummyScreen component rendered");
-  console.log("[DUMMY] 🧪 Navigation test screen loaded");
-  console.log("[DUMMY] 👤 User from context:", user ? 'Found' : 'NONE');
-  console.log("[DUMMY] ⏳ Loading state:", isLoading);
+  console.log("[NAV TEST] ⚡ NavigationTestScreen component rendered");
+  console.log("[NAV TEST] 🧪 Navigation + Auth integration test");
+  console.log("[NAV TEST] 👤 User from context:", user ? `Email: ${user.email}` : "NONE");
+  console.log("[NAV TEST] ⏳ Loading state:", isLoading);
   
   return (
     <View style={[styles.container, { backgroundColor: "#E3F2FD" }]}>
-      <Text style={[styles.title, { color: "#1976D2" }]}>DUMMY SCREEN - BUILD 24</Text>
-      <Text style={[styles.subtitle, { color: "#1976D2" }]}>Navigation Working!</Text>
-      <Text style={[styles.subtitle, { color: "#1976D2" }]}>User: {user ? 'Found' : 'NONE'}</Text>
-      <Text style={[styles.subtitle, { color: "#1976D2" }]}>Loading: {isLoading ? 'YES' : 'NO'}</Text>
+      <Text style={[styles.title, { color: "#1976D2" }]}>NAVIGATION TEST - BUILD 25</Text>
+      <Text style={[styles.subtitle, { color: "#1976D2" }]}>Navigation + Auth Context Working!</Text>
+      
+      <View style={styles.statusContainer}>
+        <Text style={[styles.statusText, { color: "#1976D2" }]}>
+          User: {user ? `✅ ${user.email}` : "❌ NONE"}
+        </Text>
+        <Text style={[styles.statusText, { color: "#1976D2" }]}>
+          Loading: {isLoading ? "YES" : "NO"}
+        </Text>
+      </View>
+      
       <Text style={[styles.message, { color: "#1976D2" }]}>
         This screen also has auth context access, proving the provider works across navigation!
       </Text>
+      
       <Button
-        title="Back to Auth Test"
-        onPress={() => navigation.navigate("AuthTestScreen")}
+        title="Back to Login Test"
+        onPress={() => navigation.navigate("LoginTestScreen")}
         color="#1976D2"
       />
     </View>
   );
 };
 
-// Build 24 Test Navigator - Modified to work with debug layout
-const Build24TestNavigator = () => {
-  console.log("[TEST NAV] 🧪 Build24TestNavigator component called");
-  console.log("[TEST NAV] 🎯 Testing navigation + auth provider with simple screens");
+// Build 25 Test Navigator
+const Build25TestNavigator = () => {
+  console.log("[TEST NAV] 🧪 Build25TestNavigator component called");
+  console.log("[TEST NAV] 🎯 Testing authentication + navigation with login screen");
   
   return (
     <Stack.Navigator 
-      initialRouteName="AuthTestScreen"
+      initialRouteName="LoginTestScreen"
       screenOptions={{
         headerStyle: {
-          backgroundColor: "#4CAF50",
+          backgroundColor: "#2E7D32",
         },
         headerTintColor: "#fff",
         headerTitleStyle: {
@@ -202,32 +309,32 @@ const Build24TestNavigator = () => {
       }}
     >
       <Stack.Screen 
-        name="AuthTestScreen" 
-        component={AuthTestScreen}
-        options={{ title: "Build 24 - Auth Test" }}
+        name="LoginTestScreen" 
+        component={LoginTestScreen}
+        options={{ title: "Build 25 - Login Test" }}
       />
       <Stack.Screen 
-        name="DummyScreen" 
-        component={DummyScreen}
-        options={{ title: "Build 24 - Dummy Screen" }}
+        name="NavigationTestScreen" 
+        component={NavigationTestScreen}
+        options={{ title: "Build 25 - Navigation Test" }}
       />
     </Stack.Navigator>
   );
 };
 
-console.log("[INIT] 🧪 Build24TestNavigator component defined");
+console.log("[INIT] 🧪 Build25TestNavigator component defined");
 
 const App = () => {
   console.log("[INIT] 🔄 App component function called");
-  console.log("[INIT] ✅ Build 24 debug mode active");
+  console.log("[INIT] ✅ Build 25 debug mode active");
   console.log("[INIT] 📱 Platform:", Platform.OS);
-  console.log("[INIT] 🧭 About to test navigation components with authenticated user provider");
+  console.log("[INIT] 🧭 About to test authentication + navigation components");
   
   // Add test logs
-  console.warn("[TEST] ⚠️ Build 24 test warning");
-  console.error("[TEST] ❌ Build 24 test error");
+  console.warn("[TEST] ⚠️ Build 25 test warning");
+  console.error("[TEST] ❌ Build 25 test error");
   
-  console.log("[INIT] 🚀 About to render AuthenticatedUserProvider + NavigationContainer test");
+  console.log("[INIT] 🚀 About to render AuthenticatedUserProvider + NavigationContainer + Auth test");
   console.log("[INIT] 🔐 Auth instance status for provider:", auth ? "Available" : "Not available");
   
   // NavigationContainer at root level with split screen inside
@@ -238,12 +345,12 @@ const App = () => {
           <View style={styles.appContainer}>
             {/* Navigation Section */}
             <View style={styles.navigationContainer}>
-              <Build24TestNavigator />
+              <Build25TestNavigator />
             </View>
             
             {/* Debug Logs Section */}
             <View style={styles.debugSection}>
-              <Text style={styles.debugTitle}>🔧 BUILD 24 DEBUG LOGS</Text>
+              <Text style={styles.debugTitle}>🔧 BUILD 25 DEBUG LOGS</Text>
               <ScrollView style={styles.debugScroll}>
                 {DEBUG_LOGS.map((log, index) => (
                   <Text key={index} style={[
@@ -410,6 +517,97 @@ const styles = StyleSheet.create({
     color: "#66BB6A",
     textAlign: "center",
     marginBottom: 30,
+    fontStyle: "italic",
+  },
+  statusContainer: {
+    backgroundColor: "#E8F5E8",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+    minWidth: 280,
+  },
+  statusText: {
+    fontSize: 16,
+    color: "#2E7D32",
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  formContainer: {
+    width: "100%",
+    maxWidth: 300,
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+    borderRadius: 10,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  formTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#2E7D32",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#CCCCCC",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+    fontSize: 16,
+    backgroundColor: "#FAFAFA",
+  },
+  loginButton: {
+    backgroundColor: "#2E7D32",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  loginButtonDisabled: {
+    backgroundColor: "#CCCCCC",
+  },
+  loginButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  errorText: {
+    color: "#FF4444",
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  successContainer: {
+    backgroundColor: "#E8F5E8",
+    padding: 20,
+    borderRadius: 10,
+    marginBottom: 20,
+    minWidth: 280,
+    borderWidth: 2,
+    borderColor: "#4CAF50",
+  },
+  successTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#2E7D32",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  successText: {
+    fontSize: 16,
+    color: "#2E7D32",
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  successSubtext: {
+    fontSize: 14,
+    color: "#4CAF50",
+    textAlign: "center",
+    marginTop: 10,
     fontStyle: "italic",
   },
 });

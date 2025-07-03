@@ -1,5 +1,5 @@
 // PRODUCTION DEBUG - Log immediately on load
-console.log('=== INDEX.JS LOADED - BUILD 24 NAVIGATION TEST ===');
+console.log('=== INDEX.JS LOADED - BUILD 25 AUTHENTICATION TEST ===');
 
 import 'react-native-gesture-handler';
 import { registerRootComponent } from 'expo';
@@ -18,10 +18,10 @@ try {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
-      event: 'index.js loaded - Build 24 - Navigation + Auth Provider Test',
+      event: 'index.js loaded - Build 25 - Authentication Testing',
       timestamp: new Date().toISOString(),
       platform: 'ios',
-      buildNumber: '24'
+      buildNumber: '25'
     })
   }).catch(() => {});
 } catch (e) {}

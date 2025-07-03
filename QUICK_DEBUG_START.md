@@ -10,14 +10,13 @@
 
 ### 🔥 Start Debugging Right Now
 
-#### Option 1: Use Current Build 23 (AuthenticatedUserProvider Test)
-1. **Launch Build 23** on iOS device via TestFlight
-2. **Look for green screen** with "AUTH TEST - BUILD 23" 
-3. **Check auth info display**: Loading state and User status
-4. **View debug logs** in bottom half of screen
-5. **Verify**: "If you see this green screen with auth info, the provider works!"
+#### Option 2: Use Current Build 24 (Navigation + AuthenticatedUserProvider Test)
+1. **Launch Build 24** on iOS device via TestFlight
+2. **Look for green screen** with "AUTH TEST - BUILD 24"
+3. **Check console logs** for Firebase initialization
+4. **Verify navigation** works between screens
 
-**Build 23 Strategy**: Testing ONLY AuthenticatedUserProvider component isolation
+**Build 24 Strategy**: Testing Navigation + AuthenticatedUserProvider component integration
 
 #### Option 2: Build with Better Debugging
 ```bash

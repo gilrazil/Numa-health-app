@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 export default {
   expo: {
     name: "Numa Health App",
@@ -5,10 +7,11 @@ export default {
     owner: "gilraz",
     privacy: "public",
     platforms: ["ios", "android", "web"],
-    version: "1.0.23",
+    version: "1.0.24",
     orientation: "portrait",
     sdkVersion: "53.0.0",
-    icon: "./assets/numa-logo.png",
+    icon: "./assets/icon.png",
+    userInterfaceStyle: "light",
     splash: {
       image: "./assets/splash.png",
       resizeMode: "contain",
@@ -22,14 +25,14 @@ export default {
     },
     runtimeVersion: "1.0.0",
     web: {
-      favicon: "./assets/numa-logo.png",
+      favicon: "./assets/favicon.png",
       bundler: "metro"
     },
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.numahealth.app",
-      buildNumber: "23",
+      bundleIdentifier: "com.gilraz.numahealthapp",
+      buildNumber: "24",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "This app uses the camera to let you take photos of your meals for tracking.",
@@ -44,8 +47,8 @@ export default {
       package: "com.numahealth.app",
       versionCode: 12,
       adaptiveIcon: {
-        foregroundImage: "./assets/numa-logo.png",
-        backgroundColor: "#FFFFFF"
+        foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#ffffff"
       },
       permissions: [
         "CAMERA",
@@ -63,7 +66,8 @@ export default {
       config: "metro.config.js"
     },
     plugins: [
-      'expo-font'
+      'expo-font',
+      'expo-router'
     ]
   },
 };

@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { View, Text, StyleSheet, Platform, LogBox, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Platform, LogBox, ScrollView, Button } from "react-native";
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { AuthenticatedUserProvider, AuthenticatedUserContext } from "./providers";
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { firebaseConfig } from './config';
 
 // 🔧 SIMPLE ON-SCREEN LOGGING SYSTEM
 const DEBUG_LOGS = []; // Simple array to store logs
@@ -40,28 +44,23 @@ console.error = (...args) => addLog('ERROR', ...args);
 console.warn = (...args) => addLog('WARN', ...args);
 
 /*
- * BUILD 23 STRATEGY: Option 1 - AuthenticatedUserProvider Test
+ * BUILD 24 STRATEGY: Option 2 - Basic Navigation + AuthenticatedUserProvider
  * 
- * This build implements Option 1 from the systematic debugging approach:
- * - Test ONLY the AuthenticatedUserProvider component
- * - No complex navigation dependencies (NavigationContainer, AuthStack, AppStack)
- * - Simple green screen with auth context display
- * - Fixes Build 21's white screen issue (missing auth prop)
- * - Incremental testing: Add one component at a time to isolate breaking changes
- * 
- * Previous builds:
- * - Build 20: ✅ Working debug screen (baseline)
- * - Build 21: ❌ White screen (missing auth prop in AuthenticatedUserProvider)
- * - Build 22: ✅ Internal distribution (preview profile)
- * - Build 23: 🧪 TestFlight production build (Option 1 strategy)
+ * This build implements Option 2 from the systematic debugging approach:
+ * ✅ Keep the working AuthenticatedUserProvider from Build 23 (proven working)
+ * ➕ Add basic navigation structure (NavigationContainer + Stack.Navigator)
+ * - Test compatibility of navigation + provider
+ * - Two simple test screens: AuthTestScreen and DummyScreen
+ * - No real routing logic yet
+ * - Incremental testing: Add navigation layer on top of working auth
  */
 
 // Add comprehensive logging for startup diagnostics
-console.log("[INIT] 🚀 App.js mounted - Starting Build 23 diagnostic logging");
+console.log("[INIT] 🚀 App.js mounted - Starting Build 24 diagnostic logging");
 console.log("[INIT] 📱 Platform:", Platform.OS);
 console.log("[INIT] 🔧 Environment:", __DEV__ ? 'Development' : 'Production');
 console.log("[INIT] ⏰ Timestamp:", new Date().toISOString());
-console.log("[INIT] 🎯 Build 23 Debug Mode: ENABLED");
+console.log("[INIT] 🎯 Build 24 Debug Mode: ENABLED");
 
 // Global error handler to catch JS errors that happen before rendering (Expo Go compatible)
 console.log("[INIT] 🛡️ Setting up global error handler");
@@ -95,159 +94,171 @@ LogBox.ignoreAllLogs();
 console.log("[INIT] 📦 Minimal imports loaded for auth provider test");
 console.log("[INIT] 🔥 About to test Firebase initialization");
 
-// Firebase configuration with iOS native API key (working from Build 20)
-const firebaseConfig = {
-  apiKey: "AIzaSyCF8WSck4p793ZjWETvvfiQ7EXng8FTmMM",
-  authDomain: "numa-app-34ede.firebaseapp.com",
-  projectId: "numa-app-34ede",
-  storageBucket: "numa-app-34ede.firebasestorage.app",
-  messagingSenderId: "650800257848",
-  appId: "1:650800257848:ios:4baae90c17dc1f9ad52a1a"
-};
-
-console.log("[FIREBASE] 🔑 Firebase config loaded");
-console.log("[FIREBASE] 🔑 API Key exists:", !!firebaseConfig.apiKey);
-console.log("[FIREBASE] 🔑 Project ID:", firebaseConfig.projectId);
-
 // Test Firebase basic initialization
-console.log("[FIREBASE] 🚀 Starting Firebase initialization");
+console.log("[FIREBASE] 🔥 Initializing Firebase App...");
 let firebaseApp = null;
 let auth = null;
 try {
   firebaseApp = initializeApp(firebaseConfig);
-  console.log("[FIREBASE] ✅ Firebase initialized successfully");
+  console.log("[FIREBASE] ✅ Firebase App initialized successfully");
   console.log("[FIREBASE] 📱 App name:", firebaseApp.name);
   console.log("[FIREBASE] ⚙️ App options exist:", !!firebaseApp.options);
   
   // Initialize Firebase Auth
   console.log("[FIREBASE] 🔐 Initializing Firebase Auth...");
-  auth = getAuth(firebaseApp);
-  console.log("[FIREBASE] ✅ Firebase Auth initialized successfully");
-  console.log("[FIREBASE] 🔗 Auth app reference:", !!auth.app);
+  try {
+    auth = getAuth(firebaseApp);
+    console.log("[FIREBASE] ✅ Firebase Auth initialized successfully");
+    console.log("[FIREBASE] 🔗 Auth app reference:", !!auth.app);
+  } catch (authError) {
+    console.log("[FIREBASE] ⚠️ Auth app reference: true");
+    console.log("[FIREBASE] 🔧 Auth app reference: true");
+    auth = initializeAuth(firebaseApp, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
+    console.log("[FIREBASE] ✅ Firebase Auth initialized with persistence");
+  }
 } catch (err) {
   console.error("[FIREBASE] ❌ Firebase init failed:", err.message);
   console.error("[FIREBASE] 🔥 Firebase error details:", err);
 }
 
-console.log("[INIT] 🧪 Build 23 - Option 1: AuthenticatedUserProvider Test Strategy");
-console.log("[INIT] 🎯 Testing ONLY AuthenticatedUserProvider (no navigation dependencies)");
-console.log("[INIT] 🔧 Removed all unnecessary imports and dependencies for clean auth test");
+console.log("[INIT] 🧪 Build 24 - Option 2: Basic Navigation + AuthenticatedUserProvider Test Strategy");
+console.log("[INIT] 🎯 Testing ONLY navigation + AuthenticatedUserProvider compatibility");
+console.log("[INIT] 🔧 Removed all unnecessary imports and dependencies for clean navigation test");
 
-// AUTH TEST COMPONENT - Build 23 Addition
-const AuthTest = () => {
-  console.log("[AUTH TEST] 🧪 AuthTest component rendered");
-  
+const Stack = createStackNavigator();
+
+// Build 24 Test Screens
+const AuthTestScreen = ({ navigation }) => {
   const { user, isLoading } = React.useContext(AuthenticatedUserContext);
-  console.log("[AUTH TEST] 👤 User from context:", user ? `Found (${user.email || user.uid})` : 'NONE');
+  
+  console.log("[AUTH TEST] 🧪 AuthTestScreen component rendered");
+  console.log("[AUTH TEST] 👤 User from context:", user ? "Found" : "NONE");
   console.log("[AUTH TEST] ⏳ Loading state:", isLoading);
   
   return (
-    <View style={{
-      flex: 1, 
-      justifyContent: 'center', 
-      alignItems: 'center',
-      backgroundColor: 'lightgreen',
-      padding: 20
-    }}>
-      <Text style={{fontSize: 24, fontWeight: 'bold', textAlign: 'center'}}>
-        AUTH TEST - BUILD 23
+    <View style={styles.container}>
+      <Text style={styles.title}>AUTH TEST - BUILD 24</Text>
+      <Text style={styles.subtitle}>Loading: {isLoading ? "YES" : "NO"}</Text>
+      <Text style={styles.subtitle}>User: {user ? "Found" : "NONE"}</Text>
+      <Text style={styles.message}>
+        If you see this green screen with auth info, the provider + navigation works!
       </Text>
-      <Text style={{fontSize: 18, marginTop: 15, textAlign: 'center'}}>
-        Loading: {isLoading ? 'YES' : 'NO'}
+      <Text style={styles.strategy}>
+        Build 24: Option 2 - Basic Navigation + AuthenticatedUserProvider Test Strategy
       </Text>
-      <Text style={{fontSize: 18, marginTop: 10, textAlign: 'center'}}>
-        User: {user ? `Found (${user.email || user.uid})` : 'NONE'}
-      </Text>
-      <Text style={{fontSize: 14, marginTop: 20, textAlign: 'center', color: '#333'}}>
-        If you see this green screen with auth info, the provider works!
-      </Text>
-      <Text style={{fontSize: 12, marginTop: 15, textAlign: 'center', color: '#666'}}>
-        Build 23: Option 1 - AuthenticatedUserProvider Test Strategy
-      </Text>
+      <Button
+        title="Go to Dummy Screen"
+        onPress={() => navigation.navigate("DummyScreen")}
+        color="#2E7D32"
+      />
     </View>
   );
 };
 
-// Simple component to display logs directly on screen
-const SimpleLogDisplay = () => {
-  const [, forceUpdate] = useState(0);
+const DummyScreen = ({ navigation }) => {
+  const { user, isLoading } = React.useContext(AuthenticatedUserContext);
   
-  // Force re-render every second to show new logs
-  useEffect(() => {
-    const interval = setInterval(() => {
-      forceUpdate(prev => prev + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
+  console.log("[DUMMY] ⚡ DummyScreen component rendered");
+  console.log("[DUMMY] 🧪 Navigation test screen loaded");
+  console.log("[DUMMY] 👤 User from context:", user ? 'Found' : 'NONE');
+  console.log("[DUMMY] ⏳ Loading state:", isLoading);
+  
   return (
-    <View style={styles.logContainer}>
-      <Text style={styles.logTitle}>🔧 BUILD 23 DEBUG LOGS</Text>
-      <ScrollView style={styles.logScrollView}>
-        {DEBUG_LOGS.map((log, index) => (
-          <Text key={index} style={[
-            styles.logText,
-            log.includes('ERROR') ? styles.logError : 
-            log.includes('WARN') ? styles.logWarn : styles.logInfo
-          ]}>
-            {log}
-          </Text>
-        ))}
-      </ScrollView>
+    <View style={[styles.container, { backgroundColor: "#E3F2FD" }]}>
+      <Text style={[styles.title, { color: "#1976D2" }]}>DUMMY SCREEN - BUILD 24</Text>
+      <Text style={[styles.subtitle, { color: "#1976D2" }]}>Navigation Working!</Text>
+      <Text style={[styles.subtitle, { color: "#1976D2" }]}>User: {user ? 'Found' : 'NONE'}</Text>
+      <Text style={[styles.subtitle, { color: "#1976D2" }]}>Loading: {isLoading ? 'YES' : 'NO'}</Text>
+      <Text style={[styles.message, { color: "#1976D2" }]}>
+        This screen also has auth context access, proving the provider works across navigation!
+      </Text>
+      <Button
+        title="Back to Auth Test"
+        onPress={() => navigation.navigate("AuthTestScreen")}
+        color="#1976D2"
+      />
     </View>
   );
 };
 
-// Build 23 Test Navigator - Simple auth test instead of complex navigation
-const Build23TestNavigator = () => {
-  console.log("[TEST NAV] 🧪 Build23TestNavigator component called");
-  console.log("[TEST NAV] 🎯 Testing auth provider with simple component");
+// Build 24 Test Navigator - Modified to work with debug layout
+const Build24TestNavigator = () => {
+  console.log("[TEST NAV] 🧪 Build24TestNavigator component called");
+  console.log("[TEST NAV] 🎯 Testing navigation + auth provider with simple screens");
   
-  try {
-    return <AuthTest />;
-  } catch (error) {
-    console.error("[TEST NAV] 🔥 Error rendering AuthTest:", error);
-    console.error("[TEST NAV] 🔥 AuthTest error stack:", error.stack);
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorTitle}>AuthTest Error</Text>
-        <Text style={styles.errorMessage}>{error.message}</Text>
-      </View>
-    );
-  }
+  return (
+    <Stack.Navigator 
+      initialRouteName="AuthTestScreen"
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#4CAF50",
+        },
+        headerTintColor: "#fff",
+        headerTitleStyle: {
+          fontWeight: "bold",
+        },
+      }}
+    >
+      <Stack.Screen 
+        name="AuthTestScreen" 
+        component={AuthTestScreen}
+        options={{ title: "Build 24 - Auth Test" }}
+      />
+      <Stack.Screen 
+        name="DummyScreen" 
+        component={DummyScreen}
+        options={{ title: "Build 24 - Dummy Screen" }}
+      />
+    </Stack.Navigator>
+  );
 };
 
-console.log("[INIT] 🧪 Build23TestNavigator component defined");
+console.log("[INIT] 🧪 Build24TestNavigator component defined");
 
 const App = () => {
   console.log("[INIT] 🔄 App component function called");
-  console.log("[INIT] ✅ Build 23 debug mode active");
+  console.log("[INIT] ✅ Build 24 debug mode active");
   console.log("[INIT] 📱 Platform:", Platform.OS);
-  console.log("[INIT] 🧭 About to test navigation components");
+  console.log("[INIT] 🧭 About to test navigation components with authenticated user provider");
   
   // Add test logs
-  console.warn("[TEST] ⚠️ Build 23 test warning");
-  console.error("[TEST] ❌ Build 23 test error");
+  console.warn("[TEST] ⚠️ Build 24 test warning");
+  console.error("[TEST] ❌ Build 24 test error");
   
-  console.log("[INIT] 🚀 About to render AuthenticatedUserProvider test (no NavigationContainer)");
-  console.log("[INIT] 🔐 Auth instance status for provider:", auth ? 'Available' : 'Not available');
+  console.log("[INIT] 🚀 About to render AuthenticatedUserProvider + NavigationContainer test");
+  console.log("[INIT] 🔐 Auth instance status for provider:", auth ? "Available" : "Not available");
   
-  // Split screen: Navigation on top, logs on bottom
+  // NavigationContainer at root level with split screen inside
   return (
-    <SafeAreaProvider style={styles.container}>
-      <View style={styles.appContainer}>
-        {/* Navigation Section */}
-        <View style={styles.navigationContainer}>
-          <AuthenticatedUserProvider auth={auth}>
-            <Build23TestNavigator />
-          </AuthenticatedUserProvider>
-        </View>
-        
-        {/* Debug Logs Section */}
-        <View style={styles.debugSection}>
-          <SimpleLogDisplay />
-        </View>
-      </View>
+    <SafeAreaProvider>
+      <AuthenticatedUserProvider auth={auth}>
+        <NavigationContainer>
+          <View style={styles.appContainer}>
+            {/* Navigation Section */}
+            <View style={styles.navigationContainer}>
+              <Build24TestNavigator />
+            </View>
+            
+            {/* Debug Logs Section */}
+            <View style={styles.debugSection}>
+              <Text style={styles.debugTitle}>🔧 BUILD 24 DEBUG LOGS</Text>
+              <ScrollView style={styles.debugScroll}>
+                {DEBUG_LOGS.map((log, index) => (
+                  <Text key={index} style={[
+                    styles.debugText,
+                    log.includes("ERROR") ? styles.logError : 
+                    log.includes("WARN") ? styles.logWarn : styles.logInfo
+                  ]}>
+                    {log}
+                  </Text>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </NavigationContainer>
+      </AuthenticatedUserProvider>
     </SafeAreaProvider>
   );
 };
@@ -255,58 +266,62 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: "#C8E6C9",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
   },
   appContainer: {
     flex: 1,
+    backgroundColor: "#000000",
   },
   navigationContainer: {
     flex: 2, // Takes up 2/3 of the screen
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   debugSection: {
     flex: 1, // Takes up 1/3 of the screen
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
     borderTopWidth: 2,
-    borderTopColor: '#00ff00',
+    borderTopColor: "#00ff00",
   },
   // Loading/Error styles for RealAppNavigator
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
     padding: 20,
   },
   loadingText: {
     fontSize: 24,
-    fontWeight: 'bold',  
-    color: '#2196F3',
+    fontWeight: "bold",  
+    color: "#2196F3",
     marginBottom: 8,
   },
   statusDetails: {
     fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
+    color: "#666666",
+    textAlign: "center",
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
     padding: 20,
   },
   errorTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FF4444',
+    fontWeight: "bold",
+    color: "#FF4444",
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   errorMessage: {
     fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
+    color: "#666666",
+    textAlign: "center",
     marginBottom: 12,
     lineHeight: 24,
   },
@@ -317,28 +332,85 @@ const styles = StyleSheet.create({
   },
   logTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#00ff00',
+    fontWeight: "bold",
+    color: "#00ff00",
     marginBottom: 5,
-    textAlign: 'center',
+    textAlign: "center",
   },
   logScrollView: {
     flex: 1,
   },
   logText: {
     fontSize: 10,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     marginBottom: 1,
     lineHeight: 12,
   },
   logInfo: {
-    color: '#00ff00',
+    color: "#00ff00",
   },
   logWarn: {
-    color: '#ffaa00',
+    color: "#ffaa00",
   },
   logError: {
-    color: '#ff4444',
+    color: "#ff4444",
+  },
+  debugContainer: {
+    flex: 1,
+  },
+  debugPanel: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 300,
+    backgroundColor: "#000",
+    borderTopWidth: 2,
+    borderTopColor: "#4CAF50",
+  },
+  debugTitle: {
+    color: "#4CAF50",
+    fontSize: 16,
+    fontWeight: "bold",
+    padding: 10,
+    textAlign: "center",
+  },
+  debugScroll: {
+    flex: 1,
+    paddingHorizontal: 10,
+  },
+  debugText: {
+    color: "#4CAF50",
+    fontSize: 10,
+    fontFamily: "monospace",
+    marginBottom: 2,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#2E7D32",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 20,
+    color: "#388E3C",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  message: {
+    fontSize: 16,
+    color: "#2E7D32",
+    textAlign: "center",
+    marginBottom: 20,
+    marginHorizontal: 20,
+  },
+  strategy: {
+    fontSize: 14,
+    color: "#66BB6A",
+    textAlign: "center",
+    marginBottom: 30,
+    fontStyle: "italic",
   },
 });
 

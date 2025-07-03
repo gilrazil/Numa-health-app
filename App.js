@@ -109,8 +109,8 @@ export default function App() {
     return (
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <View style={styles.container}>
-          <Text style={styles.errorText}>App Error: {error.message}</Text>
-          <Text style={styles.versionLabel}>Version 1.0.20 - Build 20</Text>
+                   <Text style={styles.errorText}>App Error: {error.message}</Text>
+         <Text style={styles.versionLabel}>Version 1.0.21 - Build 21</Text>
         </View>
       </SafeAreaProvider>
     );
@@ -121,8 +121,8 @@ export default function App() {
     return (
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <View style={styles.container}>
-          <Text style={styles.loadingText}>Loading...</Text>
-          <Text style={styles.versionLabel}>Version 1.0.20 - Build 20</Text>
+                   <Text style={styles.loadingText}>Loading...</Text>
+         <Text style={styles.versionLabel}>Version 1.0.21 - Build 21</Text>
         </View>
       </SafeAreaProvider>
     );
@@ -138,10 +138,10 @@ export default function App() {
           {/* Render simplified home screen */}
           <SimpleHomeScreen />
           
-          {/* Version label at bottom */}
-          <Text style={styles.versionLabel}>
-            Version 1.0.20 - Build 20
-          </Text>
+                   {/* Version label at bottom */}
+         <Text style={styles.versionLabel}>
+           Version 1.0.21 - Build 21
+         </Text>
         </View>
       </SafeAreaProvider>
     </ErrorBoundary>

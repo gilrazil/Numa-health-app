@@ -1,3 +1,5 @@
+console.log("🛠️ app.config.js loaded with buildNumber 20");
+
 export default {
   expo: {
     name: "Numa Health App",

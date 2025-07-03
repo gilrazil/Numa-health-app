@@ -29,6 +29,8 @@ config.resolver = {
   resolverMainFields: ['react-native', 'browser', 'main'],
   platforms: ['ios', 'android', 'native', 'web'],
   sourceExts: [...config.resolver.sourceExts, 'cjs'],
+  // Temporarily disable package.json exports for SDK 53 compatibility
+  unstable_enablePackageExports: false,
 };
 
 // Note: unstable_enablePackageExports is already set above

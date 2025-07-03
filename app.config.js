@@ -5,14 +5,14 @@ export default {
     owner: "gilraz",
     privacy: "public",
     platforms: ["ios", "android", "web"],
-    version: "1.0.0",
+    version: "1.0.20",
     orientation: "portrait",
     sdkVersion: "53.0.0",
     icon: "./assets/numa-logo.png",
     splash: {
       image: "./assets/splash.png",
-      resizeMode: "cover",
-      backgroundColor: "#6B4EFF",
+      resizeMode: "contain",
+      backgroundColor: "#ffffff",
     },
     updates: {
       url: "https://u.expo.dev/f8a7c205-a5a5-4ac0-b6e9-a084d95662fa",
@@ -29,7 +29,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.numahealth.app",
-      buildNumber: "19",
+      buildNumber: "20",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "This app uses the camera to let you take photos of your meals for tracking.",
@@ -45,7 +45,7 @@ export default {
       versionCode: 12,
       adaptiveIcon: {
         foregroundImage: "./assets/numa-logo.png",
-        backgroundColor: "#6B4EFF"
+        backgroundColor: "#FFFFFF"
       },
       permissions: [
         "CAMERA",
@@ -61,6 +61,9 @@ export default {
     jsEngine: "hermes", // Hermes is required for SDK 52+
     packagerOpts: {
       config: "metro.config.js"
-    }
+    },
+    plugins: [
+      'expo-font'
+    ]
   },
 };

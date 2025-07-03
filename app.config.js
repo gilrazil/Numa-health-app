@@ -5,7 +5,7 @@ export default {
     owner: "gilraz",
     privacy: "public",
     platforms: ["ios", "android", "web"],
-    version: "1.0.22",
+    version: "1.0.23",
     orientation: "portrait",
     sdkVersion: "53.0.0",
     icon: "./assets/numa-logo.png",
@@ -29,7 +29,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.numahealth.app",
-      buildNumber: "22",
+      buildNumber: "23",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "This app uses the camera to let you take photos of your meals for tracking.",

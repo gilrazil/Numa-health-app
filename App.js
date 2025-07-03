@@ -1,13 +1,82 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
+import React, { useEffect, useState } from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { View, Text, StyleSheet, Platform, LogBox, ScrollView } from "react-native";
 import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { AuthenticatedUserProvider, AuthenticatedUserContext } from "./providers";
 
-// Import the ACTUAL HomeScreen component and dependencies
-import { HomeScreen } from './screens/HomeScreen';
-import { ErrorBoundary } from './components';
-import { AuthenticatedUserProvider } from './providers';
-import { setupGlobalErrorTracking } from './utils/setupErrorTracking';
+// 🔧 SIMPLE ON-SCREEN LOGGING SYSTEM
+const DEBUG_LOGS = []; // Simple array to store logs
+
+// Override console.log to capture messages for on-screen display
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+
+// Simple log storage
+const addLog = (level, ...args) => {
+  const timestamp = new Date().toLocaleTimeString();
+  const message = args.map(arg => 
+    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+  ).join(' ');
+  
+  const logEntry = `[${timestamp}] ${level}: ${message}`;
+  DEBUG_LOGS.push(logEntry);
+  
+  // Keep only last 50 logs
+  if (DEBUG_LOGS.length > 50) {
+    DEBUG_LOGS.shift();
+  }
+  
+  // Still call original console methods
+  if (level === 'LOG') originalConsoleLog(...args);
+  else if (level === 'ERROR') originalConsoleError(...args);
+  else if (level === 'WARN') originalConsoleWarn(...args);
+};
+
+// Override console methods
+console.log = (...args) => addLog('LOG', ...args);
+console.error = (...args) => addLog('ERROR', ...args);
+console.warn = (...args) => addLog('WARN', ...args);
+
+// Add comprehensive logging for startup diagnostics
+console.log("[INIT] 🚀 App.js mounted - Starting Build 22 diagnostic logging");
+console.log("[INIT] 📱 Platform:", Platform.OS);
+console.log("[INIT] 🔧 Environment:", __DEV__ ? 'Development' : 'Production');
+console.log("[INIT] ⏰ Timestamp:", new Date().toISOString());
+console.log("[INIT] 🎯 Build 22 Debug Mode: ENABLED");
+
+// Global error handler to catch JS errors that happen before rendering (Expo Go compatible)
+console.log("[INIT] 🛡️ Setting up global error handler");
+if (global.ErrorUtils?.setGlobalHandler) {
+  global.ErrorUtils.setGlobalHandler((error, isFatal) => {
+    console.error("[GLOBAL ERROR] 🔥 Unhandled JavaScript error caught:");
+    console.error("[GLOBAL ERROR] 📝 Message:", error.message);
+    console.error("[GLOBAL ERROR] 📚 Stack:", error.stack);
+    console.error("[GLOBAL ERROR] ⚠️ Is Fatal:", isFatal);
+    console.error("[GLOBAL ERROR] 🎯 Error Name:", error.name);
+    console.error("[GLOBAL ERROR] ⏰ Timestamp:", new Date().toISOString());
+    
+    // Log additional error details if available
+    if (error.componentStack) {
+      console.error("[GLOBAL ERROR] 🔧 Component Stack:", error.componentStack);
+    }
+    
+    // For development, we still want to see the error
+    if (__DEV__) {
+      console.log("[GLOBAL ERROR] 🚨 Development mode - error will still be thrown");
+    }
+  });
+  console.log("[INIT] ✅ Global error handler configured successfully");
+} else {
+  console.log("[INIT] ⚠️ ErrorUtils not available in this environment (Expo Go)");
+}
+
+// Temporarily ignore all logs to reduce noise during debugging
+LogBox.ignoreAllLogs();
+
+console.log("[INIT] 📦 Minimal imports loaded for auth provider test");
+console.log("[INIT] 🔥 About to test Firebase initialization");
 
 // Firebase configuration with iOS native API key (working from Build 20)
 const firebaseConfig = {
@@ -19,116 +88,240 @@ const firebaseConfig = {
   appId: "1:650800257848:ios:4baae90c17dc1f9ad52a1a"
 };
 
-// Simple Firebase initialization (working from Build 20)
-console.log("🔥 Initializing Firebase...");
-initializeApp(firebaseConfig);
-console.log("✅ Firebase initialized!");
+console.log("[FIREBASE] 🔑 Firebase config loaded");
+console.log("[FIREBASE] 🔑 API Key exists:", !!firebaseConfig.apiKey);
+console.log("[FIREBASE] 🔑 Project ID:", firebaseConfig.projectId);
 
-export default function App() {
-  console.log("[SCREEN] App component loaded");
+// Test Firebase basic initialization
+console.log("[FIREBASE] 🚀 Starting Firebase initialization");
+let firebaseApp = null;
+let auth = null;
+try {
+  firebaseApp = initializeApp(firebaseConfig);
+  console.log("[FIREBASE] ✅ Firebase initialized successfully");
+  console.log("[FIREBASE] 📱 App name:", firebaseApp.name);
+  console.log("[FIREBASE] ⚙️ App options exist:", !!firebaseApp.options);
   
-  const [isReady, setIsReady] = useState(false);
-  const [error, setError] = useState(null);
+  // Initialize Firebase Auth
+  console.log("[FIREBASE] 🔐 Initializing Firebase Auth...");
+  auth = getAuth(firebaseApp);
+  console.log("[FIREBASE] ✅ Firebase Auth initialized successfully");
+  console.log("[FIREBASE] 🔗 Auth app reference:", !!auth.app);
+} catch (err) {
+  console.error("[FIREBASE] ❌ Firebase init failed:", err.message);
+  console.error("[FIREBASE] 🔥 Firebase error details:", err);
+}
 
+console.log("[INIT] 🧪 Build 22 - Testing ONLY AuthenticatedUserProvider (no navigation dependencies)");
+console.log("[INIT] 🎯 Removed all unnecessary imports and dependencies for clean auth test");
+
+// AUTH TEST COMPONENT - Build 22 Addition
+const AuthTest = () => {
+  console.log("[AUTH TEST] 🧪 AuthTest component rendered");
+  
+  const { user, isLoading } = React.useContext(AuthenticatedUserContext);
+  console.log("[AUTH TEST] 👤 User from context:", user ? `Found (${user.email || user.uid})` : 'NONE');
+  console.log("[AUTH TEST] ⏳ Loading state:", isLoading);
+  
+  return (
+    <View style={{
+      flex: 1, 
+      justifyContent: 'center', 
+      alignItems: 'center',
+      backgroundColor: 'lightgreen',
+      padding: 20
+    }}>
+      <Text style={{fontSize: 24, fontWeight: 'bold', textAlign: 'center'}}>
+        AUTH TEST - BUILD 22
+      </Text>
+      <Text style={{fontSize: 18, marginTop: 15, textAlign: 'center'}}>
+        Loading: {isLoading ? 'YES' : 'NO'}
+      </Text>
+      <Text style={{fontSize: 18, marginTop: 10, textAlign: 'center'}}>
+        User: {user ? `Found (${user.email || user.uid})` : 'NONE'}
+      </Text>
+      <Text style={{fontSize: 14, marginTop: 20, textAlign: 'center', color: '#333'}}>
+        If you see this green screen with auth info, the provider works!
+      </Text>
+      <Text style={{fontSize: 12, marginTop: 15, textAlign: 'center', color: '#666'}}>
+        Build 22: Testing auth context before adding complex components
+      </Text>
+    </View>
+  );
+};
+
+// Simple component to display logs directly on screen
+const SimpleLogDisplay = () => {
+  const [, forceUpdate] = useState(0);
+  
+  // Force re-render every second to show new logs
   useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        console.log("[SCREEN] Setting up global error tracking...");
-        setupGlobalErrorTracking();
-        
-        console.log("[SCREEN] App initialization completed");
-        setIsReady(true);
-      } catch (err) {
-        console.error("[SCREEN] App initialization failed:", err);
-        setError(err);
-      }
-    };
-
-    initializeApp();
+    const interval = setInterval(() => {
+      forceUpdate(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Simple error screen
-  if (error) {
-    return (
-      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <View style={styles.container}>
-          <Text style={styles.errorText}>App Error: {error.message}</Text>
-          <Text style={styles.versionLabel}>Version 1.0.21 - Build 21</Text>
-        </View>
-      </SafeAreaProvider>
-    );
-  }
-
-  // Loading screen
-  if (!isReady) {
-    return (
-      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <View style={styles.container}>
-          <Text style={styles.loadingText}>Loading...</Text>
-          <Text style={styles.versionLabel}>Version 1.0.21 - Build 21</Text>
-        </View>
-      </SafeAreaProvider>
-    );
-  }
-
-  // Main app - render ACTUAL HomeScreen with mock context
-  console.log("[SCREEN] HomeScreen loaded");
-  
-  // Create mock navigation object for HomeScreen
-  const mockNavigation = {
-    navigate: (screen) => console.log(`[SCREEN] Navigation to ${screen} requested`),
-    goBack: () => console.log(`[SCREEN] Go back requested`),
-  };
-
   return (
-    <ErrorBoundary>
-      <AuthenticatedUserProvider>
-        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-          <View style={styles.mainContainer}>
-            {/* Render the ACTUAL HomeScreen component */}
-            <HomeScreen navigation={mockNavigation} />
-            
-            {/* Version label at bottom */}
-            <Text style={styles.versionLabel}>
-              Version 1.0.21 - Build 21
-            </Text>
-          </View>
-        </SafeAreaProvider>
-      </AuthenticatedUserProvider>
-    </ErrorBoundary>
+    <View style={styles.logContainer}>
+      <Text style={styles.logTitle}>🔧 BUILD 22 DEBUG LOGS</Text>
+      <ScrollView style={styles.logScrollView}>
+        {DEBUG_LOGS.map((log, index) => (
+          <Text key={index} style={[
+            styles.logText,
+            log.includes('ERROR') ? styles.logError : 
+            log.includes('WARN') ? styles.logWarn : styles.logInfo
+          ]}>
+            {log}
+          </Text>
+        ))}
+      </ScrollView>
+    </View>
   );
-}
+};
+
+// Build 22 Test Navigator - Simple auth test instead of complex navigation
+const Build22TestNavigator = () => {
+  console.log("[TEST NAV] 🧪 Build22TestNavigator component called");
+  console.log("[TEST NAV] 🎯 Testing auth provider with simple component");
+  
+  try {
+    return <AuthTest />;
+  } catch (error) {
+    console.error("[TEST NAV] 🔥 Error rendering AuthTest:", error);
+    console.error("[TEST NAV] 🔥 AuthTest error stack:", error.stack);
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>AuthTest Error</Text>
+        <Text style={styles.errorMessage}>{error.message}</Text>
+      </View>
+    );
+  }
+};
+
+console.log("[INIT] 🧪 Build22TestNavigator component defined");
+
+const App = () => {
+  console.log("[INIT] 🔄 App component function called");
+  console.log("[INIT] ✅ Build 22 debug mode active");
+  console.log("[INIT] 📱 Platform:", Platform.OS);
+  console.log("[INIT] 🧭 About to test navigation components");
+  
+  // Add test logs
+  console.warn("[TEST] ⚠️ Build 22 test warning");
+  console.error("[TEST] ❌ Build 22 test error");
+  
+  console.log("[INIT] 🚀 About to render AuthenticatedUserProvider test (no NavigationContainer)");
+  console.log("[INIT] 🔐 Auth instance status for provider:", auth ? 'Available' : 'Not available');
+  
+  // Split screen: Navigation on top, logs on bottom
+  return (
+    <SafeAreaProvider style={styles.container}>
+      <View style={styles.appContainer}>
+        {/* Navigation Section */}
+        <View style={styles.navigationContainer}>
+          <AuthenticatedUserProvider auth={auth}>
+            <Build22TestNavigator />
+          </AuthenticatedUserProvider>
+        </View>
+        
+        {/* Debug Logs Section */}
+        <View style={styles.debugSection}>
+          <SimpleLogDisplay />
+        </View>
+      </View>
+    </SafeAreaProvider>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000000',
+  },
+  appContainer: {
+    flex: 1,
+  },
+  navigationContainer: {
+    flex: 2, // Takes up 2/3 of the screen
+    backgroundColor: '#ffffff',
+  },
+  debugSection: {
+    flex: 1, // Takes up 1/3 of the screen
+    backgroundColor: '#000000',
+    borderTopWidth: 2,
+    borderTopColor: '#00ff00',
+  },
+  // Loading/Error styles for RealAppNavigator
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#ffffff',
     padding: 20,
   },
-  mainContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
   loadingText: {
-    fontSize: 18,
+    fontSize: 24,
+    fontWeight: 'bold',  
+    color: '#2196F3',
+    marginBottom: 8,
+  },
+  statusDetails: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 20,
+  },
+  errorTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#000000',
-    marginBottom: 20,
-  },
-  errorText: {
-    fontSize: 16,
     color: '#FF4444',
+    marginBottom: 12,
     textAlign: 'center',
-    marginBottom: 20,
   },
-  versionLabel: {
+  errorMessage: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 24,
+  },
+  // Debug log styles
+  logContainer: {
+    flex: 1,
+    padding: 10,
+  },
+  logTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#00ff00',
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  logScrollView: {
+    flex: 1,
+  },
+  logText: {
     fontSize: 10,
-    opacity: 0.5,
-    position: 'absolute',
-    bottom: 20,
-    alignSelf: 'center',
-    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    marginBottom: 1,
+    lineHeight: 12,
   },
-}); 
+  logInfo: {
+    color: '#00ff00',
+  },
+  logWarn: {
+    color: '#ffaa00',
+  },
+  logError: {
+    color: '#ff4444',
+  },
+});
+
+export default App; 

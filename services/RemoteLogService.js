@@ -5,7 +5,7 @@ class RemoteLogService {
   constructor() {
     this.logQueue = [];
     this.isEnabled = true; // ENABLED for production debugging
-    this.remoteEndpoint = 'https://webhook.site/YOUR-UNIQUE-ID'; // Free webhook for testing
+    this.remoteEndpoint = 'https://webhook.site/0c8c4a7e-33bb-4ea7-a5b6-0129f69d57a0'; // Free webhook for testing
     this.maxQueueSize = 50;
     this.batchSize = 10;
     this.flushInterval = 30000; // 30 seconds

@@ -10,11 +10,14 @@
 
 ### 🔥 Start Debugging Right Now
 
-#### Option 1: Use Current Build
-1. **Launch your app** on iOS device
-2. **Look for orange "🔧 DEBUG" button** in top-right corner
-3. **Tap it** to see all logs on screen in real-time
-4. **Watch exactly where the app stops** before crashing
+#### Option 1: Use Current Build 23 (AuthenticatedUserProvider Test)
+1. **Launch Build 23** on iOS device via TestFlight
+2. **Look for green screen** with "AUTH TEST - BUILD 23" 
+3. **Check auth info display**: Loading state and User status
+4. **View debug logs** in bottom half of screen
+5. **Verify**: "If you see this green screen with auth info, the provider works!"
+
+**Build 23 Strategy**: Testing ONLY AuthenticatedUserProvider component isolation
 
 #### Option 2: Build with Better Debugging
 ```bash

@@ -11,6 +11,8 @@ import { log, logError, logWarn } from '../utils/logger';
 log("[HOME] 🏗️ HomeScreen module loaded");
 
 export const HomeScreen = ({ navigation }) => {
+  console.log("[SCREEN] HomeScreen loaded");
+  
   log("[HOME] 🚀 HomeScreen component called");
   log("[HOME] 🧭 Navigation prop received:", !!navigation);
   
@@ -274,6 +276,10 @@ export const HomeScreen = ({ navigation }) => {
           <MaterialCommunityIcons name="logout" size={18} color="#86868B" />
           <Text style={styles.signOutText}>Sign Out</Text>
         </Pressable>
+        
+        <Text style={styles.versionText}>
+          Version 1.0.21 - Build 21
+        </Text>
       </View>
     </SafeAreaView>
   );
@@ -508,5 +514,12 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     color: '#C1C1C6',
+  },
+  versionText: {
+    fontSize: 12,
+    color: '#86868B',
+    textAlign: 'center',
+    marginTop: 8,
+    fontWeight: '400',
   },
 });

@@ -5,7 +5,7 @@ export default {
     owner: "gilraz",
     privacy: "public",
     platforms: ["ios", "android", "web"],
-    version: "1.0.20",
+    version: "1.0.21",
     orientation: "portrait",
     sdkVersion: "53.0.0",
     icon: "./assets/numa-logo.png",

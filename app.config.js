@@ -31,7 +31,7 @@ export default {
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.gilraz.numahealthapp",
+      bundleIdentifier: "com.numahealth.app",
       buildNumber: "27",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,

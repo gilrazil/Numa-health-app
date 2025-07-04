@@ -1,5 +1,5 @@
 // PRODUCTION DEBUG - Log immediately on load
-console.log('=== INDEX.JS LOADED - BUILD 27 CAMERA & IMAGE FLOW ===');
+console.log('=== INDEX.JS LOADED - BUILD 27 FIRESTORE TESTING ===');
 
 import 'react-native-gesture-handler';
 import { registerRootComponent } from 'expo';
@@ -18,7 +18,7 @@ try {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
-      event: 'index.js loaded - Build 27 - Camera & Image Flow',
+      event: 'index.js loaded - Build 27 - Firestore Testing',
       timestamp: new Date().toISOString(),
       platform: 'ios',
               buildNumber: '27'

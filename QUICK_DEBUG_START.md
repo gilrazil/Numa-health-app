@@ -10,15 +10,16 @@
 
 ### 🔥 Start Debugging Right Now
 
-#### Option 2: Use Current Build 26 (Firestore Testing)
-1. **Launch Build 26** on iOS device via TestFlight
-2. **Look for login screen** with "BUILD 26 - FIRESTORE TEST"
+#### Option 2: Use Current Build 27 (Firestore-Only Testing)
+1. **Launch Build 27** on iOS device via TestFlight
+2. **Look for login screen** with "BUILD 27 - FIRESTORE TEST"
 3. **Test Firebase authentication** with email/password
 4. **Test Firestore operations** with profile creation and retrieval
 5. **Check console logs** for Firestore operations and errors
 6. **Verify navigation** works between login and test screens with persistent data
+7. **🚫 DO NOT test camera functionality** (saved for Build 28)
 
-**Build 26 Strategy**: Testing Firebase Firestore operations on proven Build 25 authentication foundation
+**Build 27 Strategy**: Testing Firebase Firestore operations ONLY on proven Build 25 authentication foundation
 
 #### Option 2: Build with Better Debugging
 ```bash

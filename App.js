@@ -37,8 +37,8 @@ const addLog = (level, ...args) => {
 };
 
 // Initialize logs
-addLog("INIT", "🚀 Build 27 - Camera & Image Flow initialized");
-addLog("INIT", "📸 Testing full camera functionality with expo-camera");
+addLog("INIT", "🚀 Build 27 - Firestore Testing initialized");
+  addLog("INIT", "📄 Testing Firestore profile operations");
 addLog("INIT", "🔥 Firebase Config:", auth?.app?.name || "No app name");
 addLog("INIT", "💾 Firestore Config:", db?.app?.name || "No Firestore app name");
 
@@ -60,7 +60,7 @@ if (auth) {
 }
 
 console.log("[INIT] 📚 All imports successful");
-console.log("[INIT] 📸 Build 27 - Camera & Image Flow Navigator components loaded");
+console.log("[INIT] 📄 Build 27 - Firestore Testing Navigator components loaded");
 
 // Build 27 Test Screens
 const LoginTestScreen = ({ navigation }) => {
@@ -107,28 +107,28 @@ const LoginTestScreen = ({ navigation }) => {
     }
   };
 
-  const handleTestCamera = async () => {
+  const handleTestFirestore = async () => {
     if (!user) {
-      addLog("CAMERA", "❌ No user logged in, cannot test camera");
+      addLog("FIRESTORE", "❌ No user logged in, cannot test Firestore");
       Alert.alert("Error", "Please login first");
       return;
     }
 
-    addLog("CAMERA", "📸 Starting camera test");
-    addLog("CAMERA", "👤 User:", user.email);
+    addLog("FIRESTORE", "📄 Starting Firestore test");
+    addLog("FIRESTORE", "👤 User:", user.email);
 
     try {
-      // Navigate to camera screen for testing
-      navigation.navigate('CameraTest');
+      // Navigate to navigation screen for Firestore testing
+      navigation.navigate('NavigationTest');
     } catch (error) {
-      addLog("CAMERA", "❌ Camera test navigation failed:", error.message);
-      Alert.alert("Camera Error", error.message);
+      addLog("FIRESTORE", "❌ Firestore test navigation failed:", error.message);
+      Alert.alert("Firestore Error", error.message);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>📸 Build 27 - Camera Test</Text>
+      <Text style={styles.title}>📄 Build 27 - Firestore Test</Text>
       
       {!loginSuccess ? (
         <>
@@ -170,14 +170,14 @@ const LoginTestScreen = ({ navigation }) => {
             <Text style={styles.userText}>🆔 UID: {user.uid}</Text>
           </View>
 
-          <Text style={styles.subtitle}>Step 2: Test Camera & Image Flow</Text>
+          <Text style={styles.subtitle}>Step 2: Test Firestore Operations</Text>
           
           <TouchableOpacity 
-            style={styles.cameraButton} 
-            onPress={handleTestCamera}
+            style={styles.firestoreButton} 
+            onPress={() => navigation.navigate('NavigationTest')}
           >
-            <MaterialCommunityIcons name="camera" size={24} color="#fff" />
-            <Text style={styles.cameraButtonText}>📸 Test Camera</Text>
+            <MaterialCommunityIcons name="database" size={24} color="#fff" />
+            <Text style={styles.firestoreButtonText}>📄 Test Firestore</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -193,116 +193,8 @@ const LoginTestScreen = ({ navigation }) => {
   );
 };
 
-const CameraTestScreen = ({ navigation }) => {
-  const [testing, setTesting] = useState(false);
-  const [testResults, setTestResults] = useState({});
-  const { user } = useContext(AuthenticatedUserContext);
-
-  const runCameraTests = async () => {
-    setTesting(true);
-    addLog("CAMERA_TEST", "🧪 Running camera tests");
-
-    const results = {};
-
-    try {
-      // Test 1: Camera permissions
-      addLog("CAMERA_TEST", "📝 Test 1: Checking camera permissions");
-      results.permissions = "✅ Will be checked in camera component";
-
-      // Test 2: Camera component loading
-      addLog("CAMERA_TEST", "📝 Test 2: Camera component availability");
-      results.componentLoad = "✅ Camera component should load";
-
-      // Test 3: Image processing
-      addLog("CAMERA_TEST", "📝 Test 3: Image processing capabilities");
-      results.imageProcessing = "✅ Optimization and resize ready";
-
-      // Test 4: Firebase Storage
-      addLog("CAMERA_TEST", "📝 Test 4: Firebase Storage integration");
-      results.firebaseStorage = "✅ Upload functionality implemented";
-
-      setTestResults(results);
-      addLog("CAMERA_TEST", "✅ All camera tests completed");
-
-    } catch (error) {
-      addLog("CAMERA_TEST", "❌ Camera test failed:", error.message);
-      results.error = error.message;
-      setTestResults(results);
-    } finally {
-      setTesting(false);
-    }
-  };
-
-  const openCamera = () => {
-    addLog("CAMERA_TEST", "📸 Opening camera component");
-    navigation.navigate('Camera', {
-      returnScreen: 'CameraTest',
-      autoSave: false,
-      userProfile: user
-    });
-  };
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>📸 Camera & Image Flow Test</Text>
-      <Text style={styles.subtitle}>Testing expo-camera integration</Text>
-
-      <View style={styles.testSection}>
-        <TouchableOpacity 
-          style={styles.testButton} 
-          onPress={runCameraTests}
-          disabled={testing}
-        >
-          {testing ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <>
-              <MaterialCommunityIcons name="test-tube" size={24} color="#fff" />
-              <Text style={styles.testButtonText}>Run Camera Tests</Text>
-            </>
-          )}
-        </TouchableOpacity>
-
-        {Object.keys(testResults).length > 0 && (
-          <View style={styles.resultsContainer}>
-            <Text style={styles.resultsTitle}>📋 Test Results:</Text>
-            {Object.entries(testResults).map(([key, value]) => (
-              <Text key={key} style={styles.resultText}>
-                {key}: {value}
-              </Text>
-            ))}
-          </View>
-        )}
-      </View>
-
-      <View style={styles.cameraSection}>
-        <TouchableOpacity 
-          style={styles.primaryButton} 
-          onPress={openCamera}
-        >
-          <MaterialCommunityIcons name="camera-plus" size={32} color="#fff" />
-          <Text style={styles.primaryButtonText}>Open Camera</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.secondaryButton} 
-          onPress={() => navigation.navigate('MealCamera')}
-        >
-          <MaterialCommunityIcons name="food" size={24} color="#6B4EFF" />
-          <Text style={styles.secondaryButtonText}>Meal Camera (Legacy)</Text>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity 
-        style={styles.backButton} 
-        onPress={() => navigation.goBack()}
-      >
-        <MaterialCommunityIcons name="arrow-left" size={24} color="#333" />
-        <Text style={styles.backButtonText}>Back to Login</Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
+// CameraTestScreen removed - Build 27 focuses on Firestore-only testing
+// Camera functionality will be tested in Build 28
 
 const NavigationTestScreen = ({ navigation }) => {
   const { user } = useContext(AuthenticatedUserContext);
@@ -358,7 +250,7 @@ const NavigationTestScreen = ({ navigation }) => {
   );
 };
 
-const Build27TestNavigator = () => {
+const Build27FirestoreTestNavigator = () => {
   const Stack = createStackNavigator();
   
   return (
@@ -368,11 +260,7 @@ const Build27TestNavigator = () => {
         component={LoginTestScreen} 
         options={{ headerShown: false }}
       />
-      <Stack.Screen 
-        name="CameraTest" 
-        component={CameraTestScreen} 
-        options={{ headerShown: false }}
-      />
+      {/* CameraTest removed - Build 27 focuses on Firestore-only testing */}
       <Stack.Screen 
         name="NavigationTest" 
         component={NavigationTestScreen} 
@@ -389,7 +277,7 @@ const App = () => {
     <SafeAreaProvider>
       <AuthenticatedUserProvider>
         <NavigationContainer>
-          <Build27TestNavigator />
+                      <Build27FirestoreTestNavigator />
         </NavigationContainer>
         
         {/* Debug Logs */}
@@ -400,7 +288,7 @@ const App = () => {
               onPress={() => setShowLogs(!showLogs)}
             >
               <MaterialCommunityIcons name="tools" size={16} color="#fff" />
-              <Text style={styles.logToggleText}>BUILD 27 DEBUG LOGS</Text>
+              <Text style={styles.logToggleText}>BUILD 27 FIRESTORE LOGS</Text>
             </TouchableOpacity>
             <ScrollView style={styles.logContainer} showsVerticalScrollIndicator={false}>
               {DEBUG_LOGS.slice(-10).map((log, index) => (
@@ -482,8 +370,8 @@ const styles = StyleSheet.create({
     color: "#2E7D32",
     marginBottom: 5,
   },
-  cameraButton: {
-    backgroundColor: "#FF6B35",
+  firestoreButton: {
+    backgroundColor: "#4CAF50",
     borderRadius: 8,
     padding: 15,
     alignItems: "center",
@@ -492,7 +380,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 10,
   },
-  cameraButtonText: {
+  firestoreButtonText: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "600",

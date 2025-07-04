@@ -1,28 +1,30 @@
 # 🚀 Numa Health Alpha Launch Plan
 
-## Current Status (Build 26 - Firestore Testing)
+## Current Status (Build 27 - Firestore-Only Testing)
 - ✅ Build 24 successful - Navigation + AuthenticatedUserProvider working
 - ✅ Build 25 successful - Firebase authentication integration working
-- ✅ Build 26 focuses on Firestore data operations
+- ✅ Build 27 focuses **ONLY** on Firestore data operations
 - ✅ User profile creation and retrieval testing
 - ✅ Comprehensive Firestore logging and error handling
+- 📝 Camera code present but NOT tested in Build 27
 
 ## Timeline
-- **Today**: Build 26 completes, submit to TestFlight
+- **Today**: Build 27 completes, submit to TestFlight
 - **Tomorrow**: Apple approval, test Firestore flows
 - **This Week**: Validate Firebase Firestore integration
-- **Next Week**: Move to Build 27 with additional features
+- **Next Week**: Move to Build 28 with additional features
 
 ## Message to Alpha Testers
 ```
-Welcome to Numa Health Alpha - Build 26! 
+Welcome to Numa Health Alpha - Build 27! 
 
-This build focuses on Firestore testing:
-- Test login with your existing credentials
-- Test user profile creation and storage
-- Verify profile data displays correctly
-- Report any Firestore-related issues
-- Navigate between screens with persistent data
+This build focuses ONLY on Firestore testing:
+- ✅ Test login with your existing credentials
+- ✅ Test user profile creation and storage
+- ✅ Verify profile data displays correctly
+- ✅ Report any Firestore-related issues
+- ✅ Navigate between screens with persistent data
+- 🚫 DO NOT test camera functionality (saved for Build 28)
 
 We're systematically building features step by step!
 ```
@@ -41,8 +43,8 @@ We're systematically building features step by step!
 - Comprehensive Firestore error handling works
 
 ## Next Week's Plan
-1. If Build 26 succeeds → Build 27 with Camera system
-2. If Build 26 fails → Use debug logs to fix Firestore issues
-3. Continue systematic component addition approach
-4. Move toward meal tracking in later builds
-5. Maintain systematic debugging methodology 
+1. If Build 27 succeeds → Build 28 with Camera functionality
+2. If Build 27 fails → Use debug logs to fix Firestore issues only
+3. Build 28: Basic camera capture (no Firebase upload)
+4. Build 29: Firebase Storage + meal logging
+5. Maintain systematic debugging methodology (one risk per build) 

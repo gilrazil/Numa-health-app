@@ -709,10 +709,10 @@ export const MealCameraScreen = ({ navigation }) => {
     }
   };
 
-  // Build 27 - New Camera System Integration
+  // Build 28 - New Camera System Integration
   const openNewCamera = async () => {
     try {
-      log("[CAMERA] 📸 Opening new camera system (Build 27)");
+      log("[CAMERA] 📸 Opening new camera system (Build 28)");
       logRemote.info('[CAMERA] Opening new camera system');
       
       const userProfile = await getUserProfile();
@@ -819,7 +819,7 @@ export const MealCameraScreen = ({ navigation }) => {
           </View>
           
                   <View style={styles.cameraActions}>
-          {/* Build 27 - New Camera System */}
+          {/* Build 28 - New Camera System */}
           <TouchableOpacity 
             style={[styles.newCameraButton, uploading && styles.disabledButton]} 
             onPress={openNewCamera}
@@ -830,7 +830,7 @@ export const MealCameraScreen = ({ navigation }) => {
             ) : (
               <>
                 <MaterialCommunityIcons name="camera-plus" size={30} color="#fff" />
-                <Text style={styles.newCameraButtonText}>📸 New Camera (Build 27)</Text>
+                <Text style={styles.newCameraButtonText}>📸 New Camera (Build 28)</Text>
               </>
             )}
           </TouchableOpacity>

@@ -10,6 +10,7 @@ import { AlphaBadge } from './AlphaBadge';
 import { ErrorBoundary } from './ErrorBoundary';
 import { NavigationErrorFallback } from './NavigationErrorFallback';
 import { ProductionSafeFallback } from './ProductionSafeFallback';
+import { CameraComponent } from './CameraComponent';
 
 export {
   View,
@@ -23,5 +24,6 @@ export {
   AlphaBadge,
   ErrorBoundary,
   NavigationErrorFallback,
-  ProductionSafeFallback
+  ProductionSafeFallback,
+  CameraComponent
 };

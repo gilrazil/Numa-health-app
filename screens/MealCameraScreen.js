@@ -709,6 +709,27 @@ export const MealCameraScreen = ({ navigation }) => {
     }
   };
 
+  // Build 27 - New Camera System Integration
+  const openNewCamera = async () => {
+    try {
+      log("[CAMERA] 📸 Opening new camera system (Build 27)");
+      logRemote.info('[CAMERA] Opening new camera system');
+      
+      const userProfile = await getUserProfile();
+      
+      navigation.navigate('Camera', {
+        returnScreen: 'MealCamera',
+        autoSave: false,
+        userProfile: userProfile
+      });
+      
+    } catch (error) {
+      logError("[CAMERA] ❌ Error opening new camera:", error);
+      logRemote.critical('[CAMERA] Error opening new camera', error);
+      Alert.alert('Camera Error', 'Failed to open camera. Please try again.');
+    }
+  };
+
   const handleGoBack = async () => {
     if (analysisResult) {
       try {
@@ -797,31 +818,48 @@ export const MealCameraScreen = ({ navigation }) => {
             )}
           </View>
           
-          <View style={styles.cameraActions}>
-            <TouchableOpacity 
-              style={[styles.cameraButton, (developmentMode || permissionStatus?.camera !== 'granted' || uploading) && styles.disabledButton]} 
-              onPress={takePhoto}
-              disabled={developmentMode || permissionStatus?.camera !== 'granted' || uploading}
-            >
-              {uploading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <>
-                  <MaterialCommunityIcons name="camera" size={30} color="#fff" />
-                  <Text style={styles.cameraButtonText}>Take Photo</Text>
-                </>
-              )}
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.galleryButton, (developmentMode || permissionStatus?.mediaLibrary !== 'granted' || uploading) && styles.disabledButton]} 
-              onPress={pickImage}
-              disabled={developmentMode || permissionStatus?.mediaLibrary !== 'granted' || uploading}
-            >
-              <MaterialCommunityIcons name="image" size={30} color="#6B4EFF" />
-              <Text style={styles.galleryButtonText}>Choose from Gallery</Text>
-            </TouchableOpacity>
-          </View>
+                  <View style={styles.cameraActions}>
+          {/* Build 27 - New Camera System */}
+          <TouchableOpacity 
+            style={[styles.newCameraButton, uploading && styles.disabledButton]} 
+            onPress={openNewCamera}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="camera-plus" size={30} color="#fff" />
+                <Text style={styles.newCameraButtonText}>📸 New Camera (Build 27)</Text>
+              </>
+            )}
+          </TouchableOpacity>
+          
+          {/* Legacy Camera Options */}
+          <TouchableOpacity 
+            style={[styles.cameraButton, (developmentMode || permissionStatus?.camera !== 'granted' || uploading) && styles.disabledButton]} 
+            onPress={takePhoto}
+            disabled={developmentMode || permissionStatus?.camera !== 'granted' || uploading}
+          >
+            {uploading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="camera" size={30} color="#fff" />
+                <Text style={styles.cameraButtonText}>Take Photo (Legacy)</Text>
+              </>
+            )}
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.galleryButton, (developmentMode || permissionStatus?.mediaLibrary !== 'granted' || uploading) && styles.disabledButton]} 
+            onPress={pickImage}
+            disabled={developmentMode || permissionStatus?.mediaLibrary !== 'granted' || uploading}
+          >
+            <MaterialCommunityIcons name="image" size={30} color="#6B4EFF" />
+            <Text style={styles.galleryButtonText}>Choose from Gallery</Text>
+          </TouchableOpacity>
+        </View>
         </View>
 
         {/* Recent Meals */}
@@ -966,6 +1004,21 @@ const styles = StyleSheet.create({
   },
   cameraActions: {
     gap: 15,
+  },
+  newCameraButton: {
+    backgroundColor: '#FF6B35',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    borderRadius: 12,
+    gap: 10,
+    marginBottom: 10,
+  },
+  newCameraButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
   },
   cameraButton: {
     backgroundColor: '#6B4EFF',

@@ -10,6 +10,11 @@ import { GoalScreen } from "./GoalScreen";
 import { MealCameraScreen } from "./MealCameraScreen";
 import { MealAnalysisScreen } from "./MealAnalysisScreen";
 import { AutoBiometricScreen } from "./AutoBiometricScreen";
+import { ProfileSummaryScreen } from './ProfileSummaryScreen';
+import { UserProfileScreen } from './UserProfileScreen';
+import { BiometricSettingsScreen } from './BiometricSettingsScreen';
+import { MealTrackerScreen } from './MealTrackerScreen';
+import { CameraScreen } from './CameraScreen';
 
 export { 
   LoginScreen, 
@@ -21,7 +26,12 @@ export {
   GenderScreen,
   AgeHeightWeightScreen,
   GoalScreen,
+  ProfileSummaryScreen,
+  UserProfileScreen,
+  BiometricSettingsScreen,
+  AutoBiometricScreen,
   MealCameraScreen,
   MealAnalysisScreen,
-  AutoBiometricScreen
+  MealTrackerScreen,
+  CameraScreen
 };

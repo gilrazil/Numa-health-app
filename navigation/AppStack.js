@@ -1,8 +1,13 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import { HomeScreen, MealCameraScreen, MealAnalysisScreen } from "../screens";
+import { 
+  HomeScreen, 
+  MealCameraScreen, 
+  MealAnalysisScreen, 
+  CameraScreen 
+} from "../screens";
 import LogMealScreen from '../screens/LogMealScreen';
-import { log, logError, logWarn } from '../utils/logger';
+import { log } from '../utils/logger';
 
 log("[APP] 🏗️ AppStack module loaded");
 log("[APP] 📦 AppStack imports loaded successfully");
@@ -24,6 +29,11 @@ export const AppStack = () => {
       <Stack.Screen 
         name="MealCamera" 
         component={MealCameraScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name="Camera" 
+        component={CameraScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen 

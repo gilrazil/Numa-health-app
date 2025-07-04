@@ -7,7 +7,7 @@ export default {
     owner: "gilraz",
     privacy: "public",
     platforms: ["ios", "android", "web"],
-    version: "1.0.26",
+    version: "1.0.27",
     orientation: "portrait",
     sdkVersion: "53.0.0",
     icon: "./assets/icon.png",
@@ -32,12 +32,13 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.gilraz.numahealthapp",
-      buildNumber: "26",
+      buildNumber: "27",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
-        NSCameraUsageDescription: "This app uses the camera to let you take photos of your meals for tracking.",
-        NSPhotoLibraryUsageDescription: "This app accesses your photo library to let you select meal photos.",
-        NSPhotoLibraryAddUsageDescription: "This app saves analyzed meal photos to your photo library.",
+        NSCameraUsageDescription: "This app needs access to your camera to take photos of your meals for nutritional analysis.",
+        NSPhotoLibraryUsageDescription: "This app needs access to your photo library to select meal photos for analysis.",
+        NSMicrophoneUsageDescription: "This app may use the microphone when recording videos of meals.",
+        NSPhotoLibraryAddUsageDescription: "This app needs permission to save meal photos to your photo library.",
         // Prevent cache-related crashes
         UIFileSharingEnabled: false,
         LSSupportsOpeningDocumentsInPlace: false
@@ -45,15 +46,16 @@ export default {
     },
     android: {
       package: "com.numahealth.app",
-      versionCode: 12,
+      versionCode: 27,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#ffffff"
+        backgroundColor: "#FFFFFF"
       },
       permissions: [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "WRITE_EXTERNAL_STORAGE",
+        "RECORD_AUDIO"
       ]
     },
     extra: {
@@ -66,7 +68,21 @@ export default {
       config: "metro.config.js"
     },
     plugins: [
-      // expo-font removed - not needed for Build 26
+      "expo-camera",
+      [
+        "expo-image-picker",
+        {
+          photosPermission: "The app needs access to your photos to let you select meal images for analysis.",
+          cameraPermission: "The app needs access to your camera to take photos of your meals."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          photosPermission: "The app needs access to your photo library to save and manage meal photos.",
+          savePhotosPermission: "The app needs permission to save meal photos to your photo library."
+        }
+      ]
     ]
   },
 };

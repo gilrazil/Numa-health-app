@@ -278,7 +278,7 @@ export const HomeScreen = ({ navigation }) => {
         </Pressable>
         
         <Text style={styles.versionText}>
-          Version 1.0.25 - Build 25
+          Version 1.0.26 - Build 26
         </Text>
       </View>
     </SafeAreaView>

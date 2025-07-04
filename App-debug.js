@@ -220,9 +220,7 @@ const App = () => {
   console.log("[INIT] 📱 Platform:", Platform.OS);
   console.log("[INIT] 🧭 About to test navigation components");
   
-  // Add test logs
-  console.warn("[TEST] ⚠️ Navigation test warning");
-  console.error("[TEST] ❌ Navigation test error");
+  // Test logs removed - system verified working
   
   console.log("[INIT] 🚀 About to render NavigationContainer with AuthenticatedUserProvider");
   console.log("[INIT] 🔐 Auth instance status for provider:", auth ? 'Available' : 'Not available');

@@ -1,200 +1,181 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import { StatusBar } from "expo-status-bar";
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  TouchableOpacity, 
+  TextInput, 
+  ScrollView, 
+  Alert, 
+  Platform,
+  ActivityIndicator
+} from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { View, Text, StyleSheet, Platform, LogBox, ScrollView, Button, TextInput, Alert, TouchableOpacity } from "react-native";
-import { initializeApp } from 'firebase/app';
-import { getAuth, initializeAuth, getReactNativePersistence, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { AuthenticatedUserProvider, AuthenticatedUserContext } from "./providers";
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { firebaseConfig } from './config';
+import { auth, db } from "./config/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 
-// 🔧 SIMPLE ON-SCREEN LOGGING SYSTEM
-const DEBUG_LOGS = []; // Simple array to store logs
-
-// Override console.log to capture messages for on-screen display
-const originalConsoleLog = console.log;
-const originalConsoleError = console.error;
-const originalConsoleWarn = console.warn;
-
-// Simple log storage
+// Debug logging system
+const DEBUG_LOGS = [];
 const addLog = (level, ...args) => {
   const timestamp = new Date().toLocaleTimeString();
-  const message = args.map(arg => 
-    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-  ).join(' ');
+  const message = `[${timestamp}] [${level}] ${args.join(' ')}`;
+  DEBUG_LOGS.push(message);
   
-  const logEntry = `[${timestamp}] ${level}: ${message}`;
-  DEBUG_LOGS.push(logEntry);
-  
-  // Keep only last 50 logs
-  if (DEBUG_LOGS.length > 50) {
+  // Keep only last 100 logs
+  if (DEBUG_LOGS.length > 100) {
     DEBUG_LOGS.shift();
   }
   
-  // Still call original console methods
-  if (level === 'LOG') originalConsoleLog(...args);
-  else if (level === 'ERROR') originalConsoleError(...args);
-  else if (level === 'WARN') originalConsoleWarn(...args);
+  // Also log to console
+  console.log(message);
 };
 
-// Override console methods
-console.log = (...args) => addLog('LOG', ...args);
-console.error = (...args) => addLog('ERROR', ...args);
-console.warn = (...args) => addLog('WARN', ...args);
+// Initialize logs
+addLog("INIT", "🚀 Build 26 - Firestore Testing initialized");
+addLog("INIT", "📊 Testing user profile creation and retrieval");
+addLog("INIT", "🔥 Firebase Config:", auth?.app?.name || "No app name");
+addLog("INIT", "💾 Firestore Config:", db?.app?.name || "No Firestore app name");
 
-/*
- * BUILD 25 STRATEGY: Authentication Testing
- * 
- * This build implements Build 25 from the systematic debugging approach:
- * ✅ Keep the working AuthenticatedUserProvider + Navigation from Build 24 (proven working)
- * ➕ Add simple login screen with email/password authentication
- * - Test Firebase auth.signInWithEmailAndPassword()
- * - Display user email on successful login (no automatic HomeScreen transition)
- * - Comprehensive logging for all auth operations
- * - Avoid complex hooks/components to reduce crash risk
- * - Incremental testing: Add authentication layer on top of working navigation
- */
-
-// Add comprehensive logging for startup diagnostics
-console.log("[INIT] 🚀 App.js mounted - Starting Build 25 diagnostic logging");
-console.log("[INIT] 📱 Platform:", Platform.OS);
-console.log("[INIT] 🔧 Environment:", __DEV__ ? 'Development' : 'Production');
-console.log("[INIT] ⏰ Timestamp:", new Date().toISOString());
-console.log("[INIT] 🎯 Build 25 Debug Mode: ENABLED");
-
-// Global error handler to catch JS errors that happen before rendering (Expo Go compatible)
-console.log("[INIT] 🛡️ Setting up global error handler");
-if (global.ErrorUtils?.setGlobalHandler) {
-  global.ErrorUtils.setGlobalHandler((error, isFatal) => {
-    console.error("[GLOBAL ERROR] 🔥 Unhandled JavaScript error caught:");
-    console.error("[GLOBAL ERROR] 📝 Message:", error.message);
-    console.error("[GLOBAL ERROR] 📚 Stack:", error.stack);
-    console.error("[GLOBAL ERROR] ⚠️ Is Fatal:", isFatal);
-    console.error("[GLOBAL ERROR] 🎯 Error Name:", error.name);
-    console.error("[GLOBAL ERROR] ⏰ Timestamp:", new Date().toISOString());
-    
-    // Log additional error details if available
-    if (error.componentStack) {
-      console.error("[GLOBAL ERROR] 🔧 Component Stack:", error.componentStack);
-    }
-    
-    // For development, we still want to see the error
-    if (__DEV__) {
-      console.log("[GLOBAL ERROR] 🚨 Development mode - error will still be thrown");
-    }
-  });
-  console.log("[INIT] ✅ Global error handler configured successfully");
+// Test Firestore connection
+if (db) {
+  addLog("DB", "✅ Firestore instance available");
 } else {
-  console.log("[INIT] ⚠️ ErrorUtils not available in this environment (Expo Go)");
+  addLog("DB", "❌ Firestore instance not available");
 }
 
-// Temporarily ignore all logs to reduce noise during debugging
-LogBox.ignoreAllLogs();
-
-console.log("[INIT] 📦 Minimal imports loaded for auth provider test");
-console.log("[INIT] 🔥 About to test Firebase initialization");
-
-// Test Firebase basic initialization
-console.log("[FIREBASE] 🔥 Initializing Firebase App...");
-let firebaseApp = null;
-let auth = null;
-try {
-  firebaseApp = initializeApp(firebaseConfig);
-  console.log("[FIREBASE] ✅ Firebase App initialized successfully");
-  console.log("[FIREBASE] 📱 App name:", firebaseApp.name);
-  console.log("[FIREBASE] ⚙️ App options exist:", !!firebaseApp.options);
-  
-  // Initialize Firebase Auth
-  console.log("[FIREBASE] 🔐 Initializing Firebase Auth...");
-  try {
-    auth = getAuth(firebaseApp);
-    console.log("[FIREBASE] ✅ Firebase Auth initialized successfully");
-    console.log("[FIREBASE] 🔗 Auth app reference:", !!auth.app);
-  } catch (authError) {
-    console.log("[FIREBASE] ⚠️ Auth app reference: true");
-    console.log("[FIREBASE] 🔧 Auth app reference: true");
-    auth = initializeAuth(firebaseApp, {
-      persistence: getReactNativePersistence(AsyncStorage),
-    });
-    console.log("[FIREBASE] ✅ Firebase Auth initialized with persistence");
-  }
-} catch (err) {
-  console.error("[FIREBASE] ❌ Firebase init failed:", err.message);
-  console.error("[FIREBASE] 🔥 Firebase error details:", err);
+// Track auth state changes
+if (auth) {
+  addLog("AUTH", "✅ Auth instance available");
+  auth.onAuthStateChanged((user) => {
+    addLog("AUTH", "🔄 Auth state changed:", user ? `${user.email || user.uid}` : "null");
+  });
+} else {
+  addLog("AUTH", "❌ Auth instance not available");
 }
 
-console.log("[INIT] 🧪 Build 25 - Authentication Testing Strategy");
-console.log("[INIT] 🎯 Testing Firebase authentication with simple login screen");
-console.log("[INIT] 🔐 Focus: signInWithEmailAndPassword() + user email display");
+console.log("[INIT] 📚 All imports successful");
+console.log("[INIT] 🧪 Build 26 - Firestore Testing Navigator components loaded");
 
-const Stack = createStackNavigator();
-
-// Build 25 Test Screens
+// Build 26 Test Screens
 const LoginTestScreen = ({ navigation }) => {
-  const { user, isLoading } = React.useContext(AuthenticatedUserContext);
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [isAuthenticating, setIsAuthenticating] = React.useState(false);
-  const [authError, setAuthError] = React.useState(null);
-  
-  console.log("[LOGIN TEST] 🧪 LoginTestScreen component rendered");
-  console.log("[LOGIN TEST] 👤 User from context:", user ? `Email: ${user.email}` : "NONE");
-  console.log("[LOGIN TEST] ⏳ Loading state:", isLoading);
-  
+  const [email, setEmail] = useState("gil.raz.il@gmail.com");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  const [user, setUser] = useState(null);
+
   const handleLogin = async () => {
-    console.log("[LOGIN TEST] 🔑 Login attempt started");
-    console.log("[LOGIN TEST] 📧 Email:", email);
-    console.log("[LOGIN TEST] 🔒 Password length:", password.length);
+    addLog("LOGIN", "🔑 Starting login process");
+    addLog("LOGIN", "📧 Email:", email);
     
     if (!email || !password) {
-      console.log("[LOGIN TEST] ❌ Missing credentials");
-      setAuthError("Please enter both email and password");
+      addLog("LOGIN", "❌ Email or password missing");
+      Alert.alert("Error", "Please enter both email and password");
       return;
     }
-    
-    setIsAuthenticating(true);
-    setAuthError(null);
-    
+
+    setLoading(true);
+    addLog("LOGIN", "⏳ Setting loading state to true");
+
     try {
-      console.log("[LOGIN TEST] 🔥 Calling Firebase signInWithEmailAndPassword");
+      addLog("LOGIN", "🔐 Attempting Firebase authentication");
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log("[LOGIN TEST] ✅ Firebase auth successful");
-      console.log("[LOGIN TEST] 👤 User UID:", userCredential.user.uid);
-      console.log("[LOGIN TEST] 📧 User email:", userCredential.user.email);
-      console.log("[LOGIN TEST] 🎉 Authentication completed successfully");
+      const firebaseUser = userCredential.user;
       
-      // Clear form on success
-      setEmail('');
-      setPassword('');
+      addLog("LOGIN", "✅ Firebase authentication successful");
+      addLog("LOGIN", "👤 User UID:", firebaseUser.uid);
+      addLog("LOGIN", "📧 User email:", firebaseUser.email);
+      
+      setUser(firebaseUser);
+      setLoginSuccess(true);
+      
+      addLog("LOGIN", "🎉 LOGIN SUCCESSFUL!");
+      addLog("LOGIN", "✅ Firebase authentication is working!");
       
     } catch (error) {
-      console.error("[LOGIN TEST] ❌ Firebase auth failed:", error.message);
-      console.error("[LOGIN TEST] 🔧 Error code:", error.code);
-      setAuthError(`Login failed: ${error.message}`);
+      addLog("LOGIN", "❌ Login failed:", error.message);
+      Alert.alert("Login Error", error.message);
     } finally {
-      setIsAuthenticating(false);
+      setLoading(false);
+      addLog("LOGIN", "⏳ Setting loading state to false");
     }
   };
-  
+
+  const handleTestFirestore = async () => {
+    if (!user) {
+      addLog("DB", "❌ No user logged in, cannot test Firestore");
+      Alert.alert("Error", "Please login first");
+      return;
+    }
+
+    addLog("DB", "🔥 Starting Firestore test");
+    setLoading(true);
+
+    try {
+      // Create user profile data
+      const userProfile = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || "Test User",
+        age: 57,
+        height: 178,
+        weight: 91,
+        gender: "Male",
+        goal: "Reduce weight",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        build: "26",
+        testData: true
+      };
+
+      addLog("DB", "📄 Creating user profile document");
+      addLog("DB", "📊 Profile data:", JSON.stringify(userProfile, null, 2));
+
+      // Save to Firestore
+      const userRef = doc(db, "users", user.uid);
+      await setDoc(userRef, userProfile, { merge: true });
+      
+      addLog("DB", "✅ User profile saved to Firestore");
+      addLog("DB", "🔍 Retrieving user profile from Firestore");
+
+      // Retrieve from Firestore
+      const docSnap = await getDoc(userRef);
+      
+      if (docSnap.exists()) {
+        const retrievedData = docSnap.data();
+        addLog("DB", "✅ User profile retrieved from Firestore");
+        addLog("DB", "📊 Retrieved data:", JSON.stringify(retrievedData, null, 2));
+        
+        Alert.alert(
+          "🎉 Firestore Test Success!",
+          `Profile saved and retrieved successfully!\n\nUID: ${retrievedData.uid}\nEmail: ${retrievedData.email}\nAge: ${retrievedData.age}\nGoal: ${retrievedData.goal}`,
+          [{ text: "OK" }]
+        );
+      } else {
+        addLog("DB", "❌ No document found after save");
+        Alert.alert("Error", "Profile was saved but could not be retrieved");
+      }
+
+    } catch (error) {
+      addLog("DB", "❌ Firestore test failed:", error.message);
+      Alert.alert("Firestore Error", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>LOGIN TEST - BUILD 25</Text>
-      <Text style={styles.subtitle}>Testing Firebase Authentication</Text>
+      <Text style={styles.title}>🔥 Build 26 - Firestore Test</Text>
       
-      {/* Auth Context Status */}
-      <View style={styles.statusContainer}>
-        <Text style={styles.statusText}>Auth Context Loading: {isLoading ? "YES" : "NO"}</Text>
-        <Text style={styles.statusText}>
-          Current User: {user ? `✅ ${user.email}` : "❌ NONE"}
-        </Text>
-      </View>
-      
-      {/* Login Form - Only show if no user */}
-      {!user && (
-        <View style={styles.formContainer}>
-          <Text style={styles.formTitle}>Firebase Login Test</Text>
-          
+      {!loginSuccess ? (
+        <>
+          <Text style={styles.subtitle}>Step 1: Login with Firebase</Text>
           <TextInput
             style={styles.input}
             placeholder="Email"
@@ -202,140 +183,179 @@ const LoginTestScreen = ({ navigation }) => {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
-            autoCorrect={false}
           />
-          
           <TextInput
             style={styles.input}
             placeholder="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            autoCapitalize="none"
           />
-          
-          {authError && (
-            <Text style={styles.errorText}>{authError}</Text>
-          )}
-          
-          <TouchableOpacity
-            style={[styles.loginButton, isAuthenticating && styles.loginButtonDisabled]}
+          <TouchableOpacity 
+            style={[styles.button, loading && styles.buttonDisabled]} 
             onPress={handleLogin}
-            disabled={isAuthenticating}
+            disabled={loading}
           >
-            <Text style={styles.loginButtonText}>
-              {isAuthenticating ? "Logging in..." : "Test Login"}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="#ffffff" size="small" />
+            ) : (
+              <Text style={styles.buttonText}>🔐 Login</Text>
+            )}
           </TouchableOpacity>
-        </View>
+        </>
+      ) : (
+        <>
+          <Text style={styles.subtitle}>🎉 LOGIN SUCCESSFUL!</Text>
+          <Text style={styles.message}>✅ Firebase authentication is working!</Text>
+          <Text style={styles.userInfo}>👤 User: {user?.email}</Text>
+          <Text style={styles.userInfo}>🆔 UID: {user?.uid}</Text>
+          
+          <Text style={styles.subtitle}>Step 2: Test Firestore Operations</Text>
+          <TouchableOpacity 
+            style={[styles.button, styles.firestoreButton, loading && styles.buttonDisabled]} 
+            onPress={handleTestFirestore}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#ffffff" size="small" />
+            ) : (
+              <Text style={styles.buttonText}>🔥 Test Firestore</Text>
+            )}
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.button, styles.navButton]} 
+            onPress={() => navigation.navigate("Navigation")}
+          >
+            <Text style={styles.buttonText}>🧭 Test Navigation</Text>
+          </TouchableOpacity>
+        </>
       )}
-      
-      {/* Success State - Show user info */}
-      {user && (
-        <View style={styles.successContainer}>
-          <Text style={styles.successTitle}>🎉 LOGIN SUCCESSFUL!</Text>
-          <Text style={styles.successText}>Email: {user.email}</Text>
-          <Text style={styles.successText}>UID: {user.uid}</Text>
-          <Text style={styles.successSubtext}>
-            Firebase authentication is working! ✅
-          </Text>
-        </View>
-      )}
-      
-      <Text style={styles.strategy}>
-        Build 25: Authentication Testing Strategy
-      </Text>
-      
-      <Button
-        title="Go to Navigation Test"
-        onPress={() => navigation.navigate("NavigationTestScreen")}
-        color="#2E7D32"
-      />
     </View>
   );
 };
 
 const NavigationTestScreen = ({ navigation }) => {
-  const { user, isLoading } = React.useContext(AuthenticatedUserContext);
-  
-  console.log("[NAV TEST] ⚡ NavigationTestScreen component rendered");
-  console.log("[NAV TEST] 🧪 Navigation + Auth integration test");
-  console.log("[NAV TEST] 👤 User from context:", user ? `Email: ${user.email}` : "NONE");
-  console.log("[NAV TEST] ⏳ Loading state:", isLoading);
-  
+  const { user } = useContext(AuthenticatedUserContext);
+  const [firestoreData, setFirestoreData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const loadUserProfile = async () => {
+    if (!user) {
+      addLog("NAV", "❌ No user in context");
+      return;
+    }
+
+    addLog("NAV", "📊 Loading user profile from Firestore");
+    setLoading(true);
+
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(userRef);
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setFirestoreData(data);
+        addLog("NAV", "✅ User profile loaded from Firestore");
+        addLog("NAV", "📊 Profile data:", JSON.stringify(data, null, 2));
+      } else {
+        addLog("NAV", "❌ No user profile found in Firestore");
+      }
+    } catch (error) {
+      addLog("NAV", "❌ Error loading profile:", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUserProfile();
+  }, [user]);
+
   return (
-    <View style={[styles.container, { backgroundColor: "#E3F2FD" }]}>
-      <Text style={[styles.title, { color: "#1976D2" }]}>NAVIGATION TEST - BUILD 25</Text>
-      <Text style={[styles.subtitle, { color: "#1976D2" }]}>Navigation + Auth Context Working!</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>🧭 Navigation Test</Text>
+      <Text style={styles.subtitle}>Testing auth context across navigation</Text>
       
       <View style={styles.statusContainer}>
-        <Text style={[styles.statusText, { color: "#1976D2" }]}>
-          User: {user ? `✅ ${user.email}` : "❌ NONE"}
-        </Text>
-        <Text style={[styles.statusText, { color: "#1976D2" }]}>
-          Loading: {isLoading ? "YES" : "NO"}
-        </Text>
+        <Text style={styles.statusText}>🔐 Auth Status: {user ? "✅ Authenticated" : "❌ Not authenticated"}</Text>
+        {user && (
+          <>
+            <Text style={styles.statusText}>👤 User: {user.email}</Text>
+            <Text style={styles.statusText}>🆔 UID: {user.uid}</Text>
+          </>
+        )}
       </View>
+
+      <Text style={styles.subtitle}>📊 Firestore Data</Text>
+      {loading ? (
+        <ActivityIndicator size="large" color="#2196F3" />
+      ) : firestoreData ? (
+        <View style={styles.dataContainer}>
+          <Text style={styles.dataText}>✅ Profile loaded successfully!</Text>
+          <Text style={styles.dataText}>📧 Email: {firestoreData.email}</Text>
+          <Text style={styles.dataText}>👤 Age: {firestoreData.age}</Text>
+          <Text style={styles.dataText}>📏 Height: {firestoreData.height}cm</Text>
+          <Text style={styles.dataText}>⚖️ Weight: {firestoreData.weight}kg</Text>
+          <Text style={styles.dataText}>🎯 Goal: {firestoreData.goal}</Text>
+          <Text style={styles.dataText}>🔢 Build: {firestoreData.build}</Text>
+        </View>
+      ) : (
+        <Text style={styles.dataText}>❌ No profile data found</Text>
+      )}
       
-      <Text style={[styles.message, { color: "#1976D2" }]}>
-        This screen also has auth context access, proving the provider works across navigation!
-      </Text>
-      
-      <Button
-        title="Back to Login Test"
-        onPress={() => navigation.navigate("LoginTestScreen")}
-        color="#1976D2"
-      />
+      <TouchableOpacity 
+        style={[styles.button, styles.navButton]} 
+        onPress={() => navigation.goBack()}
+      >
+        <Text style={styles.buttonText}>🔙 Back to Login</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
-// Build 25 Test Navigator
-const Build25TestNavigator = () => {
-  console.log("[TEST NAV] 🧪 Build25TestNavigator component called");
-  console.log("[TEST NAV] 🎯 Testing authentication + navigation with login screen");
+// Build 26 Test Navigator
+const Build26TestNavigator = () => {
+  const Stack = createStackNavigator();
+  
+  addLog("NAV", "🧭 Build26TestNavigator initialized");
   
   return (
     <Stack.Navigator 
-      initialRouteName="LoginTestScreen"
+      initialRouteName="Login"
       screenOptions={{
-        headerStyle: {
-          backgroundColor: "#2E7D32",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          fontWeight: "bold",
-        },
+        headerStyle: { backgroundColor: "#2196F3" },
+        headerTintColor: "#ffffff",
+        headerTitleStyle: { fontWeight: "bold" }
       }}
     >
       <Stack.Screen 
-        name="LoginTestScreen" 
-        component={LoginTestScreen}
-        options={{ title: "Build 25 - Login Test" }}
+        name="Login" 
+        component={LoginTestScreen} 
+        options={{ title: "🔥 Build 26 - Firestore Test" }}
       />
       <Stack.Screen 
-        name="NavigationTestScreen" 
-        component={NavigationTestScreen}
-        options={{ title: "Build 25 - Navigation Test" }}
+        name="Navigation" 
+        component={NavigationTestScreen} 
+        options={{ title: "🧭 Navigation Test" }}
       />
     </Stack.Navigator>
   );
 };
 
-console.log("[INIT] 🧪 Build25TestNavigator component defined");
+console.log("[INIT] 🧪 Build26TestNavigator component defined");
 
 const App = () => {
   console.log("[INIT] 🔄 App component function called");
-  console.log("[INIT] ✅ Build 25 debug mode active");
+  console.log("[INIT] ✅ Build 26 debug mode active");
   console.log("[INIT] 📱 Platform:", Platform.OS);
-  console.log("[INIT] 🧭 About to test authentication + navigation components");
+  console.log("[INIT] 🔥 About to test Firestore + authentication + navigation components");
   
-  // Add test logs
-  console.warn("[TEST] ⚠️ Build 25 test warning");
-  console.error("[TEST] ❌ Build 25 test error");
+  // Test logs removed - system verified working
   
-  console.log("[INIT] 🚀 About to render AuthenticatedUserProvider + NavigationContainer + Auth test");
+  console.log("[INIT] 🚀 About to render AuthenticatedUserProvider + NavigationContainer + Firestore test");
   console.log("[INIT] 🔐 Auth instance status for provider:", auth ? "Available" : "Not available");
+  console.log("[INIT] 💾 Firestore instance status:", db ? "Available" : "Not available");
   
   // NavigationContainer at root level with split screen inside
   return (
@@ -345,12 +365,12 @@ const App = () => {
           <View style={styles.appContainer}>
             {/* Navigation Section */}
             <View style={styles.navigationContainer}>
-              <Build25TestNavigator />
+              <Build26TestNavigator />
             </View>
             
             {/* Debug Logs Section */}
             <View style={styles.debugSection}>
-              <Text style={styles.debugTitle}>🔧 BUILD 25 DEBUG LOGS</Text>
+              <Text style={styles.debugTitle}>🔧 BUILD 26 DEBUG LOGS</Text>
               <ScrollView style={styles.debugScroll}>
                 {DEBUG_LOGS.map((log, index) => (
                   <Text key={index} style={[
@@ -373,7 +393,7 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#C8E6C9",
+    backgroundColor: "#F5F5F5",
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
@@ -392,89 +412,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     borderTopColor: "#00ff00",
   },
-  // Loading/Error styles for RealAppNavigator
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    padding: 20,
-  },
-  loadingText: {
-    fontSize: 24,
-    fontWeight: "bold",  
-    color: "#2196F3",
-    marginBottom: 8,
-  },
-  statusDetails: {
-    fontSize: 14,
-    color: "#666666",
-    textAlign: "center",
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    padding: 20,
-  },
-  errorTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#FF4444",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  errorMessage: {
-    fontSize: 16,
-    color: "#666666",
-    textAlign: "center",
-    marginBottom: 12,
-    lineHeight: 24,
-  },
-  // Debug log styles
-  logContainer: {
-    flex: 1,
-    padding: 10,
-  },
-  logTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#00ff00",
-    marginBottom: 5,
-    textAlign: "center",
-  },
-  logScrollView: {
-    flex: 1,
-  },
-  logText: {
-    fontSize: 10,
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    marginBottom: 1,
-    lineHeight: 12,
-  },
-  logInfo: {
-    color: "#00ff00",
-  },
-  logWarn: {
-    color: "#ffaa00",
-  },
-  logError: {
-    color: "#ff4444",
-  },
-  debugContainer: {
-    flex: 1,
-  },
-  debugPanel: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 300,
-    backgroundColor: "#000",
-    borderTopWidth: 2,
-    borderTopColor: "#4CAF50",
-  },
   debugTitle: {
     color: "#4CAF50",
     fontSize: 16,
@@ -491,6 +428,15 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: "monospace",
     marginBottom: 2,
+  },
+  logInfo: {
+    color: "#00ff00",
+  },
+  logWarn: {
+    color: "#ffaa00",
+  },
+  logError: {
+    color: "#ff4444",
   },
   title: {
     fontSize: 28,
@@ -512,103 +458,69 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     marginHorizontal: 20,
   },
-  strategy: {
+  userInfo: {
     fontSize: 14,
-    color: "#66BB6A",
+    color: "#1976D2",
     textAlign: "center",
-    marginBottom: 30,
-    fontStyle: "italic",
+    marginBottom: 10,
+  },
+  input: {
+    width: "100%",
+    height: 50,
+    borderColor: "#CCCCCC",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    backgroundColor: "#ffffff",
+    marginBottom: 15,
+  },
+  button: {
+    backgroundColor: "#2196F3",
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+    minWidth: 200,
+    alignItems: "center",
+  },
+  firestoreButton: {
+    backgroundColor: "#FF5722",
+  },
+  navButton: {
+    backgroundColor: "#4CAF50",
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   statusContainer: {
     backgroundColor: "#E8F5E8",
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 8,
     marginBottom: 20,
-    minWidth: 280,
+    width: "100%",
   },
   statusText: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#2E7D32",
-    textAlign: "center",
     marginBottom: 5,
   },
-  formContainer: {
-    width: "100%",
-    maxWidth: 300,
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 10,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  formTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#2E7D32",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#CCCCCC",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 15,
-    fontSize: 16,
-    backgroundColor: "#FAFAFA",
-  },
-  loginButton: {
-    backgroundColor: "#2E7D32",
+  dataContainer: {
+    backgroundColor: "#E3F2FD",
     padding: 15,
     borderRadius: 8,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  loginButtonDisabled: {
-    backgroundColor: "#CCCCCC",
-  },
-  loginButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  errorText: {
-    color: "#FF4444",
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 10,
-  },
-  successContainer: {
-    backgroundColor: "#E8F5E8",
-    padding: 20,
-    borderRadius: 10,
     marginBottom: 20,
-    minWidth: 280,
-    borderWidth: 2,
-    borderColor: "#4CAF50",
+    width: "100%",
   },
-  successTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#2E7D32",
-    textAlign: "center",
-    marginBottom: 10,
-  },
-  successText: {
-    fontSize: 16,
-    color: "#2E7D32",
-    textAlign: "center",
-    marginBottom: 5,
-  },
-  successSubtext: {
+  dataText: {
     fontSize: 14,
-    color: "#4CAF50",
-    textAlign: "center",
-    marginTop: 10,
-    fontStyle: "italic",
+    color: "#1976D2",
+    marginBottom: 5,
   },
 });
 

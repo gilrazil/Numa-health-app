@@ -131,17 +131,17 @@ Apple TestFlight build 1.0.0 was experiencing SIGABRT (abort trap 6) crashes due
 - Firebase auth state management improvements
 - React Native error boundary implementation
 
-## 🧪 Current Testing Strategy (Build 25)
+## 🧪 Current Testing Strategy (Build 26)
 
-**Authentication Testing Strategy**
+**Firestore Testing Strategy**
 
-**Current Build 25** implements a systematic debugging approach:
+**Current Build 26** implements a systematic debugging approach:
 
-- **Strategy**: Test Firebase authentication integration on top of proven Build 24 foundation
-- **Approach**: Added login screen with email/password authentication
-- **UI**: Login form with comprehensive auth logging and user email display
-- **Goal**: Validate Firebase signInWithEmailAndPassword() integration
-- **Base**: Built on successful Build 24 (Navigation + AuthenticatedUserProvider)
+- **Strategy**: Test Firebase Firestore operations on top of proven Build 25 authentication foundation
+- **Approach**: Added user profile creation and retrieval functionality
+- **UI**: Profile creation form with comprehensive Firestore logging and data display
+- **Goal**: Validate Firebase Firestore setDoc() and getDoc() integration
+- **Base**: Built on successful Build 25 (Authentication + Navigation + AuthenticatedUserProvider)
 
 ### Build Progression:
 - **Build 20**: ✅ Working debug screen (baseline)
@@ -149,16 +149,17 @@ Apple TestFlight build 1.0.0 was experiencing SIGABRT (abort trap 6) crashes due
 - **Build 22**: ✅ Internal distribution test
 - **Build 23**: ✅ TestFlight production (Option 1 - AuthenticatedUserProvider test)
 - **Build 24**: ✅ TestFlight production (Option 2 - Navigation + AuthenticatedUserProvider test)
-- **Build 25**: 🧪 **CURRENT** - TestFlight production (Authentication Testing)
+- **Build 25**: ✅ TestFlight production (Authentication Testing) - successful
+- **Build 26**: 🧪 **CURRENT** - TestFlight production (Firestore Testing)
 
 ### Next Planned Steps:
-- **Build 26**: Add Firebase data operations if Build 25 succeeds
-- **Build 27**: Add Camera system if Build 25 succeeds
+- **Build 27**: Add Camera system if Build 26 succeeds
+- **Build 28**: Add meal tracking if Build 26 succeeds
 
 ---
 *Applied on: January 2025*  
 *Branch: fix/apple-crash*
-*Current Build: 25 - Authentication Testing Strategy* 
+*Current Build: 26 - Firestore Testing Strategy* 
 
 # CRASH FIXES APPLIED TO NUMA HEALTH APP
 

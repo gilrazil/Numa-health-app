@@ -174,7 +174,7 @@ export const HomeScreen = ({ navigation }) => {
                   log("[HOME] ✅ Firebase Storage upload test completed successfully");
         setUploadStatus('success');
         setCameraHardwareActive(true);
-        Alert.alert('🟢 Upload Success', 'Firebase Storage upload test completed successfully! Build 40 verified.');
+        Alert.alert('🟢 Upload Success', 'Firebase Storage upload test completed successfully! Build 41 verified.');
         }, 2000);
       } else {
         log("[HOME] ❌ Camera permission denied");
@@ -293,7 +293,7 @@ export const HomeScreen = ({ navigation }) => {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>
-            🔥 BUILD 40 – Timestamp Metadata Validation
+            🔥 BUILD 41 – Timestamp & Compression Fix
           </Text>
           <AlphaBadge />
         </View>
@@ -308,7 +308,7 @@ export const HomeScreen = ({ navigation }) => {
             Welcome back, {userData?.email || user.email}!
           </Text>
           <Text style={styles.versionText}>
-            Version 1.0.38 • File Output Validation (Fix)
+            Version 1.0.41 • Timestamp & Compression Fix
           </Text>
         </View>
 

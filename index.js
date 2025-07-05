@@ -1,5 +1,5 @@
-// PRODUCTION DEBUG - Log immediately on load
-console.log('=== INDEX.JS LOADED - BUILD 34 PHOTO CAPTURE TEST ===');
+// Build 35 - Camera File Output Validation
+console.log('=== INDEX.JS LOADED - BUILD 35 CAMERA FILE OUTPUT TEST ===');
 
 import 'react-native-gesture-handler';
 import { registerRootComponent } from 'expo';
@@ -18,10 +18,10 @@ try {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
-        event: 'index.js loaded - Build 34 - Photo Capture Test',
+        event: 'index.js loaded - Build 35 - Camera File Output Test',
   timestamp: new Date().toISOString(),
   platform: 'ios',
-  buildNumber: '34'
+  buildNumber: '35'
     })
   }).catch(() => {});
 } catch (e) {}

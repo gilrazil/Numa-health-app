@@ -293,7 +293,7 @@ export const HomeScreen = ({ navigation }) => {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>
-            🔥 BUILD 35 - Firebase Storage Upload Test
+            🔥 BUILD 35 - Camera File Output Test
           </Text>
           <AlphaBadge />
         </View>
@@ -308,35 +308,35 @@ export const HomeScreen = ({ navigation }) => {
             Welcome back, {userData?.email || user.email}!
           </Text>
           <Text style={styles.versionText}>
-            Version 1.0.35 • Firebase Storage Upload Test
+            Version 1.0.35 • Camera File Output Test
           </Text>
         </View>
 
         {/* Build 35 Hardware Status */}
         <View style={styles.hardwareSection}>
-          <Text style={styles.sectionTitle}>🔥 Firebase Storage Upload Status</Text>
+          <Text style={styles.sectionTitle}>📸 Camera File Output Status</Text>
           <View style={styles.hardwareStatus}>
             <View style={[styles.statusIndicator, { backgroundColor: getHardwareStatusColor() }]}>
               <Text style={styles.statusIcon}>{getHardwareStatusIcon()}</Text>
             </View>
             <View style={styles.statusText}>
               <Text style={styles.statusLabel}>{getHardwareStatusText()}</Text>
-              <Text style={styles.statusSubtext}>
-                {uploadStatus === 'success' ? 'Firebase Storage pipeline verified' : 
-                 uploadStatus === 'uploading' ? 'Testing upload functionality' :
-                 uploadStatus === 'failed' ? 'Upload test failed' :
-                 'Ready to test Firebase Storage upload'}
-              </Text>
+                             <Text style={styles.statusSubtext}>
+                 {uploadStatus === 'success' ? 'Camera file output verified' : 
+                  uploadStatus === 'uploading' ? 'Testing file output' :
+                  uploadStatus === 'failed' ? 'File output test failed' :
+                  'Ready to test camera file output'}
+               </Text>
             </View>
           </View>
           
           <View style={styles.hardwareControls}>
-            <Button
-              title={uploadTesting ? "Testing Upload..." : "🔥 Test Firebase Upload"}
-              onPress={handleFirebaseUpload}
-              disabled={uploadTesting}
-              style={[styles.hardwareButton, { backgroundColor: uploadTesting ? '#ccc' : '#FF6B35' }]}
-            />
+                         <Button
+               title={uploadTesting ? "Testing File Output..." : "📸 Test Camera File Output"}
+               onPress={handleFirebaseUpload}
+               disabled={uploadTesting}
+               style={[styles.hardwareButton, { backgroundColor: uploadTesting ? '#ccc' : '#FF6B35' }]}
+             />
           </View>
         </View>
 

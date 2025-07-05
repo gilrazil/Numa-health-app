@@ -1,1334 +1,634 @@
-import React, { useEffect, useState, useContext } from "react";
-import { NavigationContainer } from "@react-navigation/native";
-import { createStackNavigator } from "@react-navigation/stack";
-import { StatusBar } from "expo-status-bar";
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  TouchableOpacity, 
-  TextInput, 
-  ScrollView, 
-  Alert, 
-  Platform,
-  ActivityIndicator,
-  Button
-} from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Camera, CameraType } from 'expo-camera'; // ENABLED - Build 34: Photo capture test
-import { AuthenticatedUserProvider, AuthenticatedUserContext } from "./providers";
-import { auth, db, storage } from "./config/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import React, { useState, useEffect } from 'react';
+import { Text, View, StyleSheet, Button, Alert, ScrollView, Platform, Image } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, db } from './config';
+import { Camera } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
-import { Icon } from './components';
+import * as MediaLibrary from 'expo-media-library';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
-// Debug logging system
-const DEBUG_LOGS = [];
-const addLog = (level, ...args) => {
-  const timestamp = new Date().toLocaleTimeString();
-  const message = `[${timestamp}] [${level}] ${args.join(' ')}`;
-  DEBUG_LOGS.push(message);
-  
-  // Keep only last 100 logs
-  if (DEBUG_LOGS.length > 100) {
-    DEBUG_LOGS.shift();
-  }
-  
-  // Also log to console
-  console.log(message);
-};
-
-// Initialize logs
-addLog("INIT", "🚀 Build 34 - Photo Capture Test initialized");
-addLog("INIT", "📸 Testing photo capture functionality after live preview success");
-addLog("INIT", "✅ All previous builds proven stable: Auth, Firestore, Navigation, Permissions, Hardware, Live Preview");
-addLog("INIT", "🔥 Firebase Config:", auth?.app?.name || "No app name");
-addLog("INIT", "💾 Firestore Config:", db?.app?.name || "No Firestore app name");
-
-// Build 34 Critical: Testing photo capture functionality - FIRST TIME photo capture enabled
-// This safely tests capture after Build 33 live preview success
-addLog("INIT", "🛡️ Build 34: Photo capture testing ENABLED - capture functionality active");
-
-// Test Firestore connection
-if (db) {
-  addLog("DB", "✅ Firestore instance available");
-} else {
-  addLog("DB", "❌ Firestore instance not available");
-}
-
-// Track auth state changes
-if (auth) {
-  addLog("AUTH", "✅ Auth instance available");
-  auth.onAuthStateChanged((user) => {
-    addLog("AUTH", "🔄 Auth state changed:", user ? `${user.email || user.uid}` : "null");
-  });
-} else {
-  addLog("AUTH", "❌ Auth instance not available");
-}
-
-console.log("[INIT] 📚 All imports successful");
-console.log("[INIT] 🛡️ Build 34 - Photo Capture Test Navigator components loaded");
-
-// Build 34 Test Screens - Photo Capture Test (Live Preview + Photo Capture)
-const LoginTestScreen = ({ navigation }) => {
-  const [email, setEmail] = useState("gil.raz.il@gmail.com");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [loginSuccess, setLoginSuccess] = useState(false);
-  const [user, setUser] = useState(null);
-
-  const handleLogin = async () => {
-    addLog("LOGIN", "🔑 Starting login process");
-    addLog("LOGIN", "📧 Email:", email);
-    
-    if (!email || !password) {
-      addLog("LOGIN", "❌ Email or password missing");
-      Alert.alert("Error", "Please enter both email and password");
-      return;
-    }
-
-    setLoading(true);
-    addLog("LOGIN", "⏳ Setting loading state to true");
-
-    try {
-      addLog("LOGIN", "🔐 Attempting Firebase authentication");
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      
-      addLog("LOGIN", "✅ Firebase authentication successful");
-      addLog("LOGIN", "👤 User UID:", firebaseUser.uid);
-      addLog("LOGIN", "📧 User email:", firebaseUser.email);
-      
-      setUser(firebaseUser);
-      setLoginSuccess(true);
-      
-      addLog("LOGIN", "🎉 LOGIN SUCCESSFUL!");
-      addLog("LOGIN", "✅ Firebase authentication is working!");
-      
-    } catch (error) {
-      addLog("LOGIN", "❌ Login failed:", error.message);
-      Alert.alert("Login Error", error.message);
-    } finally {
-      setLoading(false);
-      addLog("LOGIN", "⏳ Setting loading state to false");
-    }
-  };
-
-  const handleTestFirestore = async () => {
-    if (!user) {
-      addLog("FIRESTORE", "❌ No user logged in, cannot test Firestore");
-      Alert.alert("Error", "Please login first");
-      return;
-    }
-
-    addLog("FIRESTORE", "📄 Starting Firestore test");
-    addLog("FIRESTORE", "👤 User:", user.email);
-
-    try {
-      // Navigate to navigation screen for Firestore testing
-      navigation.navigate('NavigationTest');
-    } catch (error) {
-      addLog("FIRESTORE", "❌ Firestore test navigation failed:", error.message);
-      Alert.alert("Firestore Error", error.message);
-    }
-  };
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>🛡️ Build 34 - Photo Capture Test</Text>
-      
-      {!loginSuccess ? (
-        <>
-          <Text style={styles.subtitle}>Step 1: Login with Firebase</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-          <TouchableOpacity 
-            style={[styles.button, loading && styles.buttonDisabled]} 
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#ffffff" size="small" />
-            ) : (
-              <Text style={styles.buttonText}>🔑 Login</Text>
-            )}
-          </TouchableOpacity>
-        </>
-      ) : (
-        <>
-          <Text style={styles.successTitle}>🎉 LOGIN SUCCESSFUL!</Text>
-          <Text style={styles.successText}>✅ Firebase authentication is working!</Text>
-          
-          <View style={styles.userInfo}>
-            <Text style={styles.userText}>👤 User: {user.email}</Text>
-            <Text style={styles.userText}>🆔 UID: {user.uid}</Text>
-          </View>
-
-          <Text style={styles.subtitle}>Step 2: Test Firestore Operations</Text>
-          
-          <TouchableOpacity 
-            style={styles.firestoreButton} 
-            onPress={() => navigation.navigate('NavigationTest')}
-          >
-            <MaterialCommunityIcons name="database" size={24} color="#fff" />
-            <Text style={styles.firestoreButtonText}>📄 Test Firestore</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.navigationButton} 
-            onPress={() => navigation.navigate('NavigationTest')}
-          >
-            <MaterialCommunityIcons name="compass" size={24} color="#6B4EFF" />
-            <Text style={styles.navigationButtonText}>🧭 Test Navigation</Text>
-          </TouchableOpacity>
-        </>
-      )}
-    </View>
-  );
-};
-
-// Build 34: Photo Capture Test Screen - LIVE PREVIEW + PHOTO CAPTURE
-const CameraUITestScreen = ({ navigation }) => {
-  const [uiLoaded, setUiLoaded] = useState(false);
-  const [cameraRef, setCameraRef] = useState(null);
-  const [photoCaptured, setPhotoCaptured] = useState(false);
-  const [photoUri, setPhotoUri] = useState(null);
-  const [captureCount, setCaptureCount] = useState(0);
-
-  useEffect(() => {
-    addLog("CAMERA_UI", "📱 CameraUITest screen mounted");
-    addLog("CAMERA_UI", "🛡️ UI loaded - Build 34 Photo Capture Test");
-    addLog("CAMERA_UI", "✅ Photo capture activated (Build 34 capture test)");
-    
-    // Simulate UI loading
-    setTimeout(() => {
-      setUiLoaded(true);
-      addLog("CAMERA_UI", "📸 Camera UI ready for photo capture");
-    }, 1000);
-  }, []);
-
-  const handleGoBack = () => {
-    addLog("CAMERA_UI", "🔙 Going back to navigation test");
-    navigation.goBack();
-  };
-
-  const handlePhotoCapture = async () => {
-    addLog("CAMERA_UI", "📸 Photo capture initiated");
-    
-    try {
-      // Simulate photo capture
-      const timestamp = new Date().toISOString();
-      const photoData = {
-        uri: `file://test-photo-${timestamp}.jpg`,
-        width: 1920,
-        height: 1080,
-        size: 245760, // ~240KB
-        timestamp: timestamp
-      };
-      
-      addLog("CAMERA_UI", "📸 Photo captured successfully");
-      addLog("CAMERA_UI", "📁 File name:", `test-photo-${timestamp}.jpg`);
-      addLog("CAMERA_UI", "📏 Size:", `${Math.round(photoData.size / 1024)}KB`);
-      
-      setPhotoUri(photoData.uri);
-      setPhotoCaptured(true);
-      setCaptureCount(prev => prev + 1);
-      
-      Alert.alert(
-        "Photo Capture Success ✅", 
-        `Photo captured successfully!\n\nFile: test-photo-${timestamp}.jpg\nSize: ${Math.round(photoData.size / 1024)}KB\nCapture count: ${captureCount + 1}`,
-        [{ text: "OK", style: "default" }]
-      );
-      
-    } catch (error) {
-      addLog("CAMERA_UI", "❌ Photo capture failed:", error.message);
-      Alert.alert("Capture Error", "Failed to capture photo: " + error.message);
-    }
-  };
-
-  return (
-    <View style={styles.fullScreen}>
-      <View style={styles.cameraContainer}>
-        {/* Header with back button */}
-        <View style={styles.cameraHeader}>
-          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.cameraTitle}>🛡️ Build 34 - Photo Capture Test</Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        {/* Camera area - Build 34: Live preview + photo capture */}
-        <View style={styles.cameraArea}>
-          <MaterialCommunityIcons name="camera" size={120} color="#34C759" />
-          <Text style={styles.cameraPreviewText}>📸 Photo Capture Ready</Text>
-          <Text style={styles.cameraSubText}>Live preview + capture functionality active</Text>
-          
-          {photoCaptured && (
-            <View style={styles.captureStatus}>
-              <MaterialCommunityIcons name="check-circle" size={24} color="#34C759" />
-              <Text style={styles.captureStatusText}>Photo Captured! ({captureCount})</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Controls area */}
-        <View style={styles.cameraControls}>
-          <View style={styles.testInfo}>
-            <Text style={styles.testInfoTitle}>✅ Build 34 Test Status</Text>
-            <Text style={styles.testInfoText}>• Permissions API: ✅ Ready</Text>
-            <Text style={styles.testInfoText}>• Camera Hardware: ✅ Active</Text>
-            <Text style={styles.testInfoText}>• Live Preview: ✅ Working</Text>
-            <Text style={styles.testInfoText}>• Photo Capture: ✅ ENABLED (Build 34)</Text>
-          </View>
-
-          <TouchableOpacity 
-            style={styles.captureButton}
-            onPress={handlePhotoCapture}
-          >
-            <MaterialCommunityIcons name="camera-iris" size={30} color="#fff" />
-            <Text style={styles.controlText}>📸 Test Photo Capture</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-};
-
-// Navigation Test Screen with Firestore Operations
-const NavigationTestScreen = ({ navigation }) => {
-  const [user, setUser] = useState(null);
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [firestoreWorking, setFirestoreWorking] = useState(false);
-
-  const loadUserProfile = async () => {
-    addLog("FIRESTORE", "📊 Loading user profile from Firestore");
-    
-    try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        addLog("FIRESTORE", "❌ No authenticated user");
-        return;
-      }
-
-      setUser(currentUser);
-      addLog("FIRESTORE", "👤 Current user:", currentUser.email);
-
-      addLog("FIRESTORE", "🔥 Creating Firestore document reference");
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      
-      addLog("FIRESTORE", "📄 Getting user document");
-      const userDoc = await getDoc(userDocRef);
-      
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        setUserData(data);
-        setFirestoreWorking(true);
-        addLog("FIRESTORE", "✅ User data loaded successfully");
-        addLog("FIRESTORE", "📋 Profile data:", JSON.stringify(data, null, 2));
-      } else {
-        addLog("FIRESTORE", "📄 No user document found, will create one");
-        setUserData(null);
-        setFirestoreWorking(true);
-      }
-    } catch (error) {
-      addLog("FIRESTORE", "❌ Error loading user profile:", error.message);
-      Alert.alert("Firestore Error", error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveUserProfile = async () => {
-    addLog("FIRESTORE", "💾 Saving user profile to Firestore");
-    
-    try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        addLog("FIRESTORE", "❌ No authenticated user for save");
-        Alert.alert("Error", "No authenticated user");
-        return;
-      }
-
-      addLog("FIRESTORE", "📝 Creating user profile data");
-      const profileData = {
-        email: currentUser.email,
-        uid: currentUser.uid,
-        profileCompleted: true,
-        gender: 'Male',
-        age: 30,
-        height: 180,
-        weight: 75,
-        goal: 'Maintain weight',
-        updatedAt: serverTimestamp(),
-        createdAt: userData?.createdAt || serverTimestamp()
-      };
-
-      addLog("FIRESTORE", "🔥 Saving to Firestore");
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      await setDoc(userDocRef, profileData, { merge: true });
-      
-      setUserData(profileData);
-      setFirestoreWorking(true);
-      addLog("FIRESTORE", "✅ Profile saved successfully");
-      Alert.alert("Success", "Profile saved to Firestore!");
-      
-    } catch (error) {
-      addLog("FIRESTORE", "❌ Error saving profile:", error.message);
-      Alert.alert("Save Error", error.message);
-    }
-  };
-
-  useEffect(() => {
-    addLog("NAV", "🧭 NavigationTest screen mounted");
-    loadUserProfile();
-  }, []);
-
-  return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>🛡️ Build 34 - Photo Capture Test</Text>
-      <Text style={styles.subtitle}>Testing photo capture functionality after live preview success</Text>
-
-      {/* Firestore Test Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <MaterialCommunityIcons name="database" size={24} color="#6B4EFF" />
-          <Text style={styles.sectionTitle}>Firestore Operations Test</Text>
-        </View>
-
-        {loading ? (
-          <ActivityIndicator size="small" color="#6B4EFF" />
-        ) : (
-          <>
-            <View style={styles.statusIndicator}>
-              <MaterialCommunityIcons 
-                name={firestoreWorking ? "check-circle" : "alert-circle"} 
-                size={20} 
-                color={firestoreWorking ? "#34C759" : "#FF3B30"} 
-              />
-              <Text style={[styles.statusText, { color: firestoreWorking ? "#34C759" : "#FF3B30" }]}>
-                Firestore: {firestoreWorking ? "✅ Working" : "❌ Error"}
-              </Text>
-            </View>
-
-            {user && (
-              <View style={styles.userCard}>
-                <Text style={styles.cardTitle}>👤 User Info</Text>
-                <Text style={styles.cardText}>Email: {user.email}</Text>
-                <Text style={styles.cardText}>UID: {user.uid}</Text>
-              </View>
-            )}
-
-            {userData && (
-              <View style={styles.userCard}>
-                <Text style={styles.cardTitle}>📋 Profile Data</Text>
-                <Text style={styles.cardText}>Gender: {userData.gender}</Text>
-                <Text style={styles.cardText}>Age: {userData.age}</Text>
-                <Text style={styles.cardText}>Height: {userData.height}cm</Text>
-                <Text style={styles.cardText}>Weight: {userData.weight}kg</Text>
-                <Text style={styles.cardText}>Goal: {userData.goal}</Text>
-              </View>
-            )}
-
-            <TouchableOpacity style={styles.actionButton} onPress={saveUserProfile}>
-              <MaterialCommunityIcons name="content-save" size={20} color="#fff" />
-              <Text style={styles.actionButtonText}>Save Test Profile</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-
-      {/* Build 34: Photo Capture Test Section */}
-      <View style={styles.navigationSection}>
-        <Text style={styles.sectionTitle}>📸 Photo Capture Test</Text>
-        
-        <TouchableOpacity 
-          style={styles.cameraTestButton}
-          onPress={() => {
-            addLog("NAV", "📸 Navigating to photo capture test");
-            navigation.navigate('CameraUITest');
-          }}
-        >
-          <MaterialCommunityIcons name="camera-iris" size={24} color="#fff" />
-          <Text style={styles.cameraTestButtonText}>📸 Test Photo Capture</Text>
-        </TouchableOpacity>
-
-        <View style={styles.testStatus}>
-          <Text style={styles.testStatusTitle}>🛡️ Build 34 Status</Text>
-          <View style={styles.testStatusItem}>
-            <MaterialCommunityIcons name="shield-check" size={16} color="#34C759" />
-            <Text style={styles.testStatusText}>Firebase Auth: ✅ Stable</Text>
-          </View>
-          <View style={styles.testStatusItem}>
-            <MaterialCommunityIcons name="database-check" size={16} color="#34C759" />
-            <Text style={styles.testStatusText}>Firestore: ✅ Stable</Text>
-          </View>
-          <View style={styles.testStatusItem}>
-            <MaterialCommunityIcons name="navigation" size={16} color="#34C759" />
-            <Text style={styles.testStatusText}>Navigation: ✅ Stable</Text>
-          </View>
-          <View style={styles.testStatusItem}>
-            <MaterialCommunityIcons name="video" size={16} color="#34C759" />
-            <Text style={styles.testStatusText}>Live Preview: ✅ Stable</Text>
-          </View>
-          <View style={styles.testStatusItem}>
-            <MaterialCommunityIcons name="camera-iris" size={16} color="#34C759" />
-            <Text style={styles.testStatusText}>Photo Capture: ✅ New</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Debug Logs Section */}
-      <View style={styles.debugSection}>
-        <TouchableOpacity 
-          style={styles.logToggle}
-          onPress={() => {
-            addLog("DEBUG", "📋 Logs section toggled");
-            Alert.alert("Debug Logs", `${DEBUG_LOGS.length} logs captured`);
-          }}
-        >
-          <MaterialCommunityIcons name="tools" size={16} color="#fff" />
-          <Text style={styles.logToggleText}>BUILD 34 PHOTO CAPTURE TEST LOGS</Text>
-        </TouchableOpacity>
-        <ScrollView style={styles.logContainer} showsVerticalScrollIndicator={false}>
-          {DEBUG_LOGS.slice(-20).map((log, index) => (
-            <Text key={index} style={styles.logText}>{log}</Text>
-          ))}
-        </ScrollView>
-      </View>
-    </ScrollView>
-  );
-};
-
-const Build34PhotoCaptureTestNavigator = () => {
-  const Stack = createStackNavigator();
-  
-  return (
-    <Stack.Navigator 
-      screenOptions={{ 
-        headerShown: false,
-        gestureEnabled: true 
-      }}
-    >
-      <Stack.Screen name="LoginTest" component={LoginTestScreen} />
-      <Stack.Screen name="NavigationTest" component={NavigationTestScreen} />
-      <Stack.Screen name="CameraUITest" component={CameraUITestScreen} />
-    </Stack.Navigator>
-  );
-};
-
-const App = () => {
-  const [showLogs, setShowLogs] = useState(false);
+export default function App() {
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loginLoading, setLoginLoading] = useState(false);
   const [cameraPermission, setCameraPermission] = useState(null);
-  const [cameraHardwareStatus, setCameraHardwareStatus] = useState('unchecked');
-  const [livePreviewStatus, setLivePreviewStatus] = useState('unchecked');
-  const [photoCaptured, setPhotoCaptured] = useState(false);
-  const [photoUri, setPhotoUri] = useState(null);
-  const [captureCount, setCaptureCount] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState('unchecked');
-  const [uploadCount, setUploadCount] = useState(0);
-  const [uploadErrors, setUploadErrors] = useState(0);
-  const [uploadRetryCount, setUploadRetryCount] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
+  const [mediaLibraryPermission, setMediaLibraryPermission] = useState(null);
+  const [capturedImages, setCapturedImages] = useState([]);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [cameraRef, setCameraRef] = useState(null);
+  const [testResults, setTestResults] = useState([]);
+  const [totalTests, setTotalTests] = useState(0);
+  const [passedTests, setPassedTests] = useState(0);
+  const [failedTests, setFailedTests] = useState(0);
+  const [isRunningTests, setIsRunningTests] = useState(false);
 
   const BUILD_INFO = {
     number: 35,
-    name: "Firebase Storage Upload Test",
-    description: "Testing Firebase Storage upload after photo capture",
+    name: "Camera File Output Validation",
+    description: "Testing photo capture and file output validation",
     version: "1.0.35",
-    focus: "Firebase Storage upload pipeline"
+    focus: "File output validation and preview"
   };
 
   console.log(`📱 BUILD ${BUILD_INFO.number} - ${BUILD_INFO.name.toUpperCase()}`);
 
   useEffect(() => {
-    console.log(`🔥 Firebase Storage Upload Test - App component mounted`);
+    console.log(`📸 Build ${BUILD_INFO.number} - ${BUILD_INFO.name} - App component mounted`);
     
-    const initializeFirebase = async () => {
+    const initializeApp = async () => {
       try {
-        console.log('🔥 Initializing Firebase for upload test...');
+        console.log('🔥 Initializing Firebase for file output test...');
         
         // Test Firebase connectivity
-        if (auth && db && storage) {
+        if (auth && db) {
           console.log('✅ Firebase services initialized successfully');
           setIsFirebaseReady(true);
         } else {
           console.error('❌ Firebase services not available');
           setIsFirebaseReady(false);
         }
+
+        // Request permissions
+        await requestPermissions();
+        
       } catch (error) {
-        console.error('❌ Firebase initialization error:', error);
+        console.error('❌ App initialization error:', error);
         setIsFirebaseReady(false);
       }
     };
 
-    initializeFirebase();
+    initializeApp();
   }, []);
 
-  const handlePhotoCapture = async () => {
-    console.log('📸 Starting photo capture for upload test...');
-    
+  const requestPermissions = async () => {
     try {
-      // Simulate photo capture (Build 34 functionality)
-      const simulatedPhotoUri = `file:///path/to/photo_${Date.now()}.jpg`;
-      const photoSize = Math.floor(Math.random() * 2000000) + 500000; // 0.5-2.5MB
-      
-      console.log(`📸 Photo captured: ${simulatedPhotoUri} (${(photoSize / 1024 / 1024).toFixed(2)} MB)`);
-      
-      setPhotoCaptured(true);
-      setPhotoUri(simulatedPhotoUri);
-      setCaptureCount(prev => prev + 1);
-      
-      // Automatically attempt upload after capture
-      await uploadToFirebaseStorage(simulatedPhotoUri, photoSize);
-      
+      console.log('🔐 Requesting camera permissions...');
+      const cameraStatus = await Camera.requestCameraPermissionsAsync();
+      setCameraPermission(cameraStatus.status);
+      console.log('📊 Camera permission status:', cameraStatus.status);
+
+      console.log('🔐 Requesting media library permissions...');
+      const mediaLibraryStatus = await MediaLibrary.requestPermissionsAsync();
+      setMediaLibraryPermission(mediaLibraryStatus.status);
+      console.log('📊 Media library permission status:', mediaLibraryStatus.status);
     } catch (error) {
-      console.error('❌ Photo capture error:', error);
-      Alert.alert('Photo Capture Error', `Failed to capture photo: ${error.message}`);
+      console.error('❌ Permission request error:', error);
     }
   };
 
-  const uploadToFirebaseStorage = async (photoUri, photoSize, retryAttempt = 0) => {
-    if (isUploading) {
-      console.log('⏳ Upload already in progress, skipping...');
-      return;
-    }
-
-    setIsUploading(true);
-    const maxRetries = 3;
-    const timestamp = new Date().toISOString();
-    const uid = auth.currentUser?.uid || 'anonymous';
-    const storagePath = `test-uploads/${uid}/photo-${timestamp.replace(/[:.]/g, '-')}.jpg`;
-
-    console.log(`🔄 Attempting Firebase Storage upload (Attempt ${retryAttempt + 1}/${maxRetries + 1})`);
-    console.log(`📁 Storage path: ${storagePath}`);
+  const handleLogin = async () => {
+    const email = "gil.raz.il@gmail.com";
+    const password = "test123!";
+    
+    console.log('🔑 Starting login process for Build 35');
+    setLoginLoading(true);
 
     try {
-      // Create mock blob for upload simulation
-      const mockBlob = new Blob(['mock-image-data'], { type: 'image/jpeg' });
+      console.log('🔐 Attempting Firebase authentication...');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
       
-      // Create storage reference
-      const storageRef = ref(storage, storagePath);
+      console.log('✅ Firebase authentication successful');
+      console.log('👤 User UID:', firebaseUser.uid);
+      console.log('📧 User email:', firebaseUser.email);
       
-      // Upload with metadata
-      const metadata = {
-        contentType: 'image/jpeg',
-        customMetadata: {
-          captureTime: timestamp,
-          testMode: 'true',
-          buildNumber: BUILD_INFO.number.toString(),
-          originalSize: photoSize.toString(),
-          retryAttempt: retryAttempt.toString()
-        }
+      setUser(firebaseUser);
+      Alert.alert('✅ Login Success', 'Firebase authentication working!');
+      
+    } catch (error) {
+      console.error('❌ Login failed:', error);
+      Alert.alert('❌ Login Error', error.message);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const validateFileOutput = async (fileUri, filename) => {
+    try {
+      console.log(`📋 Validating file output: ${filename}`);
+      
+      // Check if file exists
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        console.error(`❌ File does not exist: ${filename}`);
+        return { passed: false, error: 'File does not exist' };
+      }
+
+      // Check file size (150KB - 350KB range)
+      const fileSizeKB = fileInfo.size / 1024;
+      if (fileSizeKB < 150 || fileSizeKB > 350) {
+        console.error(`❌ File size invalid: ${fileSizeKB}KB (expected 150-350KB)`);
+        return { passed: false, error: `File size ${fileSizeKB}KB out of range` };
+      }
+
+      // Check filename format (should contain ISO timestamp)
+      const timestampPattern = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+      if (!timestampPattern.test(filename)) {
+        console.error(`❌ Filename format invalid: ${filename}`);
+        return { passed: false, error: 'Filename missing ISO timestamp' };
+      }
+
+      console.log(`✅ File validation passed: ${filename} (${fileSizeKB}KB)`);
+      return { 
+        passed: true, 
+        size: fileSizeKB,
+        path: fileUri,
+        timestamp: new Date().toISOString()
       };
 
-      console.log('⬆️ Starting Firebase Storage upload...');
-      const uploadResult = await uploadBytes(storageRef, mockBlob, metadata);
-      
-      // Get download URL
-      const downloadURL = await getDownloadURL(uploadResult.ref);
-      
-      console.log('✅ Firebase Storage upload successful!');
-      console.log(`📥 Download URL: ${downloadURL}`);
-      
-      setUploadStatus('success');
-      setUploadCount(prev => prev + 1);
-      setUploadRetryCount(0);
-      setIsUploading(false);
-      
-      // Show success popup
-      Alert.alert(
-        '🟢 Photo Upload Success',
-        `Your photo was saved to Firebase Storage\n\nPath: ${storagePath}\nSize: ${(photoSize / 1024 / 1024).toFixed(2)} MB\nDownload URL: ${downloadURL.substring(0, 50)}...`,
-        [{ text: 'OK', style: 'default' }]
-      );
-      
     } catch (error) {
-      console.error(`❌ Firebase Storage upload failed (Attempt ${retryAttempt + 1}):`, error);
-      
-      setUploadErrors(prev => prev + 1);
-      
-      if (retryAttempt < maxRetries) {
-        console.log(`🔄 Retrying upload in 2 seconds... (${retryAttempt + 1}/${maxRetries})`);
-        setUploadRetryCount(prev => prev + 1);
-        
-        setTimeout(() => {
-          uploadToFirebaseStorage(photoUri, photoSize, retryAttempt + 1);
-        }, 2000);
-      } else {
-        console.error(`❌ Upload failed after ${maxRetries + 1} attempts`);
-        setUploadStatus('failed');
-        setIsUploading(false);
-        
-        // Show failure popup
-        Alert.alert(
-          '❌ Photo Upload Failed',
-          `Upload failed after ${maxRetries + 1} attempts\n\nError: ${error.message}\nPath: ${storagePath}`,
-          [{ text: 'OK', style: 'destructive' }]
-        );
-      }
+      console.error(`❌ File validation error: ${error}`);
+      return { passed: false, error: error.message };
     }
   };
 
-  const runUploadTestCycle = async () => {
-    console.log('🔄 Starting Firebase Storage upload test cycle...');
-    
-    const requiredSuccessful = 5;
-    let successfulUploads = 0;
-    let totalErrors = 0;
-    
-    while (successfulUploads < requiredSuccessful) {
-      await handlePhotoCapture();
-      
-      // Wait for upload to complete
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      if (uploadStatus === 'success') {
-        successfulUploads++;
-        console.log(`✅ Successful upload ${successfulUploads}/${requiredSuccessful}`);
-      } else {
-        totalErrors++;
-        console.log(`❌ Upload failed, total errors: ${totalErrors}`);
-      }
-      
-      // Reset status for next iteration
-      setUploadStatus('unchecked');
-      
-      // Brief pause between tests
-      await new Promise(resolve => setTimeout(resolve, 1000));
+  const capturePhoto = async () => {
+    if (!cameraRef) {
+      console.error('❌ Camera ref not available');
+      Alert.alert('❌ Camera Error', 'Camera not ready');
+      return null;
     }
+
+    try {
+      setIsCapturing(true);
+      const timestamp = new Date().toISOString();
+      const filename = `photo-${timestamp}.jpg`;
+      
+      console.log(`📸 Capturing photo: ${filename}`);
+      
+      const photo = await cameraRef.takePictureAsync({
+        quality: 0.7,
+        base64: false,
+        exif: false
+      });
+
+      console.log(`📸 Photo captured: ${photo.uri}`);
+      console.log(`📦 File size: ${Math.round((photo.width * photo.height * 3) / 1024)}KB (estimated)`);
+
+      // Validate the captured file
+      const validation = await validateFileOutput(photo.uri, filename);
+      
+      if (validation.passed) {
+        console.log(`✅ File Saved: ${filename}`);
+        console.log(`📸 Photo saved → ${photo.uri}`);
+        console.log(`📦 File size → ${validation.size}KB`);
+        console.log(`🧪 File output validation: ✅ Success`);
+        
+        setCapturedImages(prev => [...prev, {
+          uri: photo.uri,
+          filename: filename,
+          timestamp: timestamp,
+          size: validation.size,
+          validation: validation
+        }]);
+
+        return { success: true, photo, validation };
+      } else {
+        console.error(`❌ File validation failed: ${validation.error}`);
+        return { success: false, error: validation.error };
+      }
+
+    } catch (error) {
+      console.error('❌ Photo capture error:', error);
+      return { success: false, error: error.message };
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  const runTestCycle = async () => {
+    console.log('🔄 Starting camera file output test cycle...');
+    setIsRunningTests(true);
     
-    const reliability = totalErrors === 0 ? 100 : Math.max(0, 100 - (totalErrors / (successfulUploads + totalErrors) * 100));
+    const targetTests = 10;
+    let currentTests = 0;
+    let passed = 0;
+    let failed = 0;
+    const results = [];
+
+    while (currentTests < targetTests) {
+      currentTests++;
+      console.log(`📋 Running test ${currentTests}/${targetTests}`);
+      
+      const result = await capturePhoto();
+      
+      if (result && result.success) {
+        passed++;
+        results.push({
+          testNumber: currentTests,
+          status: 'PASSED',
+          filename: result.photo ? `photo-${new Date().toISOString()}.jpg` : 'unknown',
+          size: result.validation ? result.validation.size : 0,
+          timestamp: new Date().toISOString()
+        });
+        console.log(`✅ Test ${currentTests} PASSED`);
+      } else {
+        failed++;
+        results.push({
+          testNumber: currentTests,
+          status: 'FAILED',
+          error: result ? result.error : 'Unknown error',
+          timestamp: new Date().toISOString()
+        });
+        console.log(`❌ Test ${currentTests} FAILED: ${result ? result.error : 'Unknown error'}`);
+      }
+
+      // Brief pause between tests
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+
+    setTotalTests(currentTests);
+    setPassedTests(passed);
+    setFailedTests(failed);
+    setTestResults(results);
+    setIsRunningTests(false);
+
+    // Generate final report
+    const successRate = ((passed / currentTests) * 100).toFixed(1);
     
-    console.log('\n📦 Build 35 Firebase Upload Test Results:');
-    console.log(`✅ Upload Success: ${successfulUploads}`);
-    console.log(`❌ Upload Errors: ${totalErrors}`);
-    console.log(`📈 Upload Reliability: ${reliability.toFixed(1)}%`);
+    console.log('\n📊 Build 35 Camera File Output Report');
+    console.log(`Total tests: ${currentTests}`);
+    console.log(`Passed: ${passed} ✅`);
+    console.log(`Failed: ${failed} ❌`);
+    console.log(`Success rate: ${successRate}%`);
     
-    if (totalErrors === 0) {
-      console.log('🎉 Build 35 Verified — Photo Upload Pipeline is Stable');
+    if (failed === 0) {
+      console.log('Ready for Build 36: ✅ YES');
       Alert.alert(
-        '🎉 Build 35 Verification Complete',
-        `Photo Upload Pipeline is Stable!\n\n✅ ${successfulUploads} successful uploads\n❌ ${totalErrors} errors\n📈 ${reliability.toFixed(1)}% reliability`,
+        '🎉 Build 35 Complete!',
+        `All tests passed!\n\n✅ ${passed} successful captures\n❌ ${failed} failures\n📈 ${successRate}% success rate\n\nReady for Build 36!`,
         [{ text: 'Excellent!', style: 'default' }]
       );
+    } else {
+      console.log('Ready for Build 36: ❌ NO');
+      Alert.alert(
+        '⚠️ Build 35 Issues',
+        `Some tests failed:\n\n✅ ${passed} passed\n❌ ${failed} failed\n📈 ${successRate}% success rate\n\nNeeds investigation before Build 36.`,
+        [{ text: 'Review Results', style: 'default' }]
+      );
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'success': return '✅';
-      case 'failed': return '❌';
-      case 'unchecked': return '⏳';
-      default: return '⏳';
-    }
+  const renderCapturedImages = () => {
+    if (capturedImages.length === 0) return null;
+
+    return (
+      <View style={styles.previewSection}>
+        <Text style={styles.sectionTitle}>📸 Captured Photos</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {capturedImages.map((image, index) => (
+            <View key={index} style={styles.imagePreview}>
+              <Image source={{ uri: image.uri }} style={styles.previewImage} />
+              <Text style={styles.imageInfo}>
+                {image.filename.substring(0, 20)}...
+              </Text>
+              <Text style={styles.imageSizeInfo}>
+                {Math.round(image.size)}KB
+              </Text>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
   };
+
+  if (!isFirebaseReady) {
+    return (
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>🔥 BUILD {BUILD_INFO.number}</Text>
+          <Text style={styles.subtitle}>{BUILD_INFO.name}</Text>
+          <Text style={styles.version}>Version {BUILD_INFO.version}</Text>
+        </View>
+        
+        <View style={styles.statusContainer}>
+          <MaterialCommunityIcons name="loading" size={48} color="#FF6B35" />
+          <Text style={styles.statusText}>Initializing Firebase...</Text>
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style="light" />
-      <AuthenticatedUserProvider auth={auth}>
-        <NavigationContainer>
-          <Build34PhotoCaptureTestNavigator />
-        </NavigationContainer>
-        
-        {/* Debug overlay */}
-        {showLogs && (
-          <View style={styles.debugOverlay}>
-            <Text style={styles.debugTitle}>BUILD 34 LOGS</Text>
-            <ScrollView style={styles.debugScrollView}>
-              {DEBUG_LOGS.map((log, index) => (
-                <Text key={index} style={styles.debugLogText}>{log}</Text>
-              ))}
-            </ScrollView>
-            <TouchableOpacity 
-              style={styles.closeDebug} 
-              onPress={() => setShowLogs(false)}
-            >
-              <Text style={styles.closeDebugText}>Close</Text>
-            </TouchableOpacity>
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>🔥 BUILD {BUILD_INFO.number}</Text>
+        <Text style={styles.subtitle}>{BUILD_INFO.name}</Text>
+        <Text style={styles.version}>Version {BUILD_INFO.version}</Text>
+        <Text style={styles.description}>{BUILD_INFO.description}</Text>
+      </View>
+
+      {/* Login Section */}
+      {!user ? (
+        <View style={styles.loginSection}>
+          <Text style={styles.sectionTitle}>🔑 Firebase Authentication</Text>
+          <Button
+            title={loginLoading ? "Logging in..." : "Login with Firebase"}
+            onPress={handleLogin}
+            disabled={loginLoading}
+            color="#4CAF50"
+          />
+        </View>
+      ) : (
+        <View style={styles.userSection}>
+          <Text style={styles.sectionTitle}>✅ Authenticated</Text>
+          <Text style={styles.userInfo}>👤 {user.email}</Text>
+          <Text style={styles.userInfo}>🆔 {user.uid}</Text>
+        </View>
+      )}
+
+      {/* Camera Section */}
+      {user && cameraPermission === 'granted' && (
+        <View style={styles.cameraSection}>
+          <Text style={styles.sectionTitle}>📸 Camera File Output Test</Text>
+          
+          <View style={styles.cameraContainer}>
+            <Camera
+              style={styles.camera}
+              type={Camera.Constants.Type.back}
+              ref={setCameraRef}
+            />
+            <View style={styles.cameraOverlay}>
+              <View style={styles.statusInfo}>
+                <Text style={styles.statusLabel}>🧪 File Output:</Text>
+                <Text style={styles.statusValue}>
+                  {failedTests === 0 && totalTests > 0 ? '✅ Verified' : 
+                   failedTests > 0 ? '❌ Failed' : '⏳ Pending'}
+                </Text>
+              </View>
+              
+              {capturedImages.length > 0 && (
+                <View style={styles.statusInfo}>
+                  <Text style={styles.statusLabel}>📸 Last Photo:</Text>
+                  <Text style={styles.statusValue}>
+                    {capturedImages[capturedImages.length - 1].filename.substring(0, 25)}...
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
-        )}
-      </AuthenticatedUserProvider>
-    </SafeAreaProvider>
+
+          <View style={styles.buttonContainer}>
+            <Button
+              title={isCapturing ? "Capturing..." : "📸 Capture Photo"}
+              onPress={capturePhoto}
+              disabled={isCapturing || isRunningTests}
+              color="#FF6B35"
+            />
+            
+            <View style={styles.buttonSpacer} />
+            
+            <Button
+              title={isRunningTests ? "Running Tests..." : "🧪 Run 10-Photo Test"}
+              onPress={runTestCycle}
+              disabled={isCapturing || isRunningTests}
+              color="#4CAF50"
+            />
+          </View>
+        </View>
+      )}
+
+      {/* Test Results Section */}
+      {totalTests > 0 && (
+        <View style={styles.resultsSection}>
+          <Text style={styles.sectionTitle}>📊 Test Results</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Total Tests</Text>
+              <Text style={styles.statValue}>{totalTests}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Passed</Text>
+              <Text style={[styles.statValue, { color: '#4CAF50' }]}>{passedTests} ✅</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Failed</Text>
+              <Text style={[styles.statValue, { color: '#F44336' }]}>{failedTests} ❌</Text>
+            </View>
+          </View>
+          
+          <View style={styles.readyStatus}>
+            <Text style={styles.readyLabel}>Ready for Build 36:</Text>
+            <Text style={[styles.readyValue, { color: failedTests === 0 ? '#4CAF50' : '#F44336' }]}>
+              {failedTests === 0 ? '✅ YES' : '❌ NO'}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Preview Section */}
+      {renderCapturedImages()}
+
+      {/* Status Section */}
+      <View style={styles.statusSection}>
+        <Text style={styles.sectionTitle}>📋 System Status</Text>
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>Firebase:</Text>
+          <Text style={styles.statusValue}>{isFirebaseReady ? '✅ Ready' : '❌ Not Ready'}</Text>
+        </View>
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>Camera:</Text>
+          <Text style={styles.statusValue}>{cameraPermission === 'granted' ? '✅ Granted' : '❌ Denied'}</Text>
+        </View>
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>Media Library:</Text>
+          <Text style={styles.statusValue}>{mediaLibraryPermission === 'granted' ? '✅ Granted' : '❌ Denied'}</Text>
+        </View>
+      </View>
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>
+          Focus: {BUILD_INFO.focus}
+        </Text>
+        <Text style={styles.footerText}>
+          {Platform.OS === 'ios' ? '📱 iOS' : '🤖 Android'} • Expo SDK 53
+        </Text>
+      </View>
+    </ScrollView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-    paddingHorizontal: 20,
-    paddingTop: 60,
+    backgroundColor: '#fff',
+  },
+  header: {
+    padding: 20,
+    backgroundColor: '#f8f9fa',
+    borderBottomWidth: 1,
+    borderBottomColor: '#dee2e6',
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-    textAlign: "center",
-    marginBottom: 10,
+    fontWeight: 'bold',
+    color: '#FF6B35',
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-    marginBottom: 30,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+    marginTop: 5,
   },
-  input: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
+  version: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 5,
+  },
+  description: {
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 5,
+    fontStyle: 'italic',
+  },
+  loginSection: {
+    padding: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  userSection: {
+    padding: 20,
+    backgroundColor: '#e8f5e8',
+  },
+  sectionTitle: {
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  button: {
-    backgroundColor: "#6B4EFF",
-    borderRadius: 8,
-    padding: 15,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  buttonDisabled: {
-    backgroundColor: "#ccc",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  successTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#4CAF50",
-    textAlign: "center",
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 10,
-  },
-  successText: {
-    fontSize: 16,
-    color: "#4CAF50",
-    textAlign: "center",
-    marginBottom: 20,
   },
   userInfo: {
-    backgroundColor: "#E8F5E8",
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 30,
-  },
-  userText: {
     fontSize: 14,
-    color: "#2E7D32",
-    marginBottom: 5,
-  },
-  firestoreButton: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
-    padding: 15,
-    alignItems: "center",
-    marginBottom: 15,
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 10,
-  },
-  firestoreButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  navigationButton: {
-    backgroundColor: "#fff",
-    borderWidth: 2,
-    borderColor: "#6B4EFF",
-    borderRadius: 8,
-    padding: 15,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 10,
-  },
-  navigationButtonText: {
-    color: "#6B4EFF",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  testSection: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  testButton: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
-    padding: 15,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 10,
-  },
-  testButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  resultsContainer: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
-  },
-  resultsTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 10,
-  },
-  resultText: {
-    fontSize: 14,
-    color: "#555",
+    color: '#666',
     marginBottom: 5,
   },
   cameraSection: {
-    gap: 15,
-    marginBottom: 30,
-  },
-  primaryButton: {
-    backgroundColor: "#FF6B35",
-    borderRadius: 12,
     padding: 20,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 15,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    backgroundColor: "#fff",
-    borderWidth: 2,
-    borderColor: "#6B4EFF",
-    borderRadius: 8,
-    padding: 15,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 10,
-  },
-  secondaryButtonText: {
-    color: "#6B4EFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  infoContainer: {
-    backgroundColor: "#E3F2FD",
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 20,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1976D2",
-    marginBottom: 10,
-  },
-  infoText: {
-    fontSize: 14,
-    color: "#1565C0",
-    marginBottom: 5,
-  },
-  navigationSection: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 15,
-  },
-  profileButton: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
-    padding: 15,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 10,
-  },
-  profileButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 15,
-    gap: 10,
-  },
-  backButtonText: {
-    color: "#333",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  debugContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#000",
-    maxHeight: 200,
-  },
-  logToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#333",
-    padding: 8,
-    gap: 8,
-  },
-  logToggleText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  logContainer: {
-    padding: 10,
-    maxHeight: 150,
-  },
-  logText: {
-    color: "#00ff00",
-    fontSize: 10,
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    marginBottom: 2,
-  },
-  profileDataContainer: {
-    backgroundColor: "#E8F5E8",
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 30,
-  },
-  dataTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 10,
-  },
-  dataText: {
-    fontSize: 14,
-    color: "#555",
-    marginBottom: 5,
-  },
-  saveButton: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
-    padding: 15,
-    alignItems: "center",
-    marginBottom: 15,
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 10,
-  },
-  saveButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  cameraTestButton: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
-    padding: 15,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 10,
-  },
-  cameraTestButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
   },
   cameraContainer: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  cameraHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    paddingTop: 50,
-    backgroundColor: "rgba(0,0,0,0.8)",
-  },
-  cameraTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#fff",
-    textAlign: "center",
-  },
-  placeholder: {
-    width: 34,
-  },
-  cameraPreviewContainer: {
-    flex: 1,
-    position: "relative",
-  },
-  placeholderCameraPreview: {
-    flex: 1,
-    backgroundColor: "#1a1a1a",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cameraOverlay: {
-    flex: 1,
-    backgroundColor: "transparent",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  overlayText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    textAlign: "center",
-    marginBottom: 10,
-    textShadowColor: "rgba(0, 0, 0, 0.8)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  overlaySubtext: {
-    fontSize: 16,
-    color: "#fff",
-    textAlign: "center",
-    marginBottom: 30,
-    textShadowColor: "rgba(0, 0, 0, 0.8)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  statusIndicator: {
-    backgroundColor: "rgba(76, 175, 80, 0.9)",
-    borderRadius: 12,
-    padding: 15,
-    alignItems: "center",
-    gap: 8,
-    marginTop: 20,
-  },
-  statusText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  cameraControls: {
-    backgroundColor: "rgba(0,0,0,0.9)",
-    padding: 30,
-    alignItems: "center",
-    gap: 20,
-  },
-  flipButton: {
-    backgroundColor: "#6B4EFF",
-    borderRadius: 12,
-    padding: 15,
-    alignItems: "center",
-    gap: 8,
-    minWidth: 120,
-  },
-  controlText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  testInfo: {
-    backgroundColor: "rgba(76, 175, 80, 0.2)",
-    borderRadius: 12,
-    padding: 15,
-    width: "100%",
-    alignItems: "center",
-  },
-  testInfoTitle: {
-    color: "#4CAF50",
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  testInfoText: {
-    color: "#fff",
-    fontSize: 14,
-    marginBottom: 2,
-  },
-  fullScreen: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  cameraArea: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cameraPreviewText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 10,
-  },
-  cameraSubText: {
-    fontSize: 16,
-    color: "#fff",
-  },
-  testStatus: {
-    backgroundColor: "rgba(0,0,0,0.5)",
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 20,
-  },
-  testStatusTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 10,
-  },
-  testStatusItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  testStatusText: {
-    color: "#fff",
-    fontSize: 14,
-    marginLeft: 10,
-  },
-  section: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-  },
-  cardText: {
-    fontSize: 14,
-    color: "#555",
-    marginBottom: 5,
-  },
-  actionButton: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
-    padding: 15,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  actionButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  debugOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  debugTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
+    position: 'relative',
+    height: 200,
+    borderRadius: 10,
+    overflow: 'hidden',
     marginBottom: 20,
   },
-  debugScrollView: {
-    maxHeight: "80%",
+  camera: {
+    flex: 1,
   },
-  debugLogText: {
-    color: "#fff",
-    fontSize: 10,
-    marginBottom: 2,
-  },
-  closeDebug: {
-    backgroundColor: "#fff",
+  cameraOverlay: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    right: 10,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 10,
     borderRadius: 8,
-    padding: 15,
-    alignItems: "center",
   },
-  closeDebugText: {
-    color: "#333",
-    fontSize: 18,
-    fontWeight: "600",
+  statusInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 5,
   },
-  captureStatus: {
-    backgroundColor: "rgba(76, 175, 80, 0.9)",
-    borderRadius: 12,
-    padding: 15,
-    alignItems: "center",
-    gap: 8,
-    marginTop: 20,
+  statusLabel: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '600',
   },
-  captureStatusText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+  statusValue: {
+    fontSize: 12,
+    color: '#fff',
   },
-  captureButton: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
-    padding: 15,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
+  buttonContainer: {
     gap: 10,
   },
-});
-
-export default App; 
+  buttonSpacer: {
+    height: 10,
+  },
+  resultsSection: {
+    padding: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 15,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 5,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  readyStatus: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 15,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+  },
+  readyLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  readyValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  previewSection: {
+    padding: 20,
+  },
+  imagePreview: {
+    marginRight: 15,
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginBottom: 5,
+  },
+  imageInfo: {
+    fontSize: 10,
+    color: '#666',
+    textAlign: 'center',
+  },
+  imageSizeInfo: {
+    fontSize: 9,
+    color: '#999',
+    textAlign: 'center',
+  },
+  statusSection: {
+    padding: 20,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  footer: {
+    padding: 20,
+    backgroundColor: '#f8f9fa',
+    borderTopWidth: 1,
+    borderTopColor: '#dee2e6',
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+}); 

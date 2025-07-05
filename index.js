@@ -1,5 +1,5 @@
 // PRODUCTION DEBUG - Log immediately on load
-console.log('=== INDEX.JS LOADED - BUILD 31 CAMERA PERMISSIONS TEST ===');
+console.log('=== INDEX.JS LOADED - BUILD 33 CAMERA LIVE PREVIEW TEST ===');
 
 import 'react-native-gesture-handler';
 import { registerRootComponent } from 'expo';
@@ -18,10 +18,10 @@ try {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
-        event: 'index.js loaded - Build 31 - Camera Permissions Test',
+        event: 'index.js loaded - Build 33 - Camera Live Preview Test',
   timestamp: new Date().toISOString(),
   platform: 'ios',
-  buildNumber: '31'
+  buildNumber: '33'
     })
   }).catch(() => {});
 } catch (e) {}

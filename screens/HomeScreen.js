@@ -23,7 +23,11 @@ export const HomeScreen = ({ navigation }) => {
   const [isOffline, setIsOffline] = useState(false);
   const [authError, setAuthError] = useState(null);
   const [cameraPermission, setCameraPermission] = useState(null);
-  const [permissionTesting, setPermissionTesting] = useState(false);
+  const [cameraHardwareActive, setCameraHardwareActive] = useState(false);
+  const [cameraRef, setCameraRef] = useState(null);
+  const [hardwareTesting, setHardwareTesting] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const [cameraReady, setCameraReady] = useState(false);
 
   log("[HOME] 🎯 HomeScreen state initialized");
 
@@ -145,11 +149,12 @@ export const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const handleCameraPermissions = async () => {
-    log("[HOME] 📸 handleCameraPermissions called - testing camera permissions");
+  const handleCameraHardware = async () => {
+    log("[HOME] 📸 handleCameraHardware called - testing live camera preview");
     
     try {
-      setPermissionTesting(true);
+      setHardwareTesting(true);
+      setCameraError(null);
       
       log("[HOME] 🔐 Requesting camera permissions");
       const { status } = await Camera.requestCameraPermissionsAsync();
@@ -158,18 +163,34 @@ export const HomeScreen = ({ navigation }) => {
       setCameraPermission(status);
       
       if (status === 'granted') {
-        log("[HOME] ✅ Camera permission granted");
-        Alert.alert('Permission Granted', 'Camera access has been granted successfully!');
+        log("[HOME] ✅ Camera permission granted, activating live preview");
+        setCameraHardwareActive(true);
+        Alert.alert('Live Preview Active', 'Camera live preview is now active! Build 33 test successful.');
       } else {
         log("[HOME] ❌ Camera permission denied");
-        Alert.alert('Permission Denied', 'Camera access was denied. You can enable it in Settings.');
+        setCameraHardwareActive(false);
+        Alert.alert('Permission Denied', 'Camera access was denied. Live preview cannot be activated.');
       }
     } catch (error) {
-      logError('[HOME] 🔥 Error requesting camera permissions:', error);
-      Alert.alert('Error', 'Failed to request camera permissions');
+      logError('[HOME] 🔥 Error activating camera live preview:', error);
+      setCameraError(error.message);
+      setCameraHardwareActive(false);
+      Alert.alert('Preview Error', 'Failed to activate camera live preview');
     } finally {
-      setPermissionTesting(false);
+      setHardwareTesting(false);
     }
+  };
+
+  const handleCameraReady = () => {
+    log("[HOME] 📸 Live preview ready callback triggered");
+    setCameraReady(true);
+  };
+
+  const handleCameraError = (error) => {
+    logError('[HOME] 🔥 Camera live preview error:', error);
+    setCameraError(error.message);
+    setCameraHardwareActive(false);
+    Alert.alert('Preview Error', 'Camera live preview encountered an error');
   };
 
   const isProfileIncomplete = () => {
@@ -182,25 +203,28 @@ export const HomeScreen = ({ navigation }) => {
            userData?.goal === 'Not set';
   };
 
-  const getPermissionStatusIcon = () => {
-    if (permissionTesting) return "loading";
-    if (cameraPermission === 'granted') return "check-circle";
-    if (cameraPermission === 'denied') return "close-circle";
-    return "help-circle";
+  const getHardwareStatusIcon = () => {
+    if (hardwareTesting) return "loading";
+    if (cameraHardwareActive && cameraReady) return "camera-check";
+    if (cameraHardwareActive) return "camera";
+    if (cameraError) return "camera-off";
+    return "camera-outline";
   };
 
-  const getPermissionStatusColor = () => {
-    if (permissionTesting) return "#86868B";
-    if (cameraPermission === 'granted') return "#34C759";
-    if (cameraPermission === 'denied') return "#FF3B30";
+  const getHardwareStatusColor = () => {
+    if (hardwareTesting) return "#86868B";
+    if (cameraHardwareActive && cameraReady) return "#34C759";
+    if (cameraHardwareActive) return "#FF9500";
+    if (cameraError) return "#FF3B30";
     return "#86868B";
   };
 
-  const getPermissionStatusText = () => {
-    if (permissionTesting) return "Testing...";
-    if (cameraPermission === 'granted') return "Permission Granted ✅";
-    if (cameraPermission === 'denied') return "Permission Denied ❌";
-    return "Tap to test permissions";
+  const getHardwareStatusText = () => {
+    if (hardwareTesting) return "Activating live preview...";
+    if (cameraHardwareActive && cameraReady) return "Live Preview Working ✅";
+    if (cameraHardwareActive) return "Preview Loading...";
+    if (cameraError) return "Preview Error ❌";
+    return "Tap to test live preview";
   };
 
   log("[HOME] 🎨 HomeScreen render cycle");
@@ -211,7 +235,10 @@ export const HomeScreen = ({ navigation }) => {
     isOffline, 
     hasAuthError: !!authError,
     cameraPermission,
-    permissionTesting
+    cameraHardwareActive,
+    cameraReady,
+    hardwareTesting,
+    cameraError
   });
 
   // Show error state for auth errors
@@ -276,41 +303,68 @@ export const HomeScreen = ({ navigation }) => {
           Your health journey starts here
         </Text>
         
+        {/* Camera Preview Section */}
+        {cameraHardwareActive && (
+          <View style={styles.cameraPreviewContainer}>
+            <Camera
+              ref={setCameraRef}
+              style={styles.cameraPreview}
+              type={Camera.Constants.Type.back}
+              onCameraReady={handleCameraReady}
+              onMountError={handleCameraError}
+            />
+            <View style={styles.cameraOverlay}>
+              <View style={styles.cameraStatusIndicator}>
+                <MaterialCommunityIcons 
+                  name={cameraReady ? "check-circle" : "loading"} 
+                  size={24} 
+                  color={cameraReady ? "#34C759" : "#FF9500"} 
+                />
+                <Text style={styles.cameraStatusText}>
+                  {cameraReady ? "Camera Ready ✅" : "Loading..."}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+        
         {/* Modern Feature Cards */}
         <View style={styles.featuresContainer}>
           <Pressable 
-            style={styles.primaryFeatureCard}
-            onPress={handleCameraPermissions}
-            disabled={permissionTesting}
+            style={[styles.primaryFeatureCard, cameraHardwareActive && styles.cameraActiveCard]}
+            onPress={handleCameraHardware}
+            disabled={hardwareTesting}
             android_ripple={{ color: 'rgba(255, 255, 255, 0.1)' }}
           >
             <View style={styles.featureIconContainer}>
               <MaterialCommunityIcons 
-                name={getPermissionStatusIcon()} 
+                name={getHardwareStatusIcon()} 
                 size={28} 
                 color="#FFFFFF" 
               />
             </View>
             <View style={styles.featureTextContainer}>
-              <Text style={styles.primaryFeatureTitle}>Test Camera Permissions</Text>
+              <Text style={styles.primaryFeatureTitle}>Test Live Preview</Text>
               <Text style={styles.primaryFeatureSubtitle}>
-                {getPermissionStatusText()}
+                {getHardwareStatusText()}
               </Text>
             </View>
           </Pressable>
 
-          {/* Permission Status Display */}
-          {cameraPermission && (
-            <View style={[styles.permissionStatusCard, 
-              cameraPermission === 'granted' ? styles.permissionGranted : styles.permissionDenied]}>
+          {/* Hardware Status Display */}
+          {(cameraHardwareActive || cameraError) && (
+            <View style={[styles.hardwareStatusCard, 
+              cameraReady ? styles.hardwareWorking : 
+              cameraError ? styles.hardwareError : styles.hardwareLoading]}>
               <MaterialCommunityIcons 
-                name={cameraPermission === 'granted' ? "check-circle" : "close-circle"} 
+                name={cameraReady ? "check-circle" : cameraError ? "alert-circle" : "loading"} 
                 size={24} 
-                color={getPermissionStatusColor()} 
+                color={getHardwareStatusColor()} 
               />
-              <Text style={[styles.permissionStatusText, 
-                cameraPermission === 'granted' ? styles.permissionGrantedText : styles.permissionDeniedText]}>
-                {cameraPermission === 'granted' ? 'Camera Permission Granted ✅' : 'Camera Permission Denied ❌'}
+              <Text style={[styles.hardwareStatusText]}>
+                {cameraReady ? 'Live Preview Working ✅' : 
+                 cameraError ? `Preview Error: ${cameraError}` : 
+                 'Live Preview Loading...'}
               </Text>
             </View>
           )}
@@ -349,7 +403,7 @@ export const HomeScreen = ({ navigation }) => {
         </Pressable>
         
         <Text style={styles.versionText}>
-          Version 1.0.31 - Build 31
+          Version 1.0.33 - Build 33
         </Text>
       </View>
     </SafeAreaView>
@@ -513,6 +567,34 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -0.08,
   },
+  cameraPreviewContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  cameraPreview: {
+    flex: 1,
+  },
+  cameraOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraStatusIndicator: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 10,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraStatusText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#FFFFFF',
+  },
   permissionStatusCard: {
     backgroundColor: '#FFFFFF',
     flexDirection: 'row',
@@ -625,5 +707,39 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     fontWeight: '400',
+  },
+  cameraActiveCard: {
+    backgroundColor: '#FF9500',
+  },
+  hardwareWorking: {
+    borderColor: '#34C759',
+    backgroundColor: '#F0FFF4',
+  },
+  hardwareError: {
+    borderColor: '#FF3B30',
+    backgroundColor: '#FFF0F0',
+  },
+  hardwareLoading: {
+    borderColor: '#FF9500',
+    backgroundColor: '#FFF0F0',
+  },
+  hardwareStatusCard: {
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  hardwareStatusText: {
+    fontSize: 15,
+    fontWeight: '500',
+    marginLeft: 12,
+    flex: 1,
   },
 });

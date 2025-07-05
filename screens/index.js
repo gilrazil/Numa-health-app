@@ -15,6 +15,7 @@ import { UserProfileScreen } from './UserProfileScreen';
 import { BiometricSettingsScreen } from './BiometricSettingsScreen';
 import { MealTrackerScreen } from './MealTrackerScreen';
 import { CameraScreen } from './CameraScreen';
+import { TestCycleScreen } from './TestCycleScreen';
 
 export { 
   LoginScreen, 
@@ -33,5 +34,6 @@ export {
   MealCameraScreen,
   MealAnalysisScreen,
   MealTrackerScreen,
-  CameraScreen
+  CameraScreen,
+  TestCycleScreen
 };

@@ -150,7 +150,7 @@ export const HomeScreen = ({ navigation }) => {
   };
 
   const handleCameraHardware = async () => {
-    log("[HOME] 📸 handleCameraHardware called - testing live camera preview");
+    log("[HOME] 📸 handleCameraHardware called - testing photo capture functionality");
     
     try {
       setHardwareTesting(true);
@@ -163,34 +163,34 @@ export const HomeScreen = ({ navigation }) => {
       setCameraPermission(status);
       
       if (status === 'granted') {
-        log("[HOME] ✅ Camera permission granted, activating live preview");
+        log("[HOME] ✅ Camera permission granted, activating photo capture");
         setCameraHardwareActive(true);
-        Alert.alert('Live Preview Active', 'Camera live preview is now active! Build 33 test successful.');
+        Alert.alert('Photo Capture Ready', 'Camera photo capture is now active! Build 34 test successful.');
       } else {
         log("[HOME] ❌ Camera permission denied");
         setCameraHardwareActive(false);
-        Alert.alert('Permission Denied', 'Camera access was denied. Live preview cannot be activated.');
+        Alert.alert('Permission Denied', 'Camera access was denied. Photo capture cannot be activated.');
       }
     } catch (error) {
-      logError('[HOME] 🔥 Error activating camera live preview:', error);
+      logError('[HOME] 🔥 Error activating camera photo capture:', error);
       setCameraError(error.message);
       setCameraHardwareActive(false);
-      Alert.alert('Preview Error', 'Failed to activate camera live preview');
+      Alert.alert('Capture Error', 'Failed to activate camera photo capture');
     } finally {
       setHardwareTesting(false);
     }
   };
 
   const handleCameraReady = () => {
-    log("[HOME] 📸 Live preview ready callback triggered");
+    log("[HOME] 📸 Photo capture ready callback triggered");
     setCameraReady(true);
   };
 
   const handleCameraError = (error) => {
-    logError('[HOME] 🔥 Camera live preview error:', error);
+    logError('[HOME] 🔥 Camera photo capture error:', error);
     setCameraError(error.message);
     setCameraHardwareActive(false);
-    Alert.alert('Preview Error', 'Camera live preview encountered an error');
+    Alert.alert('Capture Error', 'Camera photo capture encountered an error');
   };
 
   const isProfileIncomplete = () => {
@@ -220,11 +220,11 @@ export const HomeScreen = ({ navigation }) => {
   };
 
   const getHardwareStatusText = () => {
-    if (hardwareTesting) return "Activating live preview...";
-    if (cameraHardwareActive && cameraReady) return "Live Preview Working ✅";
-    if (cameraHardwareActive) return "Preview Loading...";
-    if (cameraError) return "Preview Error ❌";
-    return "Tap to test live preview";
+    if (hardwareTesting) return "Activating photo capture...";
+    if (cameraHardwareActive && cameraReady) return "Photo Capture Ready ✅";
+    if (cameraHardwareActive) return "Capture Loading...";
+    if (cameraError) return "Capture Error ❌";
+    return "Tap to test photo capture";
   };
 
   log("[HOME] 🎨 HomeScreen render cycle");
@@ -344,7 +344,7 @@ export const HomeScreen = ({ navigation }) => {
               />
             </View>
             <View style={styles.featureTextContainer}>
-              <Text style={styles.primaryFeatureTitle}>Test Live Preview</Text>
+              <Text style={styles.primaryFeatureTitle}>Test Photo Capture</Text>
               <Text style={styles.primaryFeatureSubtitle}>
                 {getHardwareStatusText()}
               </Text>
@@ -362,9 +362,9 @@ export const HomeScreen = ({ navigation }) => {
                 color={getHardwareStatusColor()} 
               />
               <Text style={[styles.hardwareStatusText]}>
-                {cameraReady ? 'Live Preview Working ✅' : 
-                 cameraError ? `Preview Error: ${cameraError}` : 
-                 'Live Preview Loading...'}
+                {cameraReady ? 'Photo Capture Ready ✅' : 
+                 cameraError ? `Capture Error: ${cameraError}` : 
+                 'Photo Capture Loading...'}
               </Text>
             </View>
           )}
@@ -403,7 +403,7 @@ export const HomeScreen = ({ navigation }) => {
         </Pressable>
         
         <Text style={styles.versionText}>
-          Version 1.0.33 - Build 33
+          Version 1.0.34 - Build 34
         </Text>
       </View>
     </SafeAreaView>

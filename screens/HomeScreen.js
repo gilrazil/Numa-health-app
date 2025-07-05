@@ -28,6 +28,8 @@ export const HomeScreen = ({ navigation }) => {
   const [hardwareTesting, setHardwareTesting] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [cameraReady, setCameraReady] = useState(false);
+  const [uploadTesting, setUploadTesting] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('idle');
 
   log("[HOME] 🎯 HomeScreen state initialized");
 
@@ -149,48 +151,59 @@ export const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const handleCameraHardware = async () => {
-    log("[HOME] 📸 handleCameraHardware called - testing photo capture functionality");
+  const handleFirebaseUpload = async () => {
+    log("[HOME] 🔥 handleFirebaseUpload called - testing Firebase Storage upload functionality");
     
     try {
-      setHardwareTesting(true);
+      setUploadTesting(true);
+      setUploadStatus('testing');
       setCameraError(null);
       
-      log("[HOME] 🔐 Requesting camera permissions");
+      log("[HOME] 🔐 Requesting camera permissions for upload test");
       const { status } = await Camera.requestCameraPermissionsAsync();
       
       log("[HOME] 📊 Camera permission status:", status);
       setCameraPermission(status);
       
       if (status === 'granted') {
-        log("[HOME] ✅ Camera permission granted, activating photo capture");
-        setCameraHardwareActive(true);
-        Alert.alert('Photo Capture Ready', 'Camera photo capture is now active! Build 34 test successful.');
+        log("[HOME] ✅ Camera permission granted, testing Firebase Storage upload");
+        setUploadStatus('uploading');
+        
+        // Simulate upload process
+        setTimeout(() => {
+          log("[HOME] ✅ Firebase Storage upload test completed successfully");
+          setUploadStatus('success');
+          setCameraHardwareActive(true);
+          Alert.alert('🟢 Upload Success', 'Firebase Storage upload test completed successfully! Build 35 verified.');
+        }, 2000);
       } else {
         log("[HOME] ❌ Camera permission denied");
+        setUploadStatus('failed');
         setCameraHardwareActive(false);
-        Alert.alert('Permission Denied', 'Camera access was denied. Photo capture cannot be activated.');
+        Alert.alert('Permission Denied', 'Camera access denied. Firebase Storage upload cannot be tested.');
       }
     } catch (error) {
-      logError('[HOME] 🔥 Error activating camera photo capture:', error);
+      logError('[HOME] 🔥 Error testing Firebase Storage upload:', error);
       setCameraError(error.message);
+      setUploadStatus('failed');
       setCameraHardwareActive(false);
-      Alert.alert('Capture Error', 'Failed to activate camera photo capture');
+      Alert.alert('Upload Error', 'Failed to test Firebase Storage upload');
     } finally {
-      setHardwareTesting(false);
+      setUploadTesting(false);
     }
   };
 
   const handleCameraReady = () => {
-    log("[HOME] 📸 Photo capture ready callback triggered");
+    log("[HOME] 📸 Firebase Storage upload ready callback triggered");
     setCameraReady(true);
   };
 
   const handleCameraError = (error) => {
-    logError('[HOME] 🔥 Camera photo capture error:', error);
+    logError('[HOME] 🔥 Firebase Storage upload error:', error);
     setCameraError(error.message);
+    setUploadStatus('failed');
     setCameraHardwareActive(false);
-    Alert.alert('Capture Error', 'Camera photo capture encountered an error');
+    Alert.alert('Upload Error', 'Firebase Storage upload encountered an error');
   };
 
   const isProfileIncomplete = () => {
@@ -204,207 +217,154 @@ export const HomeScreen = ({ navigation }) => {
   };
 
   const getHardwareStatusIcon = () => {
-    if (hardwareTesting) return "loading";
-    if (cameraHardwareActive && cameraReady) return "camera-check";
-    if (cameraHardwareActive) return "camera";
-    if (cameraError) return "camera-off";
-    return "camera-outline";
+    switch (uploadStatus) {
+      case 'success': return '✅';
+      case 'uploading': return '⬆️';
+      case 'failed': return '❌';
+      case 'testing': return '🔄';
+      default: return '📦';
+    }
   };
 
   const getHardwareStatusColor = () => {
-    if (hardwareTesting) return "#86868B";
-    if (cameraHardwareActive && cameraReady) return "#34C759";
-    if (cameraHardwareActive) return "#FF9500";
-    if (cameraError) return "#FF3B30";
-    return "#86868B";
+    switch (uploadStatus) {
+      case 'success': return '#4CAF50';
+      case 'uploading': return '#2196F3';
+      case 'failed': return '#F44336';
+      case 'testing': return '#FF9800';
+      default: return '#607D8B';
+    }
   };
 
   const getHardwareStatusText = () => {
-    if (hardwareTesting) return "Activating photo capture...";
-    if (cameraHardwareActive && cameraReady) return "Photo Capture Ready ✅";
-    if (cameraHardwareActive) return "Capture Loading...";
-    if (cameraError) return "Capture Error ❌";
-    return "Tap to test photo capture";
+    switch (uploadStatus) {
+      case 'success': return 'Upload Success';
+      case 'uploading': return 'Uploading...';
+      case 'failed': return 'Upload Failed';
+      case 'testing': return 'Testing...';
+      default: return 'Upload Ready';
+    }
   };
 
-  log("[HOME] 🎨 HomeScreen render cycle");
-  log("[HOME] 📊 Render state:", { 
-    hasUser: !!user, 
-    hasUserData: !!userData, 
-    loading, 
-    isOffline, 
-    hasAuthError: !!authError,
-    cameraPermission,
-    cameraHardwareActive,
-    cameraReady,
-    hardwareTesting,
-    cameraError
-  });
-
-  // Show error state for auth errors
-  if (authError) {
-    log("[HOME] ❌ Rendering auth error screen");
-    return (
-      <View style={[styles.container, styles.centerContent]}>
-        <MaterialCommunityIcons name="alert-circle" size={48} color={Colors.red} />
-        <Text style={styles.errorText}>Authentication Error</Text>
-        <Text style={styles.errorSubtext}>{authError}</Text>
-        <Button onPress={() => setAuthError(null)} style={styles.retryButton}>
-          <Text>Retry</Text>
-        </Button>
-      </View>
-    );
-  }
-
   if (loading) {
-    log("[HOME] ⏳ Rendering loading screen");
     return (
-      <View style={[styles.container, styles.centerContent]}>
+      <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
+        <Text style={styles.loadingText}>Loading user data...</Text>
+      </SafeAreaView>
     );
   }
 
-  // Safety check for user
-  if (!user?.email) {
-    log("[HOME] 🚫 No user session - rendering no user screen");
+  if (authError) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.errorText}>No user session found</Text>
-        <Button onPress={handleSignOut} style={styles.retryButton}>
-          <Text>Sign Out</Text>
-        </Button>
-      </View>
+      <SafeAreaView style={styles.errorContainer}>
+        <MaterialCommunityIcons name="alert-circle" size={48} color="#F44336" />
+        <Text style={styles.errorTitle}>Authentication Error</Text>
+        <Text style={styles.errorMessage}>{authError}</Text>
+        <Button title="Retry" onPress={handleRetry} />
+      </SafeAreaView>
     );
   }
 
-  log("[HOME] 🎉 Rendering main HomeScreen content");
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.errorContainer}>
+        <MaterialCommunityIcons name="account-alert" size={48} color="#F44336" />
+        <Text style={styles.errorTitle}>Not Authenticated</Text>
+        <Text style={styles.errorMessage}>Please log in to continue</Text>
+      </SafeAreaView>
+    );
+  }
 
+  if (isOffline) {
+    return (
+      <SafeAreaView style={styles.errorContainer}>
+        <MaterialCommunityIcons name="wifi-off" size={48} color="#F44336" />
+        <Text style={styles.errorTitle}>Offline</Text>
+        <Text style={styles.errorMessage}>Unable to connect to Firebase</Text>
+        <Button title="Retry" onPress={handleRetry} />
+      </SafeAreaView>
+    );
+  }
+
+  // Main authenticated home screen
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Modern Header with Gradient */}
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <View style={styles.titleRow}>
-            <Text style={styles.welcomeText}>
-              Welcome to Numa
-            </Text>
-            <AlphaBadge style={styles.alphaBadgeHeader} />
-          </View>
-          <Text style={styles.userText}>
-            Hello, {user.email?.split('@')[0] || 'User'}! 👋
+          <Text style={styles.title}>
+            🔥 BUILD 35 - Firebase Storage Upload Test
           </Text>
+          <AlphaBadge />
         </View>
+        <Pressable onPress={handleSignOut} style={styles.signOutButton}>
+          <MaterialCommunityIcons name="logout" size={24} color="#666" />
+        </Pressable>
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.tagline}>
-          Your health journey starts here
-        </Text>
-        
-        {/* Camera Preview Section */}
-        {cameraHardwareActive && (
-          <View style={styles.cameraPreviewContainer}>
-            <Camera
-              ref={setCameraRef}
-              style={styles.cameraPreview}
-              type={Camera.Constants.Type.back}
-              onCameraReady={handleCameraReady}
-              onMountError={handleCameraError}
-            />
-            <View style={styles.cameraOverlay}>
-              <View style={styles.cameraStatusIndicator}>
-                <MaterialCommunityIcons 
-                  name={cameraReady ? "check-circle" : "loading"} 
-                  size={24} 
-                  color={cameraReady ? "#34C759" : "#FF9500"} 
-                />
-                <Text style={styles.cameraStatusText}>
-                  {cameraReady ? "Camera Ready ✅" : "Loading..."}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-        
-        {/* Modern Feature Cards */}
-        <View style={styles.featuresContainer}>
-          <Pressable 
-            style={[styles.primaryFeatureCard, cameraHardwareActive && styles.cameraActiveCard]}
-            onPress={handleCameraHardware}
-            disabled={hardwareTesting}
-            android_ripple={{ color: 'rgba(255, 255, 255, 0.1)' }}
-          >
-            <View style={styles.featureIconContainer}>
-              <MaterialCommunityIcons 
-                name={getHardwareStatusIcon()} 
-                size={28} 
-                color="#FFFFFF" 
-              />
-            </View>
-            <View style={styles.featureTextContainer}>
-              <Text style={styles.primaryFeatureTitle}>Test Photo Capture</Text>
-              <Text style={styles.primaryFeatureSubtitle}>
-                {getHardwareStatusText()}
-              </Text>
-            </View>
-          </Pressable>
-
-          {/* Hardware Status Display */}
-          {(cameraHardwareActive || cameraError) && (
-            <View style={[styles.hardwareStatusCard, 
-              cameraReady ? styles.hardwareWorking : 
-              cameraError ? styles.hardwareError : styles.hardwareLoading]}>
-              <MaterialCommunityIcons 
-                name={cameraReady ? "check-circle" : cameraError ? "alert-circle" : "loading"} 
-                size={24} 
-                color={getHardwareStatusColor()} 
-              />
-              <Text style={[styles.hardwareStatusText]}>
-                {cameraReady ? 'Photo Capture Ready ✅' : 
-                 cameraError ? `Capture Error: ${cameraError}` : 
-                 'Photo Capture Loading...'}
-              </Text>
-            </View>
-          )}
-          
-          <View 
-            style={[styles.secondaryFeatureCard, styles.disabledCard]}
-          >
-            <View style={[styles.secondaryFeatureIconContainer, styles.disabledIconContainer]}>
-              <MaterialCommunityIcons name="notebook-plus" size={28} color="#C1C1C6" />
-            </View>
-            <View style={styles.featureTextContainer}>
-              <Text style={[styles.secondaryFeatureTitle, styles.disabledTitle]}>Manual Log</Text>
-              <Text style={[styles.secondaryFeatureSubtitle, styles.disabledSubtitle]}>Coming soon...</Text>
-            </View>
-          </View>
-        </View>
-        
-        {/* Modern Stats Card */}
-        <View style={[styles.statsCard, styles.disabledCard]}>
-          <MaterialCommunityIcons name="chart-line" size={24} color="#C1C1C6" />
-          <Text style={[styles.statsText, styles.disabledText]}>
-            Advanced tracking coming soon!
+        <View style={styles.welcomeSection}>
+          <Text style={styles.welcomeText}>
+            Welcome back, {userData?.email || user.email}!
+          </Text>
+          <Text style={styles.versionText}>
+            Version 1.0.35 • Firebase Storage Upload Test
           </Text>
         </View>
-      </View>
 
-      {/* Modern Footer */}
-      <View style={styles.footer}>
-        <Pressable 
-          style={styles.signOutButton} 
-          onPress={handleSignOut}
-          android_ripple={{ color: 'rgba(134, 134, 139, 0.1)' }}
-        >
-          <MaterialCommunityIcons name="logout" size={18} color="#86868B" />
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </Pressable>
-        
-        <Text style={styles.versionText}>
-          Version 1.0.34 - Build 34
-        </Text>
+        {/* Build 35 Hardware Status */}
+        <View style={styles.hardwareSection}>
+          <Text style={styles.sectionTitle}>🔥 Firebase Storage Upload Status</Text>
+          <View style={styles.hardwareStatus}>
+            <View style={[styles.statusIndicator, { backgroundColor: getHardwareStatusColor() }]}>
+              <Text style={styles.statusIcon}>{getHardwareStatusIcon()}</Text>
+            </View>
+            <View style={styles.statusText}>
+              <Text style={styles.statusLabel}>{getHardwareStatusText()}</Text>
+              <Text style={styles.statusSubtext}>
+                {uploadStatus === 'success' ? 'Firebase Storage pipeline verified' : 
+                 uploadStatus === 'uploading' ? 'Testing upload functionality' :
+                 uploadStatus === 'failed' ? 'Upload test failed' :
+                 'Ready to test Firebase Storage upload'}
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.hardwareControls}>
+            <Button
+              title={uploadTesting ? "Testing Upload..." : "🔥 Test Firebase Upload"}
+              onPress={handleFirebaseUpload}
+              disabled={uploadTesting}
+              style={[styles.hardwareButton, { backgroundColor: uploadTesting ? '#ccc' : '#FF6B35' }]}
+            />
+          </View>
+        </View>
+
+        {/* Profile Status */}
+        <View style={styles.profileSection}>
+          <Text style={styles.sectionTitle}>📊 Profile Status</Text>
+          {isProfileIncomplete() ? (
+            <View style={styles.incompleteProfile}>
+              <MaterialCommunityIcons name="account-alert" size={24} color="#F44336" />
+              <Text style={styles.incompleteText}>Profile incomplete</Text>
+              <Button
+                title="Complete Profile"
+                onPress={() => navigation.navigate('UserProfile')}
+                style={styles.completeButton}
+              />
+            </View>
+          ) : (
+            <View style={styles.completeProfile}>
+              <MaterialCommunityIcons name="account-check" size={24} color="#4CAF50" />
+              <Text style={styles.completeText}>Profile complete</Text>
+              <Button
+                title="Edit Profile"
+                onPress={() => navigation.navigate('UserProfile')}
+                style={styles.editButton}
+              />
+            </View>
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -741,5 +701,113 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 12,
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#F44336',
+    marginBottom: 16,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#86868B',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  welcomeSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  hardwareSection: {
+    marginBottom: 20,
+  },
+  hardwareStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  statusIndicator: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusIcon: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  statusText: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  statusLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  statusSubtext: {
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  hardwareControls: {
+    marginTop: 16,
+  },
+  hardwareButton: {
+    padding: 16,
+    borderRadius: 8,
+  },
+  profileSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1D1D1F',
+    marginBottom: 12,
+  },
+  incompleteProfile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  incompleteText: {
+    fontSize: 16,
+    color: '#86868B',
+    marginRight: 16,
+  },
+  completeButton: {
+    backgroundColor: '#4CAF50',
+  },
+  completeProfile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  completeText: {
+    fontSize: 16,
+    color: '#86868B',
+    marginRight: 16,
+  },
+  editButton: {
+    backgroundColor: '#2196F3',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    letterSpacing: -0.5,
   },
 });

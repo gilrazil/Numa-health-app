@@ -54,6 +54,6 @@
     "metro-config": "^0.82.4"
   },
   "private": true,
-  "name": "expo-firebase-starter",
-  "version": "1.0.28"
+  "name": "numa-health-app",
+  "version": "1.0.29"
 }

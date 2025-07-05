@@ -2,12 +2,12 @@ import 'dotenv/config';
 
 export default {
   expo: {
-    name: "Numa Health App",
+    name: "NumaHealthApp",
     slug: "numa-health-app",
     owner: "gilraz",
     privacy: "public",
     platforms: ["ios", "android", "web"],
-    version: "1.0.28",
+    version: "1.0.29",
     orientation: "portrait",
     sdkVersion: "53.0.0",
     icon: "./assets/icon.png",
@@ -32,7 +32,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.numahealth.app",
-      buildNumber: "28",
+      buildNumber: "29",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "This app needs access to your camera to take photos of your meals for nutritional analysis.",

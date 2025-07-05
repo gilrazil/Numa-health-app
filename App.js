@@ -14,6 +14,7 @@ import {
   ActivityIndicator
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Camera, CameraType } from 'expo-camera';
 import { AuthenticatedUserProvider, AuthenticatedUserContext } from "./providers";
 import { auth, db } from "./config/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
@@ -37,14 +38,15 @@ const addLog = (level, ...args) => {
 };
 
 // Initialize logs
-addLog("INIT", "🚀 Build 28 - Firestore Testing initialized");
-addLog("INIT", "📄 Testing Firestore profile operations");
+addLog("INIT", "🚀 Build 29 - Camera Interface Test initialized");
+addLog("INIT", "📄 Testing basic Camera UI activation");
+addLog("INIT", "✅ Firestore operations proven stable in Build 28");
 addLog("INIT", "🔥 Firebase Config:", auth?.app?.name || "No app name");
 addLog("INIT", "💾 Firestore Config:", db?.app?.name || "No Firestore app name");
 
-// Build 28 Critical: Bypassing normal navigation to ensure ONLY Firestore testing
-// This prevents access to camera functionality which is reserved for Build 29
-addLog("INIT", "⚠️ Build 28: Using Firestore-only navigation - Camera functionality blocked");
+// Build 29 Critical: Adding Camera UI activation on proven Firestore foundation
+// This introduces ONLY camera UI preview - no capture/storage functionality yet
+addLog("INIT", "📸 Build 29: Adding Camera UI activation - NO capture functionality");
 
 // Test Firestore connection
 if (db) {
@@ -64,9 +66,9 @@ if (auth) {
 }
 
 console.log("[INIT] 📚 All imports successful");
-console.log("[INIT] 📄 Build 28 - Firestore Testing Navigator components loaded");
+console.log("[INIT] 📸 Build 29 - Camera Interface Test Navigator components loaded");
 
-// Build 28 Test Screens
+// Build 29 Test Screens
 const LoginTestScreen = ({ navigation }) => {
   const [email, setEmail] = useState("gil.raz.il@gmail.com");
   const [password, setPassword] = useState("");
@@ -118,7 +120,7 @@ const LoginTestScreen = ({ navigation }) => {
       return;
     }
 
-    addLog("FIRESTORE", "📄 Starting Firestore test");
+    addLog("FIRESTORE", "�� Starting Firestore test");
     addLog("FIRESTORE", "👤 User:", user.email);
 
     try {
@@ -132,7 +134,7 @@ const LoginTestScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>📄 Build 28 - Firestore Test</Text>
+      <Text style={styles.title}>📸 Build 29 - Camera Interface Test</Text>
       
       {!loginSuccess ? (
         <>
@@ -197,8 +199,8 @@ const LoginTestScreen = ({ navigation }) => {
   );
 };
 
-// CameraTestScreen removed - Build 28 focuses on Firestore-only testing
-// Camera functionality will be tested in Build 29
+// CameraTestScreen removed - Build 29 focuses on Camera UI testing
+// Camera functionality will be tested in Build 30
 
 const NavigationTestScreen = ({ navigation }) => {
   const { user } = useContext(AuthenticatedUserContext);
@@ -296,8 +298,8 @@ const NavigationTestScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>📄 Build 28 - Firestore Test</Text>
-      <Text style={styles.subtitle}>Testing Firestore read & write operations</Text>
+      <Text style={styles.title}>📸 Build 29 - Camera Interface Test</Text>
+      <Text style={styles.subtitle}>Testing Camera UI activation on proven Firestore foundation</Text>
 
       <View style={styles.infoContainer}>
         <Text style={styles.infoTitle}>🔑 Auth Status: ✅ Authenticated</Text>
@@ -306,7 +308,20 @@ const NavigationTestScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.navigationSection}>
-        <Text style={styles.sectionTitle}>📊 Firestore Operations</Text>
+        <Text style={styles.sectionTitle}>📸 Camera Interface Test</Text>
+        <Text style={styles.subtitle}>Basic camera UI activation - no capture functionality</Text>
+        
+        <TouchableOpacity 
+          style={styles.cameraTestButton} 
+          onPress={() => navigation.navigate('CameraUITest')}
+        >
+          <MaterialCommunityIcons name="camera" size={24} color="#fff" />
+          <Text style={styles.cameraTestButtonText}>🎯 Test Camera UI</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.navigationSection}>
+        <Text style={styles.sectionTitle}>📊 Firestore Operations (Build 28 - Proven Stable)</Text>
         
         <TouchableOpacity 
           style={styles.profileButton} 
@@ -410,7 +425,137 @@ const NavigationTestScreen = ({ navigation }) => {
   );
 };
 
-const Build28FirestoreTestNavigator = () => {
+// Build 29: Basic Camera UI Test Screen - Preview only, no capture
+const CameraUITestScreen = ({ navigation }) => {
+  const [hasPermission, setHasPermission] = useState(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [type, setType] = useState(CameraType.back);
+
+  useEffect(() => {
+    addLog("CAMERA", "📸 CameraUITest screen mounted");
+    addLog("CAMERA", "🔍 Requesting camera permissions...");
+    
+    (async () => {
+      try {
+        const { status } = await Camera.requestCameraPermissionsAsync();
+        addLog("CAMERA", "📋 Camera permission status:", status);
+        setHasPermission(status === 'granted');
+        
+        if (status === 'granted') {
+          addLog("CAMERA", "✅ Camera permission granted");
+        } else {
+          addLog("CAMERA", "❌ Camera permission denied");
+        }
+      } catch (error) {
+        addLog("CAMERA", "❌ Error requesting camera permissions:", error.message);
+        setHasPermission(false);
+      }
+    })();
+  }, []);
+
+  const onCameraReady = () => {
+    addLog("CAMERA", "✅ Camera ready for preview");
+    setCameraReady(true);
+  };
+
+  if (hasPermission === null) {
+    addLog("CAMERA", "⏳ Waiting for camera permissions...");
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>📸 Build 29 - Camera UI Test</Text>
+        <Text style={styles.subtitle}>Requesting camera permissions...</Text>
+        <ActivityIndicator size="large" color="#4CAF50" />
+      </View>
+    );
+  }
+
+  if (hasPermission === false) {
+    addLog("CAMERA", "🚫 No camera permission - showing error screen");
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>📸 Build 29 - Camera UI Test</Text>
+        <Text style={styles.subtitle}>Camera permission not granted</Text>
+        
+        <View style={styles.permissionContainer}>
+          <MaterialCommunityIcons name="camera-off" size={80} color="#FF6B35" />
+          <Text style={styles.permissionText}>
+            Camera access is required for this test. Please enable camera permissions in Settings.
+          </Text>
+          
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#333" />
+            <Text style={styles.backButtonText}>Back to Tests</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  addLog("CAMERA", "📱 Rendering camera preview interface");
+
+  return (
+    <View style={styles.cameraContainer}>
+      <View style={styles.cameraHeader}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.cameraTitle}>📸 Build 29 - Camera UI Test</Text>
+        <View style={styles.placeholder} />
+      </View>
+      
+      <View style={styles.cameraPreviewContainer}>
+        <Camera
+          style={styles.cameraPreview}
+          type={type}
+          onCameraReady={onCameraReady}
+        >
+          <View style={styles.cameraOverlay}>
+            <Text style={styles.overlayText}>Camera Preview Active</Text>
+            <Text style={styles.overlaySubtext}>UI Test Only - No Capture Functionality</Text>
+            
+            {cameraReady && (
+              <View style={styles.statusIndicator}>
+                <MaterialCommunityIcons name="check-circle" size={24} color="#4CAF50" />
+                <Text style={styles.statusText}>Camera Ready ✅</Text>
+              </View>
+            )}
+          </View>
+        </Camera>
+      </View>
+
+      <View style={styles.cameraControls}>
+        <TouchableOpacity
+          style={styles.flipButton}
+          onPress={() => {
+            setType(
+              type === CameraType.back ? CameraType.front : CameraType.back
+            );
+            addLog("CAMERA", "🔄 Camera flipped to:", type === CameraType.back ? "front" : "back");
+          }}
+        >
+          <MaterialCommunityIcons name="camera-flip" size={30} color="#fff" />
+          <Text style={styles.controlText}>Flip Camera</Text>
+        </TouchableOpacity>
+
+        <View style={styles.testInfo}>
+          <Text style={styles.testInfoTitle}>✅ Build 29 Test Status</Text>
+          <Text style={styles.testInfoText}>• Camera UI: Active</Text>
+          <Text style={styles.testInfoText}>• Preview: Working</Text>
+          <Text style={styles.testInfoText}>• Permissions: Granted</Text>
+          <Text style={styles.testInfoText}>• Capture: Disabled (Build 30)</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const Build29CameraInterfaceTestNavigator = () => {
   const Stack = createStackNavigator();
   
   return (
@@ -420,10 +565,14 @@ const Build28FirestoreTestNavigator = () => {
         component={LoginTestScreen} 
         options={{ headerShown: false }}
       />
-      {/* CameraTest removed - Build 28 focuses on Firestore-only testing */}
       <Stack.Screen 
         name="NavigationTest" 
         component={NavigationTestScreen} 
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name="CameraUITest" 
+        component={CameraUITestScreen} 
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
@@ -437,7 +586,7 @@ const App = () => {
     <SafeAreaProvider>
       <AuthenticatedUserProvider auth={auth}>
         <NavigationContainer>
-          <Build28FirestoreTestNavigator />
+          <Build29CameraInterfaceTestNavigator />
         </NavigationContainer>
         
         {/* Debug Logs */}
@@ -448,7 +597,7 @@ const App = () => {
               onPress={() => setShowLogs(!showLogs)}
             >
               <MaterialCommunityIcons name="tools" size={16} color="#fff" />
-              <Text style={styles.logToggleText}>BUILD 28 FIRESTORE LOGS</Text>
+              <Text style={styles.logToggleText}>BUILD 29 CAMERA INTERFACE TEST LOGS</Text>
             </TouchableOpacity>
             <ScrollView style={styles.logContainer} showsVerticalScrollIndicator={false}>
               {DEBUG_LOGS.slice(-10).map((log, index) => (
@@ -759,6 +908,138 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "600",
+  },
+  cameraTestButton: {
+    backgroundColor: "#4CAF50",
+    borderRadius: 8,
+    padding: 15,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
+  },
+  cameraTestButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  cameraContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  cameraHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    paddingTop: 50,
+    backgroundColor: "rgba(0,0,0,0.8)",
+  },
+  cameraTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#fff",
+    textAlign: "center",
+  },
+  placeholder: {
+    width: 34,
+  },
+  cameraPreviewContainer: {
+    flex: 1,
+    position: "relative",
+  },
+  cameraPreview: {
+    flex: 1,
+  },
+  cameraOverlay: {
+    flex: 1,
+    backgroundColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  overlayText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
+    marginBottom: 10,
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  overlaySubtext: {
+    fontSize: 16,
+    color: "#fff",
+    textAlign: "center",
+    marginBottom: 30,
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  statusIndicator: {
+    backgroundColor: "rgba(76, 175, 80, 0.9)",
+    borderRadius: 12,
+    padding: 15,
+    alignItems: "center",
+    gap: 8,
+    marginTop: 20,
+  },
+  statusText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  cameraControls: {
+    backgroundColor: "rgba(0,0,0,0.9)",
+    padding: 30,
+    alignItems: "center",
+    gap: 20,
+  },
+  flipButton: {
+    backgroundColor: "#6B4EFF",
+    borderRadius: 12,
+    padding: 15,
+    alignItems: "center",
+    gap: 8,
+    minWidth: 120,
+  },
+  controlText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  testInfo: {
+    backgroundColor: "rgba(76, 175, 80, 0.2)",
+    borderRadius: 12,
+    padding: 15,
+    width: "100%",
+    alignItems: "center",
+  },
+  testInfoTitle: {
+    color: "#4CAF50",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  testInfoText: {
+    color: "#fff",
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  permissionContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 30,
+    gap: 20,
+  },
+  permissionText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 24,
   },
 });
 

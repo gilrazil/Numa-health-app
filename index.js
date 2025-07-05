@@ -1,5 +1,5 @@
-// Build 39 - Regression Fix: Firebase Auth API Key Failure
-console.log('=== INDEX.JS LOADED - BUILD 39 REGRESSION FIX: FIREBASE AUTH API KEY FAILURE ===');
+// Build 40 - Timestamp Metadata Validation
+console.log('=== INDEX.JS LOADED - BUILD 40 TIMESTAMP METADATA VALIDATION ===');
 
 import 'react-native-gesture-handler';
 import { registerRootComponent } from 'expo';
@@ -18,7 +18,7 @@ try {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
-        event: 'index.js loaded - Build 39 - Regression Fix: Firebase Auth API Key Failure',
+        event: 'index.js loaded - Build 40 - Timestamp Metadata Validation',
   timestamp: new Date().toISOString(),
   platform: 'ios',
   buildNumber: '38'

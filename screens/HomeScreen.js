@@ -174,7 +174,7 @@ export const HomeScreen = ({ navigation }) => {
                   log("[HOME] ✅ Firebase Storage upload test completed successfully");
         setUploadStatus('success');
         setCameraHardwareActive(true);
-        Alert.alert('🟢 Upload Success', 'Firebase Storage upload test completed successfully! Build 39 verified.');
+        Alert.alert('🟢 Upload Success', 'Firebase Storage upload test completed successfully! Build 40 verified.');
         }, 2000);
       } else {
         log("[HOME] ❌ Camera permission denied");
@@ -293,7 +293,7 @@ export const HomeScreen = ({ navigation }) => {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>
-            🔥 BUILD 39 – Regression Fix: Firebase Auth API Key Failure
+            🔥 BUILD 40 – Timestamp Metadata Validation
           </Text>
           <AlphaBadge />
         </View>

@@ -7,7 +7,7 @@ export default {
     owner: "gilraz",
     privacy: "public",
     platforms: ["ios", "android", "web"],
-    version: "1.0.39",
+    version: "1.0.40",
     orientation: "portrait",
     sdkVersion: "53.0.0",
     icon: "./assets/icon.png",
@@ -32,7 +32,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.numahealth.app",
-      buildNumber: "39",
+      buildNumber: "40",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "This app needs access to your camera to take photos of your meals for nutritional analysis.",
@@ -46,7 +46,7 @@ export default {
     },
     android: {
       package: "com.numahealth.app",
-      versionCode: 39,
+      versionCode: 40,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#FFFFFF"

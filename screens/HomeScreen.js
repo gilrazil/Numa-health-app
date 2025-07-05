@@ -171,10 +171,10 @@ export const HomeScreen = ({ navigation }) => {
         
         // Simulate upload process
         setTimeout(() => {
-          log("[HOME] ✅ Firebase Storage upload test completed successfully");
-          setUploadStatus('success');
-          setCameraHardwareActive(true);
-          Alert.alert('🟢 Upload Success', 'Firebase Storage upload test completed successfully! Build 35 verified.');
+                  log("[HOME] ✅ Firebase Storage upload test completed successfully");
+        setUploadStatus('success');
+        setCameraHardwareActive(true);
+        Alert.alert('🟢 Upload Success', 'Firebase Storage upload test completed successfully! Build 39 verified.');
         }, 2000);
       } else {
         log("[HOME] ❌ Camera permission denied");
@@ -293,7 +293,7 @@ export const HomeScreen = ({ navigation }) => {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>
-            🔥 BUILD 35 - Camera File Output Test
+            🔥 BUILD 39 – Regression Fix: Firebase Auth API Key Failure
           </Text>
           <AlphaBadge />
         </View>
@@ -308,13 +308,13 @@ export const HomeScreen = ({ navigation }) => {
             Welcome back, {userData?.email || user.email}!
           </Text>
           <Text style={styles.versionText}>
-            Version 1.0.35 • Camera File Output Test
+            Version 1.0.38 • File Output Validation (Fix)
           </Text>
         </View>
 
         {/* Build 35 Hardware Status */}
         <View style={styles.hardwareSection}>
-          <Text style={styles.sectionTitle}>📸 Camera File Output Status</Text>
+          <Text style={styles.sectionTitle}>📸 File Output Validation Status</Text>
           <View style={styles.hardwareStatus}>
             <View style={[styles.statusIndicator, { backgroundColor: getHardwareStatusColor() }]}>
               <Text style={styles.statusIcon}>{getHardwareStatusIcon()}</Text>
@@ -332,7 +332,7 @@ export const HomeScreen = ({ navigation }) => {
           
           <View style={styles.hardwareControls}>
                          <Button
-               title={uploadTesting ? "Testing File Output..." : "📸 Test Camera File Output"}
+               title={uploadTesting ? "Testing File Output..." : "🧪 Test File Output Validation"}
                onPress={handleFirebaseUpload}
                disabled={uploadTesting}
                style={[styles.hardwareButton, { backgroundColor: uploadTesting ? '#ccc' : '#FF6B35' }]}

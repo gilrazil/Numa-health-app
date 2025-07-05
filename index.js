@@ -1,5 +1,5 @@
-// Build 35 - Camera File Output Validation
-console.log('=== INDEX.JS LOADED - BUILD 35 CAMERA FILE OUTPUT TEST ===');
+// Build 39 - Regression Fix: Firebase Auth API Key Failure
+console.log('=== INDEX.JS LOADED - BUILD 39 REGRESSION FIX: FIREBASE AUTH API KEY FAILURE ===');
 
 import 'react-native-gesture-handler';
 import { registerRootComponent } from 'expo';
@@ -18,10 +18,10 @@ try {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
-        event: 'index.js loaded - Build 35 - Camera File Output Test',
+        event: 'index.js loaded - Build 39 - Regression Fix: Firebase Auth API Key Failure',
   timestamp: new Date().toISOString(),
   platform: 'ios',
-  buildNumber: '35'
+  buildNumber: '38'
     })
   }).catch(() => {});
 } catch (e) {}

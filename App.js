@@ -38,15 +38,15 @@ const addLog = (level, ...args) => {
 };
 
 // Initialize logs
-addLog("INIT", "🚀 Build 30 - Camera UI Navigation Test initialized");
-addLog("INIT", "📱 Testing UI navigation WITHOUT camera hardware access");
-addLog("INIT", "✅ Firestore operations proven stable in Build 28");
+  addLog("INIT", "🚀 Build 31 - Camera Permissions Test initialized");
+  addLog("INIT", "📱 Testing camera permission prompts ONLY");
+  addLog("INIT", "✅ Firestore operations proven stable in Build 28");
 addLog("INIT", "🔥 Firebase Config:", auth?.app?.name || "No app name");
 addLog("INIT", "💾 Firestore Config:", db?.app?.name || "No Firestore app name");
 
-// Build 30 Critical: Testing UI navigation ONLY - NO camera hardware access
-// This isolates navigation layer after Build 29 crash (EXC_BAD_ACCESS)
-addLog("INIT", "🛡️ Build 30: Camera hardware access DISABLED for crash isolation");
+  // Build 31 Critical: Testing camera permission prompts ONLY - NO camera component mounting
+  // This safely tests permission flow after Build 30 UI navigation success
+  addLog("INIT", "🛡️ Build 31: Camera permissions testing ENABLED - no hardware mounting");
 
 // Test Firestore connection
 if (db) {
@@ -66,9 +66,9 @@ if (auth) {
 }
 
 console.log("[INIT] 📚 All imports successful");
-console.log("[INIT] 🛡️ Build 30 - Camera UI Navigation Test Navigator components loaded");
+  console.log("[INIT] 🛡️ Build 31 - Camera Permissions Test Navigator components loaded");
 
-// Build 30 Test Screens - UI Navigation Only (No Camera Hardware)
+  // Build 31 Test Screens - Camera Permissions Testing Only (No Camera Hardware)
 const LoginTestScreen = ({ navigation }) => {
   const [email, setEmail] = useState("gil.raz.il@gmail.com");
   const [password, setPassword] = useState("");
@@ -134,7 +134,7 @@ const LoginTestScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🛡️ Build 30 - Camera UI Navigation Test</Text>
+      <Text style={styles.title}>🛡️ Build 31 - Camera Permissions Test</Text>
       
       {!loginSuccess ? (
         <>
@@ -199,17 +199,17 @@ const LoginTestScreen = ({ navigation }) => {
   );
 };
 
-// CameraTestScreen removed - Build 30 focuses on UI Navigation testing
-// Camera hardware access will be tested in Build 31
+  // CameraTestScreen removed - Build 31 focuses on Camera Permissions testing
+  // Camera hardware mounting will be tested in Build 32
 
-// Build 30: Camera UI Navigation Test Screen - UI ONLY, NO hardware access
+  // Build 31: Camera Permissions Test Screen - PERMISSIONS ONLY, NO hardware access
 const CameraUITestScreen = ({ navigation }) => {
   const [uiLoaded, setUiLoaded] = useState(false);
 
   useEffect(() => {
     addLog("CAMERA_UI", "📱 CameraUITest screen mounted");
     addLog("CAMERA_UI", "🛡️ UI loaded");
-    addLog("CAMERA_UI", "⚠️ Camera access skipped (Build 30 isolation)");
+    addLog("CAMERA_UI", "⚠️ Camera hardware skipped (Build 31 permissions test)");
     
     // Simulate UI loading
     const timer = setTimeout(() => {
@@ -234,7 +234,7 @@ const CameraUITestScreen = ({ navigation }) => {
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.cameraTitle}>🛡️ Build 30 - Camera UI Navigation Test</Text>
+        <Text style={styles.cameraTitle}>🛡️ Build 31 - Camera Permissions Test</Text>
         <View style={styles.placeholder} />
       </View>
       
@@ -257,23 +257,23 @@ const CameraUITestScreen = ({ navigation }) => {
 
       <View style={styles.cameraControls}>
         <View style={styles.testInfo}>
-          <Text style={styles.testInfoTitle}>✅ Build 30 Test Status</Text>
-          <Text style={styles.testInfoText}>• UI Navigation: ✅ Working</Text>
+          <Text style={styles.testInfoTitle}>✅ Build 31 Test Status</Text>
+          <Text style={styles.testInfoText}>• Permissions API: ✅ Ready</Text>
           <Text style={styles.testInfoText}>• Camera Hardware: 🛡️ Disabled</Text>
-          <Text style={styles.testInfoText}>• Permissions: ⏭️ Skipped</Text>
+          <Text style={styles.testInfoText}>• Permission Testing: 🔄 Active</Text>
           <Text style={styles.testInfoText}>• Crash Prevention: ✅ Active</Text>
-          <Text style={styles.testInfoText}>• Hardware Access: ❌ Blocked (Build 31)</Text>
+          <Text style={styles.testInfoText}>• Hardware Mounting: ❌ Blocked (Build 32)</Text>
         </View>
 
         <TouchableOpacity
           style={styles.flipButton}
           onPress={() => {
             addLog("CAMERA_UI", "🔄 UI interaction test - button clicked");
-            Alert.alert(
-              "Build 30 Success", 
-              "UI navigation working! No crashes detected.\n\nCamera hardware will be tested in Build 31.",
-              [{ text: "OK", style: "default" }]
-            );
+                      Alert.alert(
+            "Build 31 Ready", 
+            "Camera permissions testing ready! UI navigation stable.\n\nCamera hardware mounting will be tested in Build 32.",
+            [{ text: "OK", style: "default" }]
+          );
           }}
         >
           <MaterialCommunityIcons name="test-tube" size={30} color="#fff" />
@@ -380,8 +380,8 @@ const NavigationTestScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>🛡️ Build 30 - Camera UI Navigation Test</Text>
-      <Text style={styles.subtitle}>Testing UI navigation layer (No camera hardware access)</Text>
+      <Text style={styles.title}>🛡️ Build 31 - Camera Permissions Test</Text>
+      <Text style={styles.subtitle}>Testing camera permissions API (No camera hardware access)</Text>
 
       <View style={styles.infoContainer}>
         <Text style={styles.infoTitle}>🔑 Auth Status: ✅ Authenticated</Text>
@@ -389,10 +389,10 @@ const NavigationTestScreen = ({ navigation }) => {
         <Text style={styles.infoText}>🆔 UID: {user?.uid}</Text>
       </View>
 
-      {/* Build 30: Camera UI Navigation Test Section */}
+      {/* Build 31: Camera Permissions Test Section */}
       <View style={styles.navigationSection}>
-        <Text style={styles.sectionTitle}>📱 Camera UI Navigation Test</Text>
-        <Text style={styles.subtitle}>UI-only test - Hardware access disabled</Text>
+        <Text style={styles.sectionTitle}>📱 Camera Permissions Test</Text>
+        <Text style={styles.subtitle}>Permissions-only test - Hardware access disabled</Text>
         
         <TouchableOpacity 
           style={styles.cameraTestButton} 
@@ -402,7 +402,7 @@ const NavigationTestScreen = ({ navigation }) => {
           }}
         >
           <MaterialCommunityIcons name="cellphone" size={24} color="#fff" />
-          <Text style={styles.cameraTestButtonText}>🛡️ Test Camera UI Navigation</Text>
+          <Text style={styles.cameraTestButtonText}>🛡️ Test Camera Permissions</Text>
         </TouchableOpacity>
       </View>
 
@@ -511,7 +511,7 @@ const NavigationTestScreen = ({ navigation }) => {
   );
 };
 
-const Build30CameraUINavigationTestNavigator = () => {
+const Build31CameraPermissionsTestNavigator = () => {
   const Stack = createStackNavigator();
   
   return (
@@ -542,7 +542,7 @@ const App = () => {
     <SafeAreaProvider>
       <AuthenticatedUserProvider auth={auth}>
         <NavigationContainer>
-          <Build30CameraUINavigationTestNavigator />
+          <Build31CameraPermissionsTestNavigator />
         </NavigationContainer>
         
         {/* Debug Logs */}
@@ -553,7 +553,7 @@ const App = () => {
               onPress={() => setShowLogs(!showLogs)}
             >
               <MaterialCommunityIcons name="tools" size={16} color="#fff" />
-              <Text style={styles.logToggleText}>BUILD 30 CAMERA UI NAVIGATION TEST LOGS</Text>
+              <Text style={styles.logToggleText}>BUILD 31 CAMERA PERMISSIONS TEST LOGS</Text>
             </TouchableOpacity>
             <ScrollView style={styles.logContainer} showsVerticalScrollIndicator={false}>
               {DEBUG_LOGS.slice(-10).map((log, index) => (

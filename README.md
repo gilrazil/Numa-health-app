@@ -191,6 +191,16 @@ The app is in active development with:
 - Firebase project setup
 - OpenAI API key
 
+## 🚨 **Build 28 - Critical Navigation Note**
+
+**Build 28 intentionally bypasses the normal navigation structure (RootNavigator/AppStack) to ensure ONLY Firestore operations are tested.**
+
+- ✅ **Uses**: `Build28FirestoreTestNavigator` (Firestore-only testing)
+- ❌ **Does NOT use**: `RootNavigator/AppStack` (contains camera functionality)
+- 🎯 **Objective**: Validate Firestore operations before adding camera complexity in Build 29
+
+This is a temporary navigation structure for systematic testing purposes.
+
 ---
 
 **Built for comprehensive health tracking with AI-powered insights** 🏥

@@ -13,13 +13,14 @@ Following the systematic debugging approach, each build focuses on **ONE new com
 | Build | Scope | Status | Notes |
 |-------|-------|--------|-------|
 | **25** | Authentication + Navigation | ✅ **PROVEN** | Rock-solid foundation |
-| **27** | Firestore Operations Only | 🛠️ **TESTING** | Camera code present but unused |
-| **28** | Camera Functionality | 🔜 **PLANNED** | Basic photo capture, no upload |
-| **29** | Firebase Storage + Upload | 🔜 **PLANNED** | Image upload to Firebase |
-| **30** | Meal Analysis Integration | 🔜 **PLANNED** | OpenAI API integration |
-| **31** | Biometric Authentication | 🔜 **OPTIONAL** | After full meal flow validated |
+| **27** | Firestore Operations Only | ❌ **FAILED** | Wrong interface deployed (Camera instead of Firestore) |
+| **28** | Firestore Operations Only | 🛠️ **TESTING** | Corrected: Camera code present but unused |
+| **29** | Camera Functionality | 🔜 **PLANNED** | Basic photo capture, no upload |
+| **30** | Firebase Storage + Upload | 🔜 **PLANNED** | Image upload to Firebase |
+| **31** | Meal Analysis Integration | 🔜 **PLANNED** | OpenAI API integration |
+| **32** | Biometric Authentication | 🔜 **OPTIONAL** | After full meal flow validated |
 
-## 🧪 **Build 27: Firestore-Only Testing**
+## 🧪 **Build 28: Firestore-Only Testing**
 
 ### ✅ **What TO Test:**
 - User profile creation in Firestore
@@ -49,8 +50,8 @@ Following the systematic debugging approach, each build focuses on **ONE new com
 ### **Camera Code Status:**
 - ✅ Camera components exist in codebase
 - ✅ Code is complete and ready for Build 28
-- 🚫 Camera functionality is NOT exposed in Build 27 UI
-- 📝 Camera testing deferred to Build 28 for risk isolation
+- 🚫 Camera functionality is NOT exposed in Build 28 UI
+- 📝 Camera testing deferred to Build 29 for risk isolation
 
 ### **Risk Mitigation:**
 - **Single point of failure**: Only Firestore operations
@@ -60,19 +61,19 @@ Following the systematic debugging approach, each build focuses on **ONE new com
 
 ## 🚀 **Future Build Planning**
 
-### **Build 28: Camera Functionality**
+### **Build 29: Camera Functionality**
 - Basic photo capture with expo-camera
 - Camera permissions and error handling
 - Image preview and retake functionality
-- **NO Firebase upload** (save for Build 29)
+- **NO Firebase upload** (save for Build 30)
 
-### **Build 29: Firebase Storage**
+### **Build 30: Firebase Storage**
 - Upload captured images to Firebase Storage
 - Progress tracking and error handling
 - File management and optimization
-- **NO AI analysis** (save for Build 30)
+- **NO AI analysis** (save for Build 31)
 
-### **Build 30: Meal Analysis**
+### **Build 31: Meal Analysis**
 - OpenAI API integration
 - Nutritional analysis processing
 - Results display and user interaction
@@ -88,6 +89,6 @@ Following the systematic debugging approach, each build focuses on **ONE new com
 
 ---
 
-**Current Focus: Build 27 - Firestore Operations Only**  
-**Next: Build 28 - Camera Functionality Only**  
+**Current Focus: Build 28 - Firestore Operations Only**  
+**Next: Build 29 - Camera Functionality Only**  
 **Principle: One Risk, One Build, High Success Rate** 🛡️ 

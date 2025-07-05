@@ -37,10 +37,14 @@ const addLog = (level, ...args) => {
 };
 
 // Initialize logs
-addLog("INIT", "🚀 Build 27 - Firestore Testing initialized");
-  addLog("INIT", "📄 Testing Firestore profile operations");
+addLog("INIT", "🚀 Build 28 - Firestore Testing initialized");
+addLog("INIT", "📄 Testing Firestore profile operations");
 addLog("INIT", "🔥 Firebase Config:", auth?.app?.name || "No app name");
 addLog("INIT", "💾 Firestore Config:", db?.app?.name || "No Firestore app name");
+
+// Build 28 Critical: Bypassing normal navigation to ensure ONLY Firestore testing
+// This prevents access to camera functionality which is reserved for Build 29
+addLog("INIT", "⚠️ Build 28: Using Firestore-only navigation - Camera functionality blocked");
 
 // Test Firestore connection
 if (db) {
@@ -60,9 +64,9 @@ if (auth) {
 }
 
 console.log("[INIT] 📚 All imports successful");
-console.log("[INIT] 📄 Build 27 - Firestore Testing Navigator components loaded");
+console.log("[INIT] 📄 Build 28 - Firestore Testing Navigator components loaded");
 
-// Build 27 Test Screens
+// Build 28 Test Screens
 const LoginTestScreen = ({ navigation }) => {
   const [email, setEmail] = useState("gil.raz.il@gmail.com");
   const [password, setPassword] = useState("");
@@ -128,7 +132,7 @@ const LoginTestScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>📄 Build 27 - Firestore Test</Text>
+      <Text style={styles.title}>📄 Build 28 - Firestore Test</Text>
       
       {!loginSuccess ? (
         <>
@@ -193,33 +197,107 @@ const LoginTestScreen = ({ navigation }) => {
   );
 };
 
-// CameraTestScreen removed - Build 27 focuses on Firestore-only testing
-// Camera functionality will be tested in Build 28
+// CameraTestScreen removed - Build 28 focuses on Firestore-only testing
+// Camera functionality will be tested in Build 29
 
 const NavigationTestScreen = ({ navigation }) => {
   const { user } = useContext(AuthenticatedUserContext);
+  const [profile, setProfile] = useState({
+    firstName: '',
+    lastName: '',
+    age: '',
+    gender: '',
+    height: '',
+    weight: '',
+    goal: ''
+  });
+  const [profileData, setProfileData] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const loadUserProfile = async () => {
     try {
+      setLoading(true);
+      addLog("NAV", "📄 Loading user profile from Firestore...");
+      
       if (user) {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          addLog("NAV", "📄 User profile loaded:", JSON.stringify(userData, null, 2));
+          addLog("NAV", "✅ User profile loaded successfully");
+          addLog("NAV", "📊 Profile data:", JSON.stringify(userData, null, 2));
+          setProfileData(userData);
+          setProfile({
+            firstName: userData.firstName || '',
+            lastName: userData.lastName || '',
+            age: userData.age?.toString() || '',
+            gender: userData.gender || '',
+            height: userData.height?.toString() || '',
+            weight: userData.weight?.toString() || '',
+            goal: userData.goal || ''
+          });
           return userData;
+        } else {
+          addLog("NAV", "⚠️ No user profile found in Firestore");
+          setProfileData(null);
         }
       }
       return null;
     } catch (error) {
       addLog("NAV", "❌ Error loading user profile:", error.message);
+      Alert.alert('Error', 'Failed to load profile from Firestore');
       return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveUserProfile = async () => {
+    try {
+      setSaving(true);
+      addLog("NAV", "💾 Saving user profile to Firestore...");
+      
+      if (!user) {
+        throw new Error('No authenticated user');
+      }
+
+      const userRef = doc(db, 'users', user.uid);
+      
+      const profileData = {
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        email: user.email,
+        age: profile.age ? parseInt(profile.age) : null,
+        gender: profile.gender,
+        height: profile.height ? parseFloat(profile.height) : null,
+        weight: profile.weight ? parseFloat(profile.weight) : null,
+        goal: profile.goal,
+        updatedAt: serverTimestamp(),
+        createdAt: serverTimestamp()
+      };
+
+      addLog("NAV", "📝 Profile data to save:", JSON.stringify(profileData, null, 2));
+      
+      await setDoc(userRef, profileData, { merge: true });
+      
+      addLog("NAV", "✅ Profile saved successfully to Firestore");
+      Alert.alert('Success', 'Profile saved successfully!');
+      
+      // Reload to verify save
+      await loadUserProfile();
+      
+    } catch (error) {
+      addLog("NAV", "❌ Error saving user profile:", error.message);
+      Alert.alert('Error', 'Failed to save profile: ' + error.message);
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>🧭 Navigation Test</Text>
-      <Text style={styles.subtitle}>Testing auth context across navigation</Text>
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>📄 Build 28 - Firestore Test</Text>
+      <Text style={styles.subtitle}>Testing Firestore read & write operations</Text>
 
       <View style={styles.infoContainer}>
         <Text style={styles.infoTitle}>🔑 Auth Status: ✅ Authenticated</Text>
@@ -228,14 +306,96 @@ const NavigationTestScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.navigationSection}>
-        <Text style={styles.sectionTitle}>📊 Firestore Data</Text>
+        <Text style={styles.sectionTitle}>📊 Firestore Operations</Text>
         
         <TouchableOpacity 
           style={styles.profileButton} 
           onPress={loadUserProfile}
+          disabled={loading}
         >
-          <MaterialCommunityIcons name="account" size={24} color="#fff" />
-          <Text style={styles.profileButtonText}>Load Profile</Text>
+          <MaterialCommunityIcons name="download" size={24} color="#fff" />
+          <Text style={styles.profileButtonText}>
+            {loading ? 'Loading...' : 'Load Profile'}
+          </Text>
+        </TouchableOpacity>
+
+        {profileData && (
+          <View style={styles.profileDataContainer}>
+            <Text style={styles.dataTitle}>📋 Current Profile Data:</Text>
+            <Text style={styles.dataText}>Name: {profileData.firstName} {profileData.lastName}</Text>
+            <Text style={styles.dataText}>Age: {profileData.age || 'Not set'}</Text>
+            <Text style={styles.dataText}>Gender: {profileData.gender || 'Not set'}</Text>
+            <Text style={styles.dataText}>Height: {profileData.height || 'Not set'} cm</Text>
+            <Text style={styles.dataText}>Weight: {profileData.weight || 'Not set'} kg</Text>
+            <Text style={styles.dataText}>Goal: {profileData.goal || 'Not set'}</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.navigationSection}>
+        <Text style={styles.sectionTitle}>✏️ Edit Profile</Text>
+        
+        <TextInput
+          style={styles.input}
+          placeholder="First Name"
+          value={profile.firstName}
+          onChangeText={(text) => setProfile({...profile, firstName: text})}
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Last Name"
+          value={profile.lastName}
+          onChangeText={(text) => setProfile({...profile, lastName: text})}
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Age"
+          value={profile.age}
+          onChangeText={(text) => setProfile({...profile, age: text})}
+          keyboardType="number-pad"
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Gender (Male/Female/Other)"
+          value={profile.gender}
+          onChangeText={(text) => setProfile({...profile, gender: text})}
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Height (cm)"
+          value={profile.height}
+          onChangeText={(text) => setProfile({...profile, height: text})}
+          keyboardType="number-pad"
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Weight (kg)"
+          value={profile.weight}
+          onChangeText={(text) => setProfile({...profile, weight: text})}
+          keyboardType="number-pad"
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Goal (Lose/Maintain/Gain weight)"
+          value={profile.goal}
+          onChangeText={(text) => setProfile({...profile, goal: text})}
+        />
+
+        <TouchableOpacity 
+          style={[styles.saveButton, saving && styles.buttonDisabled]} 
+          onPress={saveUserProfile}
+          disabled={saving}
+        >
+          <MaterialCommunityIcons name="content-save" size={24} color="#fff" />
+          <Text style={styles.saveButtonText}>
+            {saving ? 'Saving...' : 'Save Profile'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -246,11 +406,11 @@ const NavigationTestScreen = ({ navigation }) => {
         <MaterialCommunityIcons name="arrow-left" size={24} color="#333" />
         <Text style={styles.backButtonText}>Back to Login</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
-const Build27FirestoreTestNavigator = () => {
+const Build28FirestoreTestNavigator = () => {
   const Stack = createStackNavigator();
   
   return (
@@ -260,7 +420,7 @@ const Build27FirestoreTestNavigator = () => {
         component={LoginTestScreen} 
         options={{ headerShown: false }}
       />
-      {/* CameraTest removed - Build 27 focuses on Firestore-only testing */}
+      {/* CameraTest removed - Build 28 focuses on Firestore-only testing */}
       <Stack.Screen 
         name="NavigationTest" 
         component={NavigationTestScreen} 
@@ -275,9 +435,9 @@ const App = () => {
 
   return (
     <SafeAreaProvider>
-      <AuthenticatedUserProvider>
+      <AuthenticatedUserProvider auth={auth}>
         <NavigationContainer>
-                      <Build27FirestoreTestNavigator />
+          <Build28FirestoreTestNavigator />
         </NavigationContainer>
         
         {/* Debug Logs */}
@@ -288,7 +448,7 @@ const App = () => {
               onPress={() => setShowLogs(!showLogs)}
             >
               <MaterialCommunityIcons name="tools" size={16} color="#fff" />
-              <Text style={styles.logToggleText}>BUILD 27 FIRESTORE LOGS</Text>
+              <Text style={styles.logToggleText}>BUILD 28 FIRESTORE LOGS</Text>
             </TouchableOpacity>
             <ScrollView style={styles.logContainer} showsVerticalScrollIndicator={false}>
               {DEBUG_LOGS.slice(-10).map((log, index) => (
@@ -567,6 +727,38 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     marginBottom: 2,
+  },
+  profileDataContainer: {
+    backgroundColor: "#E8F5E8",
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 30,
+  },
+  dataTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 10,
+  },
+  dataText: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 5,
+  },
+  saveButton: {
+    backgroundColor: "#4CAF50",
+    borderRadius: 8,
+    padding: 15,
+    alignItems: "center",
+    marginBottom: 15,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
   },
 });
 

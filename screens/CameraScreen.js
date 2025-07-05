@@ -112,7 +112,7 @@ export const CameraScreen = ({ navigation, route }) => {
           optimized: photo.optimized,
           originalSize: photo.originalSize
         },
-        build: '27',
+        build: '28',
         source: 'camera'
       };
       

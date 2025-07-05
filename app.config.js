@@ -7,7 +7,7 @@ export default {
     owner: "gilraz",
     privacy: "public",
     platforms: ["ios", "android", "web"],
-    version: "1.0.40",
+    version: "1.0.41",
     orientation: "portrait",
     sdkVersion: "53.0.0",
     icon: "./assets/icon.png",
@@ -46,7 +46,7 @@ export default {
     },
     android: {
       package: "com.numahealth.app",
-      versionCode: 40,
+      versionCode: 41,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#FFFFFF"

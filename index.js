@@ -1,5 +1,5 @@
-// Build 40 - Timestamp Metadata Validation
-console.log('=== INDEX.JS LOADED - BUILD 40 TIMESTAMP METADATA VALIDATION ===');
+// Build 41 - Timestamp & Compression Fix
+console.log('=== INDEX.JS LOADED - BUILD 41 TIMESTAMP & COMPRESSION FIX ===');
 
 import 'react-native-gesture-handler';
 import { registerRootComponent } from 'expo';
@@ -18,10 +18,10 @@ try {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
-        event: 'index.js loaded - Build 40 - Timestamp Metadata Validation',
+        event: 'index.js loaded - Build 41 - Timestamp & Compression Fix',
   timestamp: new Date().toISOString(),
   platform: 'ios',
-  buildNumber: '38'
+  buildNumber: '41'
     })
   }).catch(() => {});
 } catch (e) {}

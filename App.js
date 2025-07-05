@@ -14,7 +14,7 @@ import {
   ActivityIndicator
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-// import { Camera, CameraType } from 'expo-camera'; // COMMENTED OUT - Build 30: No camera hardware access
+// import { Camera, CameraType } from 'expo-camera'; // COMMENTED OUT - Build 31: No camera hardware access
 import { AuthenticatedUserProvider, AuthenticatedUserContext } from "./providers";
 import { auth, db } from "./config/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
@@ -45,7 +45,7 @@ addLog("INIT", "🔥 Firebase Config:", auth?.app?.name || "No app name");
 addLog("INIT", "💾 Firestore Config:", db?.app?.name || "No Firestore app name");
 
   // Build 31 Critical: Testing camera permission prompts ONLY - NO camera component mounting
-  // This safely tests permission flow after Build 30 UI navigation success
+  // This safely tests permission flow after Build 30 UI navigation success (now Build 31)
   addLog("INIT", "🛡️ Build 31: Camera permissions testing ENABLED - no hardware mounting");
 
 // Test Firestore connection

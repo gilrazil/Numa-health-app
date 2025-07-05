@@ -157,5 +157,5 @@ The app is now in a stable pre-alpha state with:
 
 **Status:** Build 28 - Firestore-Only Testing (User profile creation and retrieval)
 **Last Updated:** January 2025
-**Version:** 1.0.28 - Build 28
+**Version:** 1.0.30 - Build 30
 **Note:** Camera code present but not tested in this build 

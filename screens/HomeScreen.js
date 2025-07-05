@@ -7,6 +7,7 @@ import { Colors, auth, db } from '../config';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, AlphaBadge } from '../components';
 import { log, logError, logWarn } from '../utils/logger';
+import { Camera } from 'expo-camera';
 
 log("[HOME] 🏗️ HomeScreen module loaded");
 
@@ -21,6 +22,8 @@ export const HomeScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
   const [authError, setAuthError] = useState(null);
+  const [cameraPermission, setCameraPermission] = useState(null);
+  const [permissionTesting, setPermissionTesting] = useState(false);
 
   log("[HOME] 🎯 HomeScreen state initialized");
 
@@ -142,9 +145,31 @@ export const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const handleStartTracking = () => {
-    log("[HOME] 📸 handleStartTracking called - navigating to MealCamera");
-    navigation.navigate('MealCamera');
+  const handleCameraPermissions = async () => {
+    log("[HOME] 📸 handleCameraPermissions called - testing camera permissions");
+    
+    try {
+      setPermissionTesting(true);
+      
+      log("[HOME] 🔐 Requesting camera permissions");
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      
+      log("[HOME] 📊 Camera permission status:", status);
+      setCameraPermission(status);
+      
+      if (status === 'granted') {
+        log("[HOME] ✅ Camera permission granted");
+        Alert.alert('Permission Granted', 'Camera access has been granted successfully!');
+      } else {
+        log("[HOME] ❌ Camera permission denied");
+        Alert.alert('Permission Denied', 'Camera access was denied. You can enable it in Settings.');
+      }
+    } catch (error) {
+      logError('[HOME] 🔥 Error requesting camera permissions:', error);
+      Alert.alert('Error', 'Failed to request camera permissions');
+    } finally {
+      setPermissionTesting(false);
+    }
   };
 
   const isProfileIncomplete = () => {
@@ -157,13 +182,36 @@ export const HomeScreen = ({ navigation }) => {
            userData?.goal === 'Not set';
   };
 
+  const getPermissionStatusIcon = () => {
+    if (permissionTesting) return "loading";
+    if (cameraPermission === 'granted') return "check-circle";
+    if (cameraPermission === 'denied') return "close-circle";
+    return "help-circle";
+  };
+
+  const getPermissionStatusColor = () => {
+    if (permissionTesting) return "#86868B";
+    if (cameraPermission === 'granted') return "#34C759";
+    if (cameraPermission === 'denied') return "#FF3B30";
+    return "#86868B";
+  };
+
+  const getPermissionStatusText = () => {
+    if (permissionTesting) return "Testing...";
+    if (cameraPermission === 'granted') return "Permission Granted ✅";
+    if (cameraPermission === 'denied') return "Permission Denied ❌";
+    return "Tap to test permissions";
+  };
+
   log("[HOME] 🎨 HomeScreen render cycle");
   log("[HOME] 📊 Render state:", { 
     hasUser: !!user, 
     hasUserData: !!userData, 
     loading, 
     isOffline, 
-    hasAuthError: !!authError 
+    hasAuthError: !!authError,
+    cameraPermission,
+    permissionTesting
   });
 
   // Show error state for auth errors
@@ -232,17 +280,40 @@ export const HomeScreen = ({ navigation }) => {
         <View style={styles.featuresContainer}>
           <Pressable 
             style={styles.primaryFeatureCard}
-            onPress={handleStartTracking}
+            onPress={handleCameraPermissions}
+            disabled={permissionTesting}
             android_ripple={{ color: 'rgba(255, 255, 255, 0.1)' }}
           >
             <View style={styles.featureIconContainer}>
-              <MaterialCommunityIcons name="camera" size={28} color="#FFFFFF" />
+              <MaterialCommunityIcons 
+                name={getPermissionStatusIcon()} 
+                size={28} 
+                color="#FFFFFF" 
+              />
             </View>
             <View style={styles.featureTextContainer}>
-              <Text style={styles.primaryFeatureTitle}>Take Meal Photo</Text>
-              <Text style={styles.primaryFeatureSubtitle}>Snap a photo to analyze your meal</Text>
+              <Text style={styles.primaryFeatureTitle}>Test Camera Permissions</Text>
+              <Text style={styles.primaryFeatureSubtitle}>
+                {getPermissionStatusText()}
+              </Text>
             </View>
           </Pressable>
+
+          {/* Permission Status Display */}
+          {cameraPermission && (
+            <View style={[styles.permissionStatusCard, 
+              cameraPermission === 'granted' ? styles.permissionGranted : styles.permissionDenied]}>
+              <MaterialCommunityIcons 
+                name={cameraPermission === 'granted' ? "check-circle" : "close-circle"} 
+                size={24} 
+                color={getPermissionStatusColor()} 
+              />
+              <Text style={[styles.permissionStatusText, 
+                cameraPermission === 'granted' ? styles.permissionGrantedText : styles.permissionDeniedText]}>
+                {cameraPermission === 'granted' ? 'Camera Permission Granted ✅' : 'Camera Permission Denied ❌'}
+              </Text>
+            </View>
+          )}
           
           <View 
             style={[styles.secondaryFeatureCard, styles.disabledCard]}
@@ -278,7 +349,7 @@ export const HomeScreen = ({ navigation }) => {
         </Pressable>
         
         <Text style={styles.versionText}>
-          Version 1.0.30 - Build 30
+          Version 1.0.31 - Build 31
         </Text>
       </View>
     </SafeAreaView>
@@ -441,6 +512,39 @@ const styles = StyleSheet.create({
     color: '#86868B',
     fontWeight: '400',
     letterSpacing: -0.08,
+  },
+  permissionStatusCard: {
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  permissionGranted: {
+    borderColor: '#34C759',
+    backgroundColor: '#F0FFF4',
+  },
+  permissionDenied: {
+    borderColor: '#FF3B30',
+    backgroundColor: '#FFF0F0',
+  },
+  permissionStatusText: {
+    fontSize: 15,
+    fontWeight: '500',
+    marginLeft: 12,
+    flex: 1,
+  },
+  permissionGrantedText: {
+    color: '#34C759',
+  },
+  permissionDeniedText: {
+    color: '#FF3B30',
   },
   statsCard: {
     backgroundColor: '#FFFFFF',

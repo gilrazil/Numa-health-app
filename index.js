@@ -1,16 +1,13 @@
-// Build 42 - Final Metadata Validation Fix
-console.log('=== INDEX.JS LOADED - BUILD 42 FINAL METADATA VALIDATION FIX ===');
+// Build 43 - Upload + Firestore Logging
+console.log('=== INDEX.JS LOADED - BUILD 43 UPLOAD + FIRESTORE LOGGING ===');
 
-import 'react-native-gesture-handler';
-import { registerRootComponent } from 'expo';
-
-// Log before importing App
-console.log('=== BEFORE APP IMPORT ===');
-
+import { AppRegistry } from 'react-native';
 import App from './App';
 
-// Log after importing App
-console.log('=== AFTER APP IMPORT ===');
+console.log('=== APP IMPORTS LOADED ===');
+console.log('App component loaded:', !!App);
+
+console.log('=== REGISTERING ROOT COMPONENT ===');
 
 // Try to send a simple fetch request to verify network
 try {
@@ -18,16 +15,16 @@ try {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
-        event: 'index.js loaded - Build 42 - Final Metadata Validation Fix',
+        event: 'index.js loaded - Build 43 - Upload + Firestore Logging',
   timestamp: new Date().toISOString(),
   platform: 'ios',
-  buildNumber: '42'
+  buildNumber: '43'
     })
   }).catch(() => {});
 } catch (e) {}
 
 console.log('=== BEFORE REGISTER ROOT ===');
 
-registerRootComponent(App);
+AppRegistry.registerRootComponent(App);
 
-console.log('=== AFTER REGISTER ROOT ==='); 
+console.log('=== APP REGISTERED SUCCESSFULLY ==='); 
